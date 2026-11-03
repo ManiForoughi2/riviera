@@ -1,5 +1,5 @@
-import { mountShader, prefersReducedMotion } from "./shaders.js?v=fd493069";
-import { startSea } from "./sea.js?v=fd493069";
+import { mountShader, prefersReducedMotion } from "./shaders.js?v=674d9794";
+import { startSea } from "./sea.js?v=674d9794";
 
 const root = document.documentElement;
 const reduced = prefersReducedMotion();

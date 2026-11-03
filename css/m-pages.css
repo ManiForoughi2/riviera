@@ -22,6 +22,11 @@
   .it-chairs span { margin-bottom: 8px; }
   .it-foot .btn-brass { width: 100%; min-height: 52px; font-size: 15px; }
 
+  /* club 1848: the price slip */
+  .slip { margin-inline: 10px; padding: 46px clamp(18px, 5vw, 26px) 28px; gap: 22px 8px; }
+  .slip-price { font-size: 16px; }
+  .slip-btn { min-height: 52px; font-size: 15px; }
+
   /* internships: two even columns, every mark scaled to the column */
   .logo-wall {
     display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px;
