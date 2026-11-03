@@ -1,7 +1,8 @@
 # Rebuilds assets/fonts/recia-display.woff2, the face used only by the big page titles.
 # Nothing may hang below the waterline, so: the J's hook is raised onto the baseline, and the Q
 # is the O's bowl plus a drawn tail that tapers out along the baseline (inscriptional style).
-# usage: python3 tools/build-display-font.py [out.woff2]   then bump ?v= on its URL (styles.css + preloads)
+# Digits are the lining set at cap height; the font's default old-style 4 and 5 hang under the baseline.
+# usage: uv run --no-project --with fonttools --with brotli python tools/build-display-font.py [out.woff2]   then bump ?v= on its URL (styles.css + preloads)
 import sys
 from fontTools.ttLib import TTFont
 from fontTools.ttLib.tables import ttProgram
@@ -35,6 +36,11 @@ pen.qCurveTo((500, -6), (400, 110))         # up through the stroke
 pen.closePath()
 finish("Q", pen.glyph())
 f["hmtx"]["Q"] = (glyf["Q"].xMax + 20, 48)
+
+DIGITS = "zero one two three four five six seven eight nine".split()
+for t in f["cmap"].tables:
+    if t.isUnicode():
+        for i, n in enumerate(DIGITS): t.cmap[48 + i] = f"{n}.plf"
 
 for r in f["name"].names:
     if r.nameID in (1, 4, 16):
