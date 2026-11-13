@@ -375,8 +375,6 @@ svg { display: block; }
 /* ---------- footer ---------- */
 .foot { position: relative; overflow: hidden; padding: 0 var(--g); }
 .foot-line { display: flex; justify-content: center; align-items: center; gap: 14px; padding: 24px 0 3vh; font: 500 14px/1.3 var(--body); color: var(--ink-3); text-align: center; }
-.foot-club { color: var(--ink-2); white-space: nowrap; transition: color .2s ease; }
-.foot-club:hover { color: var(--accent-text); }
 .foot-ig { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; color: var(--ink-2); transition: color .2s ease; }
 .foot-ig:hover { color: var(--accent-text); }
 .foot-ig svg { width: 18px; height: 18px; }
@@ -631,7 +629,6 @@ svg { display: block; }
 /* bigger thumbs, bigger targets */
 @media (pointer: coarse) {
   .foot-ig { width: 44px; height: 44px; }
-  .foot-club { display: inline-grid; place-items: center; min-height: 44px; padding: 0 8px; }
   .rush-dm { padding: 14px 4px; }
   .row .text-link { padding: 12px 0; }
   .qa summary { padding-block: 22px; }
