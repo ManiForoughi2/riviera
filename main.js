@@ -1,5 +1,5 @@
-import { mountShader, prefersReducedMotion } from "./shaders.js?v=9a43aafc";
-import { startSea } from "./sea.js?v=9a43aafc";
+import { mountShader, prefersReducedMotion } from "./shaders.js?v=365abc8f";
+import { startSea } from "./sea.js?v=365abc8f";
 
 const root = document.documentElement;
 const reduced = prefersReducedMotion();
@@ -450,6 +450,15 @@ const queue = () => { if (!queued) { queued = true; requestAnimationFrame(frame)
 addEventListener("scroll", queue, { passive: true });
 addEventListener("resize", queue, { passive: true });
 frame();
+
+// ---------- club 1848: back from stripe checkout ----------
+const slip = document.querySelector(".slip");
+if (slip && new URLSearchParams(location.search).has("joined")) {
+  slip.classList.add("is-joined");
+  slip.querySelector(".slip-done").hidden = false;
+  history.replaceState(null, "", location.pathname);
+  addEventListener("load", () => slip.scrollIntoView({ block: "center", behavior: reduced ? "auto" : "smooth" }));
+}
 
 // ---------- magnetic buttons ----------
 const finePointer = matchMedia("(hover: hover) and (pointer: fine)").matches;

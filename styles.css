@@ -345,9 +345,16 @@ svg { display: block; }
 }
 .slip-price { font-size: 17px; white-space: nowrap; }
 .slip-price b { display: block; font: 600 clamp(34px, 5vw, 44px)/1.1 var(--serif); font-variant-numeric: lining-nums; color: var(--navy); }
+.slip-opt { justify-self: stretch; display: flex; flex-direction: column; align-items: stretch; gap: 20px; text-align: center; }
 .slip-or { font-size: 17px; }
 .slip-note { grid-column: 1 / -1; font-size: 16px; line-height: 1.35; text-align: center; text-wrap: balance; }
-.slip-btn { grid-column: 1 / -1; justify-self: stretch; text-align: center; }
+.slip-btn { text-align: center; }
+/* back from checkout: the slip turns into the welcome */
+.slip.is-joined .slip-opt, .slip.is-joined .slip-or, .slip.is-joined .slip-note { display: none; }
+.slip-done { grid-column: 1 / -1; display: grid; gap: 10px; text-align: center; }
+.slip-done[hidden] { display: none; }
+.slip-done-head { font: 600 clamp(34px, 5vw, 44px)/1.1 var(--serif); color: var(--navy); }
+.slip-done-line { font-size: 17px; line-height: 1.4; text-wrap: balance; }
 
 /* ---------- final call ---------- */
 .rush { padding: 4vh var(--g) 14vh; }

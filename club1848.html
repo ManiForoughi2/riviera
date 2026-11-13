@@ -35,13 +35,13 @@
     d.setAttribute("data-theme", t);
   })();
 </script>
-<link rel="stylesheet" href="styles.css?v=9a43aafc">
-<link rel="stylesheet" href="css/m-global.css?v=9a43aafc">
-<link rel="stylesheet" href="css/m-perf.css?v=9a43aafc">
-<link rel="stylesheet" href="css/m-nav.css?v=9a43aafc">
-<link rel="stylesheet" href="css/m-cards.css?v=9a43aafc">
-<link rel="stylesheet" href="css/m-home.css?v=9a43aafc">
-<link rel="stylesheet" href="css/m-pages.css?v=9a43aafc">
+<link rel="stylesheet" href="styles.css?v=365abc8f">
+<link rel="stylesheet" href="css/m-global.css?v=365abc8f">
+<link rel="stylesheet" href="css/m-perf.css?v=365abc8f">
+<link rel="stylesheet" href="css/m-nav.css?v=365abc8f">
+<link rel="stylesheet" href="css/m-cards.css?v=365abc8f">
+<link rel="stylesheet" href="css/m-home.css?v=365abc8f">
+<link rel="stylesheet" href="css/m-pages.css?v=365abc8f">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -119,12 +119,21 @@
       <li class="it-row"><span class="it-day">The pin</span><span class="it-what">A Club 1848 lapel pin, mailed when you join.</span></li>
     </ul>
   </div>
-  <div class="slip reveal">
-    <p class="slip-price"><b>$18.48</b> a month</p>
+  <div class="slip reveal" id="join">
+    <div class="slip-opt">
+      <p class="slip-price"><b>$18.48</b> a month</p>
+      <a class="btn-brass magnetic slip-btn" href="https://buy.stripe.com/test_28E7sK5Wc0m6bL3fSfbjW00">Give monthly</a>
+    </div>
     <p class="slip-or">or</p>
-    <p class="slip-price"><b>$1,848</b> once</p>
+    <div class="slip-opt">
+      <p class="slip-price"><b>$1,848</b> once</p>
+      <a class="btn-brass magnetic slip-btn" href="https://buy.stripe.com/test_14A8wO3O41qa5mF5dBbjW01">Give once</a>
+    </div>
     <p class="slip-note">Named for the year FIJI started. So is the price.</p>
-    <a class="btn-brass magnetic slip-btn" href="https://www.instagram.com/asufiji/" target="_blank" rel="noopener">DM @asufiji to join</a>
+    <div class="slip-done" hidden>
+      <p class="slip-done-head">You're in.</p>
+      <p class="slip-done-line">Welcome to Club 1848. Your receipt is in your email.</p>
+    </div>
   </div>
 </section>
 
@@ -136,6 +145,6 @@
   <div class="wordmark" aria-hidden="true">PHI GAMMA DELTA</div>
 </footer>
 
-<script type="module" src="main.js?v=9a43aafc"></script>
+<script type="module" src="main.js?v=365abc8f"></script>
 </body>
 </html>

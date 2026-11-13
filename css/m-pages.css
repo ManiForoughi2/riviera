@@ -25,6 +25,7 @@
   /* club 1848: the price slip */
   .slip { margin-inline: 10px; padding: 46px clamp(18px, 5vw, 26px) 28px; gap: 22px 8px; }
   .slip-price { font-size: 16px; }
+  .slip { grid-template-columns: minmax(0, 1fr); }
   .slip-btn { min-height: 52px; font-size: 15px; }
 
   /* internships: two even columns, every mark scaled to the column */
