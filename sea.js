@@ -1,7 +1,16 @@
-// night scene behind the crest: one WebGL pass draws the sky AND the sea from the same light
-// model, so the reflection samples exactly the sky it sits under. perspective wave field from
-// just above the surface, fresnel mirror toward the horizon, mist across the horizon line, a low
-// glow behind the word, and the real DOM wordmark reflected through the wave normals.
+// the scene behind every page title: a Blender-rendered sky with palm islands (assets/sky, made by
+// ~/asufiji-render) above a WebGL sea that mirrors it. the title itself is DOM and stands on the
+// horizon line; its reflection, and the haze and glare it picks up, are worked out here.
+//
+// how the water is kept from looking computed:
+//  - every wave is filtered against the patch of sea its pixel really covers, which near the
+//    horizon is hundreds of times longer than it is wide. sampling waves a row cannot resolve is
+//    what used to break the far water into single-pixel streaks.
+//  - what the filter removes returns as roughness: reflections are read from vertically squeezed
+//    copies of the sky and of the title (rough water smears a reflection down the screen, not
+//    across), so far reflections are soft and long instead of hard-edged or missing.
+//  - the sun and moon reflect as a slope-space highlight: separate sparks near the eye, one soft
+//    path far out. fine ripples from a small mip-mapped slope map give the near water its grain.
 // returns null if WebGL is unavailable (the CSS sky + DOM reflection stay as the fallback).
 
 const VERT = `attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }`;
@@ -16,17 +25,65 @@ for (let i = 0, L = 9; i < 12; i++, L *= 0.7) {
 const f = (x) => x.toPrecision(9);
 const AK = 0.011 * TAU;                                     // amplitude * k, same for every wave
 
-// smoothstep(4fp, 14fp, L) == s(L / 10fp - 0.4); waves shorter than 4fp are fully attenuated and
-// they only get shorter, so stop there (far pixels near the horizon need just a few)
+// a pixel of sea covers 1/q of water across the view but z/q along it (q = px below the horizon,
+// z = distance): near the horizon one row spans many wavelengths. each wave is faded by how far
+// its phase turns across the pixel, in both directions: full while a wave still spans 20 px,
+// gone by 8 px. so nothing the screen cannot resolve is ever sampled, and no wave is ever drawn
+// as a hairline (regular thin lines read as scanlines even when they are correctly sampled).
+// the energy that fades out is not dropped: it comes back as roughness (blurred reflection, wide
+// soft glitter). waves only get shorter down the list, so once one is fully faded the rest are
+// skipped.
+const F_LO = 0.1, F_HI = 0.62;                              // phase step per pixel, squared
 const WAVE_GLSL = `
-vec2 waveGrad(vec2 xz, float fp) {
-  vec2 g = vec2(0.0);
-  float iv = 0.1 / fp, f4 = 4.0 * fp, a;
-${WAVES.map((w, i) => `  if (f4 >= ${f(w.L)}) return g;
-  a = clamp(${f(w.L)} * iv - 0.4, 0.0, 1.0);
-  g += vec2(${f(w.dx * AK)}, ${f(w.dz * AK)}) * (cos(dot(vec2(${f(w.dx * w.k)}, ${f(w.dz * w.k)}), xz) + uPh[${i}]) * a * a * (3.0 - 2.0 * a));`).join("\n")}
-  return g;
+vec3 waveField(vec2 xz, float fp, float ax) {
+  vec3 w = vec3(0.0);
+  float fp2 = fp * fp, th, a;
+${WAVES.map((w, i) => {
+    const rest = WAVES.slice(i);
+    const minDz = Math.min(...rest.map((r) => r.dz)), maxDx = Math.max(...rest.map((r) => Math.abs(r.dx)));
+    const c = w.k / Math.sqrt(F_HI);
+    return `  if (fp * (${f(c * minDz)} * xz.y - ${f(c * maxDx)} * ax) >= 1.0) return w;
+  th = dot(vec2(${f(w.dx * w.k)}, ${f(w.dz * w.k)}), xz);
+  a = clamp(${f(F_HI / (F_HI - F_LO))} - fp2 * (th * th + ${f((w.dx * w.k) ** 2)}) * ${f(1 / (F_HI - F_LO))}, 0.0, 1.0);
+  a *= a * (3.0 - 2.0 * a);
+  w += vec3(vec2(${f(w.dx * AK)}, ${f(w.dz * AK)}) * (cos(th + uPh[${i}]) * a), a * a);`;
+  }).join("\n")}
+  return w;
 }`;
+// slope variance of one wave along the view (they all run roughly toward the eye)
+const VAR1 = (AK * AK / 2) * (WAVES.reduce((t, w) => t + w.dz * w.dz, 0) / WAVES.length);
+const S0 = 0.004;        // slope of the ripples too fine to draw: softens every reflected edge
+const BLUR = 0.4;        // share of that lost slope that smears the reflection (1 = physical, lower = glassier far water)
+const CALM = 5.0;        // distance (eye heights) past which the water starts to flatten
+const S1 = 0.03;         // slope spread of one sun spark
+const SHADOW = 0.6;      // how high the chop lifts the lowest reflected ray, in units of its rms slope
+const GLINT = 3.0;       // brightness of a spark that faces the sun squarely
+
+// fine ripples. the 12 waves stop at about 40 cm, and water drawn with nothing finer looks like
+// poured glass up close. one small tileable slope map (a handful of short waves, baked once) is
+// laid over the sea twice, at two sizes and headings that drift apart. it is mip-mapped, so it
+// fades out by itself where a pixel can no longer hold it.
+const RIP_N = 128, RIP_SLOPE = 0.034;                       // texels per tile; rms slope of one layer
+function rippleMap() {
+  const N = RIP_N, sx = new Float32Array(N * N), sz = new Float32Array(N * N), out = new Uint8Array(N * N * 4);
+  let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let w = 0; w < 14; w++) {
+    const m = Math.round((rnd() * 2 - 1) * 7), n = Math.round(4 + rnd() * 8);   // whole waves per tile: it repeats cleanly
+    const ph = rnd() * TAU, kk = Math.hypot(m, n), ax = m / kk, az = n / kk;
+    for (let y = 0, i = 0; y < N; y++) for (let x = 0; x < N; x++, i++) {
+      const c = Math.cos(TAU * (m * x + n * y) / N + ph);
+      sx[i] += ax * c; sz[i] += az * c;
+    }
+  }
+  let v = 0; for (let i = 0; i < N * N; i++) v += sx[i] * sx[i] + sz[i] * sz[i];
+  const k = 0.25 / Math.sqrt(v / (N * N));                  // rms -> a quarter of the byte range either way
+  for (let i = 0; i < N * N; i++) {
+    out[i * 4] = Math.max(0, Math.min(255, 127.5 + sx[i] * k * 255));
+    out[i * 4 + 1] = Math.max(0, Math.min(255, 127.5 + sz[i] * k * 255));
+    out[i * 4 + 3] = 255;
+  }
+  return out;
+}
 
 // one source, two programs: sky pixels never pay for (or hold registers for) the sea path
 const FRAG = (part, oct = 4) => `
@@ -44,10 +101,18 @@ uniform sampler2D uPlateDay, uPlateNight; // blender-rendered sky + islands; bot
 uniform float uNight;     // 0 day .. 1 night, animated on theme switch
 uniform float uPlateOn;   // 1 once the render has loaded
 uniform vec2 uPlateT;     // the render's half-width and full-height, in tan(angle)
-uniform vec2 uSunT;       // the rendered sun, in tan(angle) (x right, y up)
+uniform vec3 uSunD, uMoonD;   // unit vectors toward the rendered sun and moon (x right, y up, z ahead)
 uniform vec3 uHorizon;    // the render's horizon color with the islands left out
-uniform vec2 uWordRes;
-uniform float uWordHz;    // the horizon's row in the word texture (it also holds what hangs below)
+uniform vec2 uWordRes;    // word texture size
+uniform float uWordHz;    // the horizon's row in the word texture
+uniform float uWordH0;    // rows of its full-size level; the squeezed levels sit under it
+uniform float uWLod;      // word level that matches level 0 of the reflection atlas
+uniform vec2 uWordX;      // left and right edge of the word, px
+uniform float uWordQ;     // px -> u in the squeezed levels (they are narrower than level 0)
+uniform sampler2D uEnvDay, uEnvNight;   // the renders again, squeezed for the reflection (see envAtlas)
+uniform sampler2D uRip;   // fine ripple slopes, tileable (see rippleMap)
+uniform vec4 uRipT;       // drift of its two layers
+uniform float uRipA;      // their strength; 0 on the lowest quality levels skips them
 uniform float uPh[12];    // per-wave phase at uTime, wrapped on the cpu
 uniform vec3 uSkyTop, uSkyMid, uHaze, uGlow, uBody, uDeep, uGlint, uWordCol;
 uniform vec3 uIsle, uIsleFar, uCloud;   // island silhouettes and cloud tint
@@ -97,6 +162,35 @@ float fbm(vec2 p) {
 #endif
 #ifdef SEA
 ${WAVE_GLSL}
+// rough water smears a reflection up and down the screen, hardly at all sideways. the atlas holds
+// the render squeezed vertically by 1, 2, 4 .. 64, one under the other, so a lookup at level
+// "lod" is that smear for free: two taps, whatever the width
+vec3 envTap(sampler2D s, float u, float v, float sc) {      // sc = 2^-level
+  float h = 192.0 * sc;
+  return texture2D(s, vec2(u, (384.0 * (1.0 - sc) + clamp(v * h, 0.5, h - 0.5)) / 512.0)).rgb;
+}
+vec3 env1(sampler2D s, vec2 t, float lod) {
+  float u = 0.5 + t.x / (2.0 * uPlateT.x), v = 1.0 - min(t.y, uPlateT.y) / uPlateT.y;
+  float j = floor(lod), sc = exp2(-j);
+  return mix(envTap(s, u, v, sc), envTap(s, u, v, sc * 0.5), lod - j);
+}
+vec3 env(vec2 t, float lod) {
+  if (uNight <= 0.0) return env1(uEnvDay, t, lod);
+  if (uNight >= 1.0) return env1(uEnvNight, t, lod);
+  return mix(env1(uEnvDay, t, lod), env1(uEnvNight, t, lod), uNight);
+}
+// the word's reflection, from the same kind of squeezed copies (levels 3..8 of the word texture)
+float wordTap(float u, float y, float sc) {                 // sc = 2^-level
+  float h = uWordH0 * sc;
+  return texture2D(uWord, vec2(u, (uWordH0 * (1.25 - 2.0 * sc) + clamp(y * sc, 0.5, h - 0.5)) / uWordRes.y)).r;
+}
+// sunlight (or moonlight) thrown back by the facets that happen to face it: g = resolved slope,
+// var = slope variance of everything smaller. sharp sparks up close, one soft path far out
+float glitter(vec3 v, vec3 l, vec2 g, float var) {
+  vec3 h = normalize(l + v);
+  vec2 dg = -h.xz / max(h.y, 0.02) - g;
+  return exp(-dot(dg, dg) / (2.0 * var)) / var;
+}
 #endif
 
 void main() {
@@ -151,46 +245,92 @@ void main() {
   }
 #else
   if (dy > 0.0) discard;
-  float t = 1.0 / -d.y;                                      // eye height 1
-  vec3 p = d * t;
-  float fp = t / uF;
-  vec2 g = waveGrad(p.xz, fp);
+  float fp = 1.0 / (0.75 - dy);                              // eye height 1: a pixel is fp wide on the water, fp * z long
+  vec3 p = vec3((px.x - uRes.x * 0.5) * fp, -1.0, uF * fp);  // where the view ray meets the water
+  vec3 w = waveField(p.xz, fp, abs(p.x));
+  // the chop is at the viewer's feet; out toward the islands the water lies nearly flat, which is
+  // what lets it hold their reflections (full strength inside ~5 eye heights, then ~1/distance)
+  float cz = p.z * ${f(1 / CALM)}; cz *= cz;
+  float calm = inversesqrt(sqrt(1.0 + cz * cz)), var1 = ${f(VAR1)} * calm * calm;
+  vec2 g = w.xy * calm;
+  if (uRipA > 0.0) {
+    vec2 r1 = texture2D(uRip, p.xz * 1.1 + uRipT.xy).rg - 0.5;
+    vec2 r2 = texture2D(uRip, vec2(p.x * 0.82 - p.z * 0.57, p.x * 0.57 + p.z * 0.82) * 1.7 + uRipT.zw).rg - 0.5;
+    g += (r1 + vec2(r2.x * 0.82 + r2.y * 0.57, r2.y * 0.82 - r2.x * 0.57)) * (uRipA * calm);
+  }
+  float vu = var1 * (12.0 - w.z);                            // slope variance the pixel cannot resolve
+
+  // a facet tilted away past edge-on is hidden by the crest in front of it, and what shows there
+  // instead is the face of the next wave: tilt it back toward the eye by as much as it overshot
+  float il = inversesqrt(dot(p.xz, p.xz));
+  vec2 hd = p.xz * il;
+  float gam = il + dot(g, hd);                               // angle between the view ray and the facet
+  g -= hd * (2.0 * min(gam, 0.0));
+  gam = abs(gam);
   vec3 n = normalize(vec3(-g.x, 1.0, -g.y));
   vec3 r = reflect(d, n);
-  r.y = max(r.y, 0.0005);
   float c = 1.0 - max(dot(-d, n), 0.0), c2 = c * c;
-  float fres = 0.02 + 0.98 * c2 * c2 * c;
 
-  float up = r.y / r.z * uF;
-  float xs = uRes.x * 0.5 + r.x / r.z * uF;
-  vec2 wuv = vec2(xs / uWordRes.x, (uWordHz - up) / uWordRes.y);
-  vec4 sc = vec4(0.0);
-  if (wuv.x > 0.0 && wuv.x < 1.0 && wuv.y > 0.0 && wuv.y < 1.0) sc = texture2D(uWord, wuv);
+  // roughness below the pixel: fine ripples everywhere, plus what the far water lost above.
+  // of a rough patch you see mostly the facets leaning toward you, so it mirrors sky from higher up
+  float sr2 = ${f(S0 * S0)} + ${f(BLUR * BLUR)} * vu, sr = sqrt(sr2);
+  vec2 rt = vec2(r.x, abs(r.y)) / max(r.z, 0.2);             // a ray sent down bounces once more: fold it up
+  // a ray leaving low over choppy water runs into the next crest, so the chop never mirrors the
+  // horizon band itself; calm far water still does, which is where the islands' reflections live
+  float vr = var1 * w.z;
+  rt.y = sqrt(rt.y * rt.y + ${f(SHADOW * SHADOW)} * vr);
+  rt.y += sqrt(gam * gam + ${f(6.2832 * BLUR * BLUR)} * vu) - gam;
+  float lod = clamp(0.5 * log2(sr2) + 10.16, 0.0, 5.999);    // level whose rows are about 2 * sr tall
+  float fres = (0.02 + 0.98 * c2 * c2 * c) / (1.0 + 22.7 * sr * sqrt(sr));
+
+  float xs = uRes.x * 0.5 + rt.x * uF;
   vec3 refl;
-  if (uPlateOn > 0.5) refl = plate(r) * 0.86;
+  if (uPlateOn > 0.5) refl = env(rt, lod) * 0.86;
   else {
-    refl = sky(r) * 0.85;
-    refl = mix(refl, uIsleFar * 0.9, sc.b);
-    refl = mix(refl, uIsle * 0.9, sc.g);
+    vec3 rr = normalize(vec3(rt, 1.0));
+    refl = sky(rr) * 0.85;
+    vec2 wuv = vec2(xs / uWordRes.x, (uWordHz - rt.y * uF) / uWordRes.y);
+    if (wuv.x > 0.0 && wuv.x < 1.0 && wuv.y > 0.0) {
+      vec4 sc = texture2D(uWord, wuv);
+      refl = mix(refl, uIsleFar * 0.9, sc.b);
+      refl = mix(refl, uIsle * 0.9, sc.g);
+    }
   }
-  refl = mix(refl, uWordCol * 0.86, sc.r * 0.74);
+  float wa = 0.0;                                            // how much of the reflection is the word
+  if (xs > uWordX.x && xs < uWordX.y) {
+    float jw = clamp(lod + uWLod, 3.0, 7.999), j = floor(jw), sc = exp2(-j);
+    float u = xs * uWordQ, y = uWordHz - rt.y * uF;
+    wa = mix(wordTap(u, y, sc), wordTap(u, y, sc * 0.5), jw - j);
+    refl = mix(refl, uWordCol * 0.86, wa * 0.74);
+  }
 
+  vec3 far = uPlateOn > 0.5 ? uHorizon : uHaze;            // the horizon's own color
   float depth01 = clamp(-dy / (uRes.y - uHz), 0.0, 1.0);
   vec3 body = mix(uBody, uDeep, depth01) * (0.85 + 0.15 * n.z);
   col = mix(body, refl, fres);
 
-  vec3 L = normalize(uPlateOn > 0.5 ? vec3(uSunT.x, max(uSunT.y, 0.012), 1.0) : vec3(0.0, max(uSunE, 0.012), 1.0));
-  float s = pow(max(dot(r, L), 0.0), 900.0);
-  col += uGlint * s * 1.6 * (1.0 - smoothstep(0.0, 1.0, fp * 0.08));
+  float gv = ${f(S1 * S1)} + vu, spark = 0.0;
+  if (uPlateOn < 0.5) spark = glitter(-d, normalize(vec3(0.0, max(uSunE, 0.012), 1.0)), g, gv);
+  else {
+    if (uNight < 1.0) spark = glitter(-d, uSunD, g, gv) * (1.0 - uNight);
+    if (uNight > 0.0) spark += glitter(-d, uMoonD, g, gv) * uNight * 0.6;
+  }
+  col += uGlint * (1.0 - exp(-spark * ${f(GLINT * S1 * S1)})) * (1.0 - col * 0.6);
 
-  vec3 far = uPlateOn > 0.5 ? uHorizon : uHaze;            // the horizon's own color
-  col = mix(far, col, exp(-t * 0.0045));                   // sea fades into the mist
+  // the sea fades into the mist, but the letters and the islands stand nearer than the horizon:
+  // the water at their feet keeps their (dark) reflection, so they are seen to touch it
+  float dk = clamp(1.0 - dot(refl, vec3(0.333)) / max(dot(far, vec3(0.333)), 0.02), 0.0, 1.0);
+  float keep = max(wa * 0.8, dk * 0.85) * fres;
+  col = mix(far, col, mix(exp(-p.z * 0.0018), 1.0, keep));
 #endif
 
   // one band of mist straddles the horizon so sky and sea meet without a seam
   float mist = exp(-abs(dy) / (uRes.y * 0.035));
   float mx = (px.x / uRes.x - 0.5) * 2.4;
-  if (uPlateOn > 0.5) col = mix(col, uHorizon, mist * 0.3);
+#ifdef SEA
+  mist *= 1.0 - keep;
+#endif
+  if (uPlateOn > 0.5) col = mix(col, uHorizon, mist * 0.24);
   else col = mix(col, mix(uHaze, uSkyHz, exp(-mx * mx)) + uGlow * 0.12 * exp(-mx * mx), mist * 0.5);
 
   float dn = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
@@ -203,7 +343,7 @@ const LOOK = {
   dark: {
     skyTop: "#080b1c", skyMid: "#211d45", skyLow: "#6b3a58", skyHz: "#e2865a", haze: "#5a3a52", glow: "#c46a4e",
     sun: "#ffb27a", sunE: -0.006,
-    body: "#121732", deep: "#070a18", glint: "#ffcf9e", word: "#f0c9a6", stars: 1,
+    body: "#121732", deep: "#070a18", glint: "#e6ebf6", word: "#ecd9bd", stars: 1,
     isle: "#0b0c1c", isleFar: "#3b2a47", cloud: "#2a2242", cloudLit: "#e9906a", clouds: 0.85,
   },
   light: {
@@ -264,7 +404,7 @@ export function startSea(canvas, opts) {
   const ph = new Float32Array(12);
   const px1 = new Uint8Array(4);
 
-  let progs, sky, sea, tex;
+  let progs, sky, sea, tex, rip;
   let dpr = 1, raf = 0, visible = true, lost = false, last = 0;
   let level = 0, W = 1, H = 1, hz = 0, acc = 0, n = 0, bad = 0;
   let scrollT = -1e9, cw = 0, ch = 0;
@@ -296,7 +436,17 @@ export function startSea(canvas, opts) {
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     gl.enable(gl.SCISSOR_TEST);
 
-    texs.day = texs.night = null; shapeNow = "";   // a restored context needs the renders uploaded again
+    texs.day = texs.night = envs.day = envs.night = null; shapeNow = "";   // a restored context needs the renders uploaded again
+    gl.activeTexture(gl.TEXTURE5);
+    gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, RIP_N, RIP_N, 0, gl.RGBA, gl.UNSIGNED_BYTE, rip || (rip = rippleMap()));
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.useProgram(sea.p); gl.uniform1i(sea.u("uRip"), 5);
+    sea.rip = sea.u("uRipT");
     tex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -309,13 +459,14 @@ export function startSea(canvas, opts) {
 
   // ---- the blender render (asufiji-render/build_scene.py) ----
   // wide: desktop/landscape framing; tall: phones, where the islands sit just outside the word.
-  // sun = the day render's sun, moon = the night render's moon, both in tan(angle)
+  // sun = the day render's sun, moon = the night render's moon, both in tan(angle). they stand in
+  // open sky clear of any title: wide, over the islands (titles stop at tan .29); tall, above it
   const PLATES = {
-    wide: { tx: 0.56, tv: 0.672, sun: [0.1228, 0.196], moon: [-0.38, 0.27] },
-    tall: { tx: 0.25, tv: 0.66, sun: [0.1228, 0.196], moon: [-0.13, 0.25] },
+    wide: { tx: 0.56, tv: 0.672, sun: [0.36, 0.14], moon: [-0.37, 0.22] },
+    tall: { tx: 0.25, tv: 0.66, sun: [0.135, 0.235], moon: [-0.13, 0.26] },
   };
   const imgs = new Map();                       // key -> decoded image (or null while loading)
-  const texs = { day: null, night: null };
+  const texs = { day: null, night: null }, envs = { day: null, night: null };
   let shapeNow = "", horizon = { day: [0.6, 0.6, 0.62], night: [0.1, 0.12, 0.2] };
   let nightNow = getTheme() === "light" ? 0 : 1, fadeRaf = 0;
 
@@ -336,18 +487,53 @@ export function startSea(canvas, opts) {
     }
     return n ? [r / n / 255, g / n / 255, b / n / 255] : [0.5, 0.45, 0.45];
   }
-  function upload(which, img, unit) {
-    if (!texs[which]) texs[which] = gl.createTexture();
+  const tex2d = (t, src, unit) => {
     gl.activeTexture(unit);
-    gl.bindTexture(gl.TEXTURE_2D, texs[which]);
+    gl.bindTexture(gl.TEXTURE_2D, t);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, src);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.activeTexture(gl.TEXTURE0);
+  };
+  // the render as the water mirrors it: 7 copies squeezed to 192, 96 .. 3 rows, stacked in one
+  // small texture. each is halved from the one before, so a row is the true average of the sky
+  // it stands for, and the sea shader gets any amount of vertical blur from two taps
+  function envAtlas(img) {
+    if (img.env) return img.env;
+    const aw = img.width > 1600 ? 1024 : 512;
+    const mk = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; const x = c.getContext("2d"); x.imageSmoothingQuality = "high"; return [c, x]; };
+    const [a, ax] = mk(aw, 768), [b, bx] = mk(aw, 384), [c, cx] = mk(aw, 512);
+    ax.drawImage(img, 0, 0, aw, 768);
+    bx.drawImage(a, 0, 0, aw, 384);
+    cx.drawImage(b, 0, 0, aw, 192);
+    for (let h = 192, y = 0; h > 3; y += h, h /= 2) cx.drawImage(c, 0, y, aw, h, 0, y + h, aw, h / 2);
+    return (img.env = c);
+  }
+  function upload(which, img, unit) {
+    if (!texs[which]) { texs[which] = gl.createTexture(); envs[which] = gl.createTexture(); }
+    tex2d(texs[which], img, unit);
+    tex2d(envs[which], envAtlas(img), which === "day" ? gl.TEXTURE3 : gl.TEXTURE4);
     horizon[which] = img.horizon || (img.horizon = horizonOf(img));
+    have[which] = true;
+  }
+  // the title is DOM, so the scene hands it its light (see the last block of styles.css): the
+  // colour of the haze on the waterline, and where the sun and moon stand relative to the letters
+  const have = { day: false, night: false };
+  function lightWord(cr, wr, baseline) {
+    const st = wordEl.style, which = getTheme() === "light" ? "day" : "night";
+    if (have[which]) st.setProperty("--hw-hz", `rgb(${horizon[which].map((v) => Math.round(v * 255)).join(" ")})`);
+    if (!cr) return;
+    const P = PLATES[shapeFor()], F = Math.max(cr.width, cr.height * 1.1) * 0.95;
+    const ox = cr.width / 2 - (wr.left - cr.left), oy = baseline - (wr.top - cr.top);
+    for (const k of ["sun", "moon"]) {
+      st.setProperty(`--hw-${k}-x`, `${(ox + P[k][0] * F).toFixed(1)}px`);
+      st.setProperty(`--hw-${k}-y`, `${(oy - P[k][1] * F).toFixed(1)}px`);
+    }
+    st.setProperty("--hw-lamp-r", `${(F * 0.5).toFixed(0)}px`);
+    st.setProperty("--hw-mist-h", `${(cr.height * 0.035).toFixed(1)}px`);
   }
   // load both renders for this screen shape, the one on screen first
   function usePlate() {
@@ -358,14 +544,17 @@ export function startSea(canvas, opts) {
     for (const which of order) {
       const key = `${shape}-${which}`;
       const img = imgs.get(key);
-      if (img) { if (fresh || !texs[which] || texs[which].key !== key) { upload(which, img, which === "day" ? gl.TEXTURE1 : gl.TEXTURE2); texs[which].key = key; } continue; }
+      if (img) { if (fresh || !texs[which] || texs[which].key !== key) { upload(which, img, which === "day" ? gl.TEXTURE1 : gl.TEXTURE2); texs[which].key = key; lightWord(); } continue; }
       if (imgs.has(key)) continue;
       imgs.set(key, null);
       const im = new Image();
       im.decoding = "async";
+      const ready = () => { if (imgs.get(key)) return; imgs.set(key, im); if (!lost) { usePlate(); applyLook(nightNow); draw(performance.now() / 1000 * 0.55); } };
+      // decode off the main thread when the browser will, but never wait on it: a tab that is not
+      // being painted (opened in the background) leaves decode() pending until it is shown
+      im.onload = () => { im.decode().then(ready, ready); setTimeout(ready, 300); };
+      im.onerror = () => imgs.delete(key);
       im.src = new URL(`assets/sky/${key}.webp`, import.meta.url).href;
-      im.decode().then(() => { imgs.set(key, im); if (!lost) { usePlate(); applyLook(nightNow); draw(performance.now() / 1000 * 0.55); } })
-        .catch(() => imgs.delete(key));
     }
     // a missing half borrows the other until it arrives, so the shader never samples an empty unit
     const haveDay = texs.day && texs.day.key === `${shape}-day`, haveNight = texs.night && texs.night.key === `${shape}-night`;
@@ -374,6 +563,8 @@ export function startSea(canvas, opts) {
       gl.uniform1i(u("uWord"), 0);
       gl.uniform1i(u("uPlateDay"), haveDay ? 1 : 2);
       gl.uniform1i(u("uPlateNight"), haveNight ? 2 : 1);
+      gl.uniform1i(u("uEnvDay"), haveDay ? 3 : 4);
+      gl.uniform1i(u("uEnvNight"), haveNight ? 4 : 3);
       gl.uniform1f(u("uPlateOn"), on ? 1 : 0);
       gl.uniform2f(u("uPlateT"), PLATES[shape].tx, PLATES[shape].tv);
     });
@@ -393,6 +584,7 @@ export function startSea(canvas, opts) {
   // every theme-driven uniform, blended by how far into night we are (0 day .. 1 night)
   const lerp = (a, b, t) => a + (b - a) * t;
   const lerp3 = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+  const unit = ([x, y]) => { const l = Math.hypot(x, y, 1); return [x / l, y / l, 1 / l]; };
   function applyLook(t) {
     const d = LOOK.light, n = LOOK.dark, p = PLATES[shapeNow || shapeFor()];
     each((u) => {
@@ -401,13 +593,15 @@ export function startSea(canvas, opts) {
       gl.uniform1f(u("uClouds"), lerp(d.clouds, n.clouds, t));
       gl.uniform1f(u("uSunE"), lerp(d.sunE, n.sunE, t));
       gl.uniform1f(u("uNight"), t);
-      gl.uniform2fv(u("uSunT"), lerp3([...p.sun, 0], [...p.moon, 0], t).slice(0, 2));
+      gl.uniform3fv(u("uSunD"), unit(p.sun));
+      gl.uniform3fv(u("uMoonD"), unit(p.moon));
       gl.uniform3fv(u("uHorizon"), lerp3(horizon.day, horizon.night, t));
     });
   }
   function setLook() {
     const target = getTheme() === "light" ? 0 : 1;
     usePlate();
+    lightWord();
     cancelAnimationFrame(fadeRaf);
     if (reduced || target === nightNow || !progs) { nightNow = target; applyLook(nightNow); return; }
     // a slow sunrise / nightfall: ease the whole scene across about a second
@@ -423,15 +617,21 @@ export function startSea(canvas, opts) {
   }
 
   // horizon = the word's baseline; paint the word into a texture of the area above it
+  const sq = document.createElement("canvas"), sqx = sq.getContext("2d");
   function paintWord() {
     const cr = canvas.getBoundingClientRect();
     const cs = getComputedStyle(wordEl);
     const fs = parseFloat(cs.fontSize);
     const wr = wordEl.getBoundingClientRect();
     const baseline = wr.top - cr.top + fs * 0.87;          // line-height 1, Recia metrics
-    hz = baseline * dpr;
+    // the sea starts a fraction of a pixel above the baseline, tucked behind the letters' last
+    // row, so no sliver of bright sky can show between a letter and its reflection
+    hz = Math.floor(baseline * dpr - 0.25);
+    // level 0 = the scene at full size, with room under the baseline for the mirror image; under
+    // it sit copies squeezed to 1/8 .. 1/256 of the height, which the sea reads as the blurred word
+    const h0 = Math.ceil((baseline + fs * 0.32) * dpr / 256) * 256;
     wc.width = Math.max(1, Math.round(cr.width * dpr));
-    wc.height = Math.max(1, Math.round((baseline + fs * 0.32) * dpr));   // room for the descender under the water
+    wc.height = h0 * 1.25;
     wctx.clearRect(0, 0, wc.width, wc.height);
     wctx.save();
     wctx.scale(dpr, dpr);
@@ -441,7 +641,15 @@ export function startSea(canvas, opts) {
     // each layer in its own channel; additive so overlaps don't steal coverage from each other
     wctx.globalCompositeOperation = "lighter";
     wctx.fillStyle = "#f00";
-    wctx.fillText(wordEl.textContent, wr.left - cr.left + parseFloat(cs.textIndent || 0), baseline);
+    const tx = wr.left - cr.left + parseFloat(cs.textIndent || 0);
+    wctx.fillText(wordEl.textContent, tx, baseline);
+    // the same word upside down below the waterline: a blurred lookup right at the letters' feet
+    // then averages letter with letter, and the reflection stays solid where it meets them
+    wctx.save();
+    wctx.beginPath(); wctx.rect(0, baseline, cr.width, h0 / dpr - baseline); wctx.clip();
+    wctx.translate(0, 2 * baseline); wctx.scale(1, -1);
+    wctx.fillText(wordEl.textContent, tx, baseline);
+    wctx.restore();
     // islands sit in the open water beside the word, sized to the gap they have
     const cw = cr.width, ih = Math.min(cr.height * 0.11, cw * 0.09);
     const gapL = wr.left - cr.left, gapR = cr.right - wr.right;
@@ -460,10 +668,28 @@ export function startSea(canvas, opts) {
       ]);
     }
     wctx.restore();
+    // squeeze by halves (each row a true average): 1/2 and 1/4 in a scratch canvas, 1/8 .. 1/256
+    // kept. the kept ones are also narrower, since water never mirrors a hard side edge: a quarter
+    // as wide for a big title, less for small ones so their thin strokes survive
+    const ww = wc.width, qw = Math.ceil(ww / Math.max(1, Math.min(4, Math.round(fs * dpr / 100))));
+    const hw = Math.max(qw, Math.ceil(ww / 2));
+    sq.width = ww; sq.height = h0 * 0.75;
+    sqx.drawImage(wc, 0, 0, ww, h0, 0, 0, hw, h0 / 2);
+    sqx.drawImage(sq, 0, 0, hw, h0 / 2, 0, h0 / 2, qw, h0 / 4);
+    wctx.drawImage(sq, 0, h0 / 2, qw, h0 / 4, 0, h0, qw, h0 / 8);
+    for (let h = h0 / 8, y = h0; h > h0 / 256; y += h, h /= 2) wctx.drawImage(wc, 0, y, qw, h, 0, y + h, qw, h / 2);
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, wc);
-    each((u) => { gl.uniform1f(u("uHz"), hz); gl.uniform2f(u("uWordRes"), wc.width, wc.height); gl.uniform1f(u("uWordHz"), baseline * dpr); });
+    const F = Math.max(W, H * 1.1) * 0.95, shape = shapeFor();
+    each((u) => {
+      gl.uniform1f(u("uHz"), hz); gl.uniform2f(u("uWordRes"), wc.width, wc.height);
+      gl.uniform1f(u("uWordQ"), qw / ww / ww);
+      gl.uniform1f(u("uWordHz"), baseline * dpr); gl.uniform1f(u("uWordH0"), h0);
+      gl.uniform1f(u("uWLod"), Math.log2(PLATES[shape].tv * F / 192));
+      gl.uniform2f(u("uWordX"), (wr.left - cr.left) * dpr - 2, (wr.right - cr.left) * dpr + 2);
+    });
+    lightWord(cr, wr, baseline);
   }
 
 
@@ -479,6 +705,7 @@ export function startSea(canvas, opts) {
       gl.uniform2f(u("uRes"), W, H);
       gl.uniform1f(u("uF"), Math.max(W, H * 1.1) * 0.95);
       gl.uniform1f(u("uQ"), q);
+      gl.uniform1f(u("uRipA"), level < 2 ? RIP_SLOPE * 4 : 0);   // a gpu already on reduced resolution skips the ripples
     });
     fitWord();
     paintWord();
@@ -509,6 +736,7 @@ export function startSea(canvas, opts) {
     gl.useProgram(sea.p);
     gl.uniform1f(sea.time, sec);
     gl.uniform1fv(sea.ph, ph);
+    gl.uniform4f(sea.rip, (sec * 0.031) % 1, (sec * 0.262) % 1, (sec * -0.118) % 1, (sec * 0.238) % 1);
     gl.scissor(0, 0, W, Math.min(H, split + 1));
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }

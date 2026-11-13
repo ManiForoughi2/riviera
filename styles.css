@@ -652,3 +652,58 @@ svg { display: block; }
   .week { padding-block: 14vh; }
 }
 
+
+/* ==========================================================================================
+   HERO SCENE (design/hero): the title standing in the scene's light. Keep this block last.
+   The letters are DOM, the scene behind them is WebGL (sea.js), so sea.js publishes its light
+   on the title element and the letters pick it up here:
+     --hw-hz                    the sky render's colour at the horizon (the haze on the waterline)
+     --hw-sun-x/y, --hw-moon-x/y  where the sun and moon stand, px from the title's top left
+     --hw-lamp-r                how far their glare reaches;  --hw-mist-h  depth of the mist band
+   Without WebGL none of these are set and the letters fall back to the plain two-tone fill.
+   The colours are registered so a theme switch crossfades the letters with the scene (1.1s)
+   instead of snapping while the sky is still turning.
+   ========================================================================================== */
+@property --hw-ink  { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --hw-foot { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --hw-hz   { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --hw-sun  { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --hw-moon { syntax: "<color>"; inherits: true; initial-value: transparent; }
+.hero .word:not(.word-refl) {
+  /* night: cream letters, a touch cooler and dimmer toward the dark water, the moon's glare faint */
+  --hw-ink: var(--word);
+  --hw-foot: color-mix(in srgb, #8da0cc 20%, var(--word));
+  --hw-sun: rgba(255, 232, 196, 0);
+  --hw-moon: rgba(206, 220, 255, .12);
+  --hw-m: min(var(--hw-mist-h, 30px), .075em);   /* small titles keep most of their height clear */
+  background:
+    /* glare: the sun's bloom veils whatever stands near it, the letters included */
+    radial-gradient(circle at var(--hw-sun-x, 130%) var(--hw-sun-y, 30%),
+      var(--hw-sun) 0, color-mix(in srgb, var(--hw-sun) 46%, transparent) calc(var(--hw-lamp-r, 600px) * .26),
+      color-mix(in srgb, var(--hw-sun) 15%, transparent) calc(var(--hw-lamp-r, 600px) * .58), transparent var(--hw-lamp-r, 600px)),
+    radial-gradient(circle at var(--hw-moon-x, -30%) var(--hw-moon-y, 30%),
+      var(--hw-moon) 0, color-mix(in srgb, var(--hw-moon) 46%, transparent) calc(var(--hw-lamp-r, 600px) * .26),
+      color-mix(in srgb, var(--hw-moon) 15%, transparent) calc(var(--hw-lamp-r, 600px) * .58), transparent var(--hw-lamp-r, 600px)),
+    /* the same mist the scene lays along the horizon, rising a little way up the letters' feet */
+    linear-gradient(to top, transparent calc(.13em - 1px),
+      color-mix(in srgb, var(--hw-hz) 30%, transparent) .13em,
+      color-mix(in srgb, var(--hw-hz) 19%, transparent) calc(.13em + var(--hw-m) * .5),
+      color-mix(in srgb, var(--hw-hz) 11%, transparent) calc(.13em + var(--hw-m)),
+      color-mix(in srgb, var(--hw-hz) 4%, transparent) calc(.13em + var(--hw-m) * 2),
+      transparent calc(.13em + var(--hw-m) * 3)),
+    /* the face: its own colour, turning toward the light off the water near the waterline */
+    linear-gradient(to bottom, var(--hw-ink) 0%, var(--hw-ink) 50%, var(--hw-foot) 87%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  transition: --hw-ink 1.1s cubic-bezier(.45, 0, .55, 1), --hw-foot 1.1s cubic-bezier(.45, 0, .55, 1),
+    --hw-hz 1.1s cubic-bezier(.45, 0, .55, 1), --hw-sun 1.1s cubic-bezier(.45, 0, .55, 1),
+    --hw-moon 1.1s cubic-bezier(.45, 0, .55, 1);
+}
+:root[data-theme="light"] .hero .word:not(.word-refl) {
+  /* day: navy letters against the light, warmed at the foot, the sun's glare on the side nearest it */
+  --hw-foot: color-mix(in srgb, #6a4a52 34%, var(--word));
+  --hw-sun: rgba(255, 232, 196, .28);
+  --hw-moon: rgba(206, 220, 255, 0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero .word:not(.word-refl) { transition: none; }
+}
