@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="dark" class="sub">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -32,28 +32,37 @@
     try { if (!matchMedia("(max-width: 760px), (hover: none) and (pointer: coarse)").matches) t = localStorage.getItem("asufiji-theme"); } catch (e) {}
     if (t !== "light" && t !== "dark") t = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
     d.setAttribute("data-theme", t);
+    // the page opens at the surface: bare chrome over the sky. main.js keeps these in step with
+    // the scroll; if it never arrives, fall back to the plain filled bar
+    d.classList.add("at-top", "over");
+    setTimeout(function () { if (!d.classList.contains("js")) d.classList.remove("at-top", "over"); }, 4000);
+    // splash: the first page of a visit only, and never under reduced motion. css runs it and
+    // clears it; the timer is only a backstop so the cover can never outstay a second
+    try {
+      if (!sessionStorage.getItem("asufiji-in") && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        sessionStorage.setItem("asufiji-in", "1");
+        d.classList.add("splash");
+        setTimeout(function () { d.classList.remove("splash"); }, 1100);
+      }
+    } catch (e) {}
   })();
 </script>
-<link rel="stylesheet" href="styles.css?v=71fc959f">
-<link rel="stylesheet" href="css/m-global.css?v=71fc959f">
-<link rel="stylesheet" href="css/m-perf.css?v=71fc959f">
-<link rel="stylesheet" href="css/m-nav.css?v=71fc959f">
-<link rel="stylesheet" href="css/m-cards.css?v=71fc959f">
-<link rel="stylesheet" href="css/m-home.css?v=71fc959f">
-<link rel="stylesheet" href="css/m-pages.css?v=71fc959f">
+<link rel="stylesheet" href="styles.css?v=de93a382">
+<link rel="stylesheet" href="css/m-global.css?v=de93a382">
+<link rel="stylesheet" href="css/m-perf.css?v=de93a382">
+<link rel="stylesheet" href="css/m-nav.css?v=de93a382">
+<link rel="stylesheet" href="css/m-home.css?v=de93a382">
+<link rel="stylesheet" href="css/m-pages.css?v=de93a382">
 </head>
 <body>
+
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
-    <!-- phosphor icons (MIT, fill) + simple-icons instagram; paths injected from assets/icons -->
+    <!-- phosphor icons (MIT, fill) + simple-icons instagram -->
     <symbol id="i-palm" viewBox="0 0 256 256"><path fill="currentColor" d="M239.84 60.33a8 8 0 0 1-4.65 5.75L179 90.55a71.42 71.42 0 0 1 43.36 33.21a70.64 70.64 0 0 1 7.2 54.32a8 8 0 0 1-12.56 4.28l-81-61.68V224a8 8 0 0 1-16 0V120.68l-81 61.68a8 8 0 0 1-12.57-4.28a70.64 70.64 0 0 1 7.2-54.32A71.42 71.42 0 0 1 77 90.55L20.81 66.08a8 8 0 0 1-2.6-12.85a66.86 66.86 0 0 1 97.74 0a72.2 72.2 0 0 1 12 17a72.2 72.2 0 0 1 12.05-17a66.86 66.86 0 0 1 97.74 0a8 8 0 0 1 2.1 7.1"/></symbol>
-    <symbol id="i-anchor" viewBox="0 0 256 256"><path fill="currentColor" d="M232 120a104 104 0 0 1-208 0a8 8 0 0 1 8-8h24a8 8 0 0 1 0 16H40.36A88.15 88.15 0 0 0 120 207.63V90.83a28 28 0 1 1 16 0v116.8A88.15 88.15 0 0 0 215.64 128H200a8 8 0 0 1 0-16h24a8 8 0 0 1 8 8"/></symbol>
-    <symbol id="i-compass" viewBox="0 0 256 256"><path fill="currentColor" d="m249.94 120.24l-27.05-6.76a95.86 95.86 0 0 0-80.37-80.37l-6.76-27a8 8 0 0 0-15.52 0l-6.76 27.05a95.86 95.86 0 0 0-80.37 80.37l-27 6.76a8 8 0 0 0 0 15.52l27.05 6.76a95.86 95.86 0 0 0 80.37 80.37l6.76 27.05a8 8 0 0 0 15.52 0l6.76-27.05a95.86 95.86 0 0 0 80.37-80.37l27.05-6.76a8 8 0 0 0 0-15.52Zm-44.17-11L158.6 97.4l-11.8-47.17a79.88 79.88 0 0 1 58.97 58.97Zm-96.57-59L97.4 97.4l-47.17 11.8a79.88 79.88 0 0 1 58.97-58.97Zm-59 96.57l47.2 11.79l11.8 47.17a79.88 79.88 0 0 1-58.97-58.97Zm96.57 59l11.8-47.17l47.17-11.8a79.88 79.88 0 0 1-58.94 58.93Z"/></symbol>
-    <symbol id="i-sail" viewBox="0 0 256 256"><path fill="currentColor" d="M160 140V72.85a4 4 0 0 1 7-2.69l55 60.46a8 8 0 0 1 .43 10.26a8.24 8.24 0 0 1-6.58 3.12H164a4 4 0 0 1-4-4m87.21 32.53A8 8 0 0 0 240 168h-96V8a8 8 0 0 0-14.21-5l-104 128A8 8 0 0 0 32 144h96v24H16a8 8 0 0 0-6.25 13l29.6 37a15.93 15.93 0 0 0 12.49 6h152.32a15.93 15.93 0 0 0 12.49-6l29.6-37a8 8 0 0 0 .96-8.47"/></symbol>
-    <symbol id="i-heart" viewBox="0 0 256 256"><path fill="currentColor" d="M230.33 141.06a24.34 24.34 0 0 0-18.61-4.77C230.5 117.33 240 98.48 240 80c0-26.47-21.29-48-47.46-48A47.58 47.58 0 0 0 156 48.75A47.58 47.58 0 0 0 119.46 32C93.29 32 72 53.53 72 80c0 11 3.24 21.69 10.06 33a31.87 31.87 0 0 0-14.75 8.4L44.69 144H16a16 16 0 0 0-16 16v40a16 16 0 0 0 16 16h104a8 8 0 0 0 1.94-.24l64-16a7 7 0 0 0 1.19-.4L226 182.82l.44-.2a24.6 24.6 0 0 0 3.93-41.56Zm-10.9 27.15l-38 16.18L119 200H56v-44.69l22.63-22.62A15.86 15.86 0 0 1 89.94 128H140a12 12 0 0 1 0 24h-28a8 8 0 0 0 0 16h32a8.3 8.3 0 0 0 1.79-.2l67-15.41l.31-.08a8.6 8.6 0 0 1 6.3 15.9Z"/></symbol>
     <symbol id="i-down" viewBox="0 0 256 256"><path fill="currentColor" d="m208.49 152.49l-72 72a12 12 0 0 1-17 0l-72-72a12 12 0 0 1 17-17L116 187V40a12 12 0 0 1 24 0v147l51.51-51.52a12 12 0 0 1 17 17Z"/></symbol>
     <symbol id="i-ig" viewBox="0 0 24 24"><path fill="currentColor" d="M7.03.084c-1.277.06-2.149.264-2.91.563a5.9 5.9 0 0 0-2.124 1.388a5.9 5.9 0 0 0-1.38 2.127C.321 4.926.12 5.8.064 7.076s-.069 1.688-.063 4.947s.021 3.667.083 4.947c.061 1.277.264 2.149.563 2.911c.308.789.72 1.457 1.388 2.123a5.9 5.9 0 0 0 2.129 1.38c.763.295 1.636.496 2.913.552c1.278.056 1.689.069 4.947.063s3.668-.021 4.947-.082c1.28-.06 2.147-.265 2.91-.563a5.9 5.9 0 0 0 2.123-1.388a5.9 5.9 0 0 0 1.38-2.129c.295-.763.496-1.636.551-2.912c.056-1.28.07-1.69.063-4.948c-.006-3.258-.02-3.667-.081-4.947c-.06-1.28-.264-2.148-.564-2.911a5.9 5.9 0 0 0-1.387-2.123a5.9 5.9 0 0 0-2.128-1.38c-.764-.294-1.636-.496-2.914-.55C15.647.009 15.236-.006 11.977 0S8.31.021 7.03.084m.14 21.693c-1.17-.05-1.805-.245-2.228-.408a3.7 3.7 0 0 1-1.382-.895a3.7 3.7 0 0 1-.9-1.378c-.165-.423-.363-1.058-.417-2.228c-.06-1.264-.072-1.644-.08-4.848c-.006-3.204.006-3.583.061-4.848c.05-1.169.246-1.805.408-2.228c.216-.561.477-.96.895-1.382a3.7 3.7 0 0 1 1.379-.9c.423-.165 1.057-.361 2.227-.417c1.265-.06 1.644-.072 4.848-.08c3.203-.006 3.583.006 4.85.062c1.168.05 1.804.244 2.227.408c.56.216.96.475 1.382.895s.681.817.9 1.378c.165.422.362 1.056.417 2.227c.06 1.265.074 1.645.08 4.848c.005 3.203-.006 3.583-.061 4.848c-.051 1.17-.245 1.805-.408 2.23c-.216.56-.477.96-.896 1.38a3.7 3.7 0 0 1-1.378.9c-.422.165-1.058.362-2.226.418c-1.266.06-1.645.072-4.85.079s-3.582-.006-4.848-.06m9.783-16.192a1.44 1.44 0 1 0 1.437-1.442a1.44 1.44 0 0 0-1.437 1.442M5.839 12.012a6.161 6.161 0 1 0 12.323-.024a6.162 6.162 0 0 0-12.323.024M8 12.008A4 4 0 1 1 12.008 16A4 4 0 0 1 8 12.008"/></symbol>
-    <!-- reflection ripple -->
+    <!-- reflection ripple: only the no-webgl fallback uses it -->
     <filter id="ripple" x="-6%" y="-4%" width="112%" height="108%" color-interpolation-filters="sRGB">
       <feTurbulence type="fractalNoise" baseFrequency="0.002 0.14" numOctaves="2" seed="7" result="n">
         <animate attributeName="baseFrequency" dur="7s" values="0.002 0.14;0.003 0.17;0.002 0.14" repeatCount="indefinite"/>
@@ -61,11 +70,6 @@
       <feColorMatrix in="n" type="matrix" values="1 0 0 0 0  0 0 0 0 .5  0 0 0 0 .5  0 0 0 0 1" result="m"/>
       <feDisplacementMap in="SourceGraphic" in2="m" scale="24" xChannelSelector="R" yChannelSelector="G" result="d"/>
       <feGaussianBlur in="d" stdDeviation="1 3.6"/>
-    </filter>
-    <!-- deckled parchment edge -->
-    <filter id="deckle" x="-3%" y="-3%" width="106%" height="106%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="4" seed="3" result="n"/>
-      <feDisplacementMap in="SourceGraphic" in2="n" scale="16" xChannelSelector="R" yChannelSelector="G"/>
     </filter>
   </defs>
 </svg>
@@ -75,7 +79,7 @@
   <div class="rail-links" id="rail-links">
     <a class="rail-link" href="internships.html" aria-current="page">Internships</a>
     <a class="rail-link" href="faq.html">FAQ</a>
-    <a class="rail-link" href="members.html">Members</a>
+    <a class="rail-link" href="club1848.html">Club 1848</a>
     <div class="rail-extra">
       <a class="btn-brass btn-lg rail-join" href="join.html">Join FIJI</a>
     </div>
@@ -87,6 +91,7 @@
   <svg aria-hidden="true"><use href="#i-palm"/></svg>
 </button>
 
+<div class="surface">
 <header class="hero hero-sub" style="--ratio:7.26">
   <h1 class="sr-only">Internships</h1>
   <div class="sky" aria-hidden="true"></div>
@@ -99,33 +104,39 @@
     <p class="tagline">Where brothers worked in summer 2026.</p>
   </div>
 </header>
+</div>
 
-<main class="page-body">
-  <ul class="logo-wall reveal" aria-label="Companies where brothers interned">
-    <li class="logo"><span class="logo-mark" role="img" aria-label="J.P. Morgan" title="J.P. Morgan" style="--src:url(assets/logos/jpmorgan.svg);width:13.77em;height:2.83em"></span></li>
-    <li class="logo"><span class="logo-mark" role="img" aria-label="Wells Fargo" title="Wells Fargo" style="--src:url(assets/logos/wells-fargo.svg);width:6.18em;height:6.31em"></span></li>
-    <li class="logo"><span class="logo-mark" role="img" aria-label="Deloitte" title="Deloitte" style="--src:url(assets/logos/deloitte.svg);width:14.36em;height:2.71em"></span></li>
-    <li class="logo"><span class="logo-mark" role="img" aria-label="Credit Sesame" title="Credit Sesame" style="--src:url(assets/logos/credit-sesame.svg);width:8.09em;height:4.82em"></span></li>
-    <li class="logo"><span class="logo-mark" role="img" aria-label="Renaissance Financial" title="Renaissance Financial" style="--src:url(assets/logos/renaissance-financial.png);width:10.51em;height:3.71em"></span></li>
-    <li class="logo"><span class="logo-mark" role="img" aria-label="Matthews" title="Matthews" style="--src:url(assets/logos/matthews.svg);width:19.26em;height:2.03em"></span></li>
-    <li class="logo"><span class="logo-mark" role="img" aria-label="Microsoft" title="Microsoft" style="--src:url(assets/logos/microsoft.svg);width:13.51em;height:2.89em"></span></li>
-    <li class="logo"><span class="logo-mark" role="img" aria-label="Amazon" title="Amazon" style="--src:url(assets/logos/amazon.svg);width:11.36em;height:3.43em"></span></li>
-    <li class="logo"><span class="logo-mark" role="img" aria-label="Texas Instruments" title="Texas Instruments" style="--src:url(assets/logos/texas-instruments.svg);width:12.90em;height:3.03em"></span></li>
-    <li class="logo"><span class="logo-mark" role="img" aria-label="Curtiss-Wright" title="Curtiss-Wright" style="--src:url(assets/logos/curtiss-wright.svg);width:11.84em;height:3.29em"></span></li>
-    <li class="logo"><span class="logo-mark" role="img" aria-label="Vivint" title="Vivint" style="--src:url(assets/logos/vivint.svg);width:12.79em;height:3.05em"></span></li>
-    <li class="logo"><span class="logo-mark" role="img" aria-label="NRG" title="NRG" style="--src:url(assets/logos/nrg.svg);width:7.61em;height:5.13em"></span></li>
-    <li class="logo"><span class="logo-mark" role="img" aria-label="CallPoint" title="CallPoint" style="--src:url(assets/logos/callpoint.png);width:12.18em;height:3.20em"></span></li>
-    <li class="logo"><span class="logo-mark" role="img" aria-label="HemaSense" title="HemaSense" style="--src:url(assets/logos/hemasense.png);width:14.69em;height:2.66em"></span></li>
-    <li class="logo"><span class="logo-mark" role="img" aria-label="Rytan Construction" title="Rytan Construction" style="--src:url(assets/logos/rytan-construction.png);width:10.55em;height:3.70em"></span></li>
-    <li class="logo"><span class="logo-mark" role="img" aria-label="Coakley Williams Construction" title="Coakley Williams Construction" style="--src:url(assets/logos/coakley-williams-construction.png);width:9.80em;height:3.98em"></span></li>
-    <li class="logo"><span class="logo-mark" role="img" aria-label="JT Magen" title="JT Magen" style="--src:url(assets/logos/jt-magen.png);width:5.95em;height:6.55em"></span></li>
-    <li class="logo logo-text"><span>Solano Builders</span></li>
-    <li class="logo"><span class="logo-mark" role="img" aria-label="Aqualis Partners" title="Aqualis Partners" style="--src:url(assets/logos/aqualis-partners.png);width:13.68em;height:2.85em"></span></li>
-    <li class="logo"><span class="logo-mark" role="img" aria-label="Arizona Diamondbacks" title="Arizona Diamondbacks" style="--src:url(assets/logos/arizona-diamondbacks.svg);width:6.73em;height:5.80em"></span></li>
-    <li class="logo"><span class="logo-mark" role="img" aria-label="Phoenix Rising FC" title="Phoenix Rising FC" style="--src:url(assets/logos/phoenix-rising-fc.png);width:3.98em;height:7.40em"></span></li>
-    <li class="logo"><span class="logo-mark" role="img" aria-label="Cartoon Network" title="Cartoon Network" style="--src:url(assets/logos/cartoon-network.svg);width:11.96em;height:3.26em"></span></li>
-    <li class="logo"><span class="logo-mark" role="img" aria-label="Elysium Private Jet" title="Elysium Private Jet" style="--src:url(assets/logos/elysium-private-jet.svg);width:6.31em;height:6.18em"></span></li>
-  </ul>
+<main class="deep">
+  <div class="waterline" aria-hidden="true"><i></i><i></i></div>
+  <div class="rays" aria-hidden="true"><b></b><i></i><i></i><i></i><i></i></div>
+
+  <section class="page">
+    <ul class="logo-wall" aria-label="Companies where brothers interned">
+        <li class="logo"><span class="logo-mark" role="img" aria-label="J.P. Morgan" title="J.P. Morgan" style="--src:url(assets/logos/jpmorgan.svg);width:13.77em;height:2.83em"></span></li>
+        <li class="logo"><span class="logo-mark" role="img" aria-label="Wells Fargo" title="Wells Fargo" style="--src:url(assets/logos/wells-fargo.svg);width:6.18em;height:6.31em"></span></li>
+        <li class="logo"><span class="logo-mark" role="img" aria-label="Deloitte" title="Deloitte" style="--src:url(assets/logos/deloitte.svg);width:14.36em;height:2.71em"></span></li>
+        <li class="logo"><span class="logo-mark" role="img" aria-label="Credit Sesame" title="Credit Sesame" style="--src:url(assets/logos/credit-sesame.svg);width:8.09em;height:4.82em"></span></li>
+        <li class="logo"><span class="logo-mark" role="img" aria-label="Renaissance Financial" title="Renaissance Financial" style="--src:url(assets/logos/renaissance-financial.png);width:10.51em;height:3.71em"></span></li>
+        <li class="logo"><span class="logo-mark" role="img" aria-label="Matthews" title="Matthews" style="--src:url(assets/logos/matthews.svg);width:19.26em;height:2.03em"></span></li>
+        <li class="logo"><span class="logo-mark" role="img" aria-label="Microsoft" title="Microsoft" style="--src:url(assets/logos/microsoft.svg);width:13.51em;height:2.89em"></span></li>
+        <li class="logo"><span class="logo-mark" role="img" aria-label="Amazon" title="Amazon" style="--src:url(assets/logos/amazon.svg);width:11.36em;height:3.43em"></span></li>
+        <li class="logo"><span class="logo-mark" role="img" aria-label="Texas Instruments" title="Texas Instruments" style="--src:url(assets/logos/texas-instruments.svg);width:12.90em;height:3.03em"></span></li>
+        <li class="logo"><span class="logo-mark" role="img" aria-label="Curtiss-Wright" title="Curtiss-Wright" style="--src:url(assets/logos/curtiss-wright.svg);width:11.84em;height:3.29em"></span></li>
+        <li class="logo"><span class="logo-mark" role="img" aria-label="Vivint" title="Vivint" style="--src:url(assets/logos/vivint.svg);width:12.79em;height:3.05em"></span></li>
+        <li class="logo"><span class="logo-mark" role="img" aria-label="NRG" title="NRG" style="--src:url(assets/logos/nrg.svg);width:7.61em;height:5.13em"></span></li>
+        <li class="logo"><span class="logo-mark" role="img" aria-label="CallPoint" title="CallPoint" style="--src:url(assets/logos/callpoint.png);width:12.18em;height:3.20em"></span></li>
+        <li class="logo"><span class="logo-mark" role="img" aria-label="HemaSense" title="HemaSense" style="--src:url(assets/logos/hemasense.png);width:14.69em;height:2.66em"></span></li>
+        <li class="logo"><span class="logo-mark" role="img" aria-label="Rytan Construction" title="Rytan Construction" style="--src:url(assets/logos/rytan-construction.png);width:10.55em;height:3.70em"></span></li>
+        <li class="logo"><span class="logo-mark" role="img" aria-label="Coakley Williams Construction" title="Coakley Williams Construction" style="--src:url(assets/logos/coakley-williams-construction.png);width:9.80em;height:3.98em"></span></li>
+        <li class="logo"><span class="logo-mark" role="img" aria-label="JT Magen" title="JT Magen" style="--src:url(assets/logos/jt-magen.png);width:5.95em;height:6.55em"></span></li>
+        <li class="logo logo-text"><span>Solano Builders</span></li>
+        <li class="logo"><span class="logo-mark" role="img" aria-label="Aqualis Partners" title="Aqualis Partners" style="--src:url(assets/logos/aqualis-partners.png);width:13.68em;height:2.85em"></span></li>
+        <li class="logo"><span class="logo-mark" role="img" aria-label="Arizona Diamondbacks" title="Arizona Diamondbacks" style="--src:url(assets/logos/arizona-diamondbacks.svg);width:6.73em;height:5.80em"></span></li>
+        <li class="logo"><span class="logo-mark" role="img" aria-label="Phoenix Rising FC" title="Phoenix Rising FC" style="--src:url(assets/logos/phoenix-rising-fc.png);width:3.98em;height:7.40em"></span></li>
+        <li class="logo"><span class="logo-mark" role="img" aria-label="Cartoon Network" title="Cartoon Network" style="--src:url(assets/logos/cartoon-network.svg);width:11.96em;height:3.26em"></span></li>
+        <li class="logo"><span class="logo-mark" role="img" aria-label="Elysium Private Jet" title="Elysium Private Jet" style="--src:url(assets/logos/elysium-private-jet.svg);width:6.31em;height:6.18em"></span></li>
+      </ul>
+  </section>
 </main>
 
 <footer class="foot">
@@ -136,6 +147,6 @@
   <div class="wordmark" aria-hidden="true">PHI GAMMA DELTA</div>
 </footer>
 
-<script type="module" src="main.js?v=71fc959f"></script>
+<script type="module" src="main.js?v=de93a382"></script>
 </body>
 </html>
