@@ -70,9 +70,12 @@
 *, *::before, *::after { box-sizing: border-box; }
 /* no rubber-band past the top: it showed the page color above the sky */
 html { -webkit-text-size-adjust: 100%; scroll-padding-top: 90px; overscroll-behavior-y: none; }
+/* if a browser stretches the page anyway, what shows above the sky is the sky's own top color */
+html { background: #000822; }
+:root[data-theme="light"] { background: #6b7f93; }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 body {
-  margin: 0; background: var(--bg); color: var(--ink);
+  margin: 0; min-height: 100svh; background: var(--bg); color: var(--ink);
   font: 400 17px/1.5 var(--body);
   -webkit-font-smoothing: antialiased; overflow-x: clip;
   transition: background-color .6s var(--ease), color .6s var(--ease);
