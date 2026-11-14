@@ -311,6 +311,7 @@ html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; back
   letter-spacing: -.012em; white-space: nowrap; color: var(--u);
 }
 .line { font-size: clamp(17px, 1.5vw, 21px); line-height: 1.45; color: var(--u2); text-wrap: balance; }
+.line-low { margin-top: clamp(14px, 2.2vh, 26px); }
 
 /* ---------- opening card ---------- */
 .overture {
