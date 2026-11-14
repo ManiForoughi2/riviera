@@ -15,8 +15,9 @@
   }
   :root.sub { --hh: max(58svh, 420px); --hz: 58%; --band: 13svh; }
 
-  /* ---------- home hero: crest centered, FIJI standing a touch above center ---------- */
-  .hero:not(.hero-sub) { --kw: min(calc((100vw - 2 * var(--g)) * .72 / 1.78), 31svh); }
+  /* ---------- home hero: crest centered, FIJI standing close: 84% of the screen across
+     (the word is 1.814em wide), which is as near as the islands at the frame's edges allow ---------- */
+  .hero:not(.hero-sub) { --kw: min(46.3vw, 31svh); }
   .crest-top {
     bottom: calc(100% - var(--hz) + var(--kw) * .75 + clamp(16px, 2.4svh, 24px));
     font-size: 13px; letter-spacing: .3em; gap: .8em;
@@ -28,8 +29,9 @@
     line-height: 1.6; letter-spacing: .16em; text-indent: .16em;
     max-width: 30em; text-wrap: balance;
   }
-  /* subpage headers: short words capped so JOIN and INTERNSHIPS read as one family */
-  .hero-sub { --kw: min(calc((100vw - 2 * var(--g)) * .9 / var(--ratio)), 32vw, 26svh); }
+  /* subpage headers: long words run to 85% of the screen like the home title, short ones are
+     capped so JOIN and INTERNSHIPS read as one family and the sun keeps its sky under the menu */
+  .hero-sub { --kw: min(calc((100vw - 2 * var(--g)) * .96 / var(--ratio)), 34vw, 26svh); }
   .hero-sub .hero-base { bottom: calc(env(safe-area-inset-bottom) + var(--wh) + max(18px, 3.4svh)); }
 
   .line { font-size: 17px; }

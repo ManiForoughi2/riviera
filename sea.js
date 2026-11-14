@@ -487,12 +487,66 @@ export function startSea(canvas, opts) {
   // ---- the blender render (asufiji-render/build_scene.py) ----
   // wide: desktop/landscape framing; tall: the phone camera (see focal), whose frame is the same
   // on every phone. sun = the day render's sun, moon = the night render's moon, in tan(angle).
-  // both stand in open sky over the islands, clear of any title: "inner" is where the islands
-  // begin, and fitWord keeps every title inside it
+  // "inner" is where the islands begin; fitWord keeps every title inside it.
+  // wide has its sun and moon baked in, over the islands, clear of any title. on a phone the
+  // title fills the frame and the open sky is above it, in a different place on each page (a
+  // tall FIJI under a deep sky, a short sub-page header under the menu). so the tall render has
+  // no sun or moon: its entries are only where they would like to stand, placeLamps finds where
+  // this page has room, and paintLamp draws them into the render before it is uploaded
   const PLATES = {
     wide: { tx: 0.56, tv: 0.672, sun: [0.36, 0.14], moon: [-0.37, 0.22], inner: 0.29 },
-    tall: { tx: PHONE_EDGE, tv: 0.8, sun: [0.25, 0.22], moon: [-0.25, 0.235], inner: 0.20 },
+    tall: { tx: PHONE_EDGE, tv: 0.8, sun: [0.2, 0.30], moon: [-0.2, 0.31], inner: 0.258 },
   };
+  const lamps = { sun: PLATES.tall.sun.slice(), moon: PLATES.tall.moon.slice() };
+  const lampsOf = (shape) => (shape === "tall" ? lamps : PLATES.wide);
+  const NAV = 64;                                 // css px the phone menu row takes at the top
+  function placeLamps(cr, baseline, fs) {
+    const F = focal(cr.width, cr.height);
+    // open sky: far enough over the capitals to be clear of them, and under the menu row
+    const lo = fs * 0.75 / F + 0.085, hi = (baseline - NAV - 30) / F;
+    for (const k of ["sun", "moon"]) {
+      const want = PLATES.tall[k][1], y = lo <= hi ? Math.max(lo, Math.min(hi, want)) : (lo + hi) / 2;
+      if (Math.abs(y - lamps[k][1]) > 0.004) lamps[k] = [PLATES.tall[k][0], y];
+    }
+  }
+  // the sun or moon as a camera would have caught it, painted over the render: a clipped core,
+  // then glare in wider and fainter rings (screened on, like light), and for the moon its face.
+  // the same recipe as ~/asufiji-render/export_plates.py uses on the wide render
+  function paintLamp(x, which, W, H, shape) {
+    const P = PLATES[shape], px = W / (2 * P.tx), pos = lamps[which === "day" ? "sun" : "moon"];
+    const cx = (0.5 + pos[0] / (2 * P.tx)) * W, cy = (1 - pos[1] / P.tv) * H;
+    const ring = (r0, w, gain, rgb) => {                     // gain * exp(-(r - r0) / w)
+      const g = x.createRadialGradient(cx, cy, r0, cx, cy, r0 + w * 6.5);
+      for (const t of [0, 0.35, 0.75, 1.2, 1.8, 2.6, 3.6, 5]) g.addColorStop(t / 6.5, `rgba(${rgb},${(gain * Math.exp(-t)).toFixed(4)})`);
+      g.addColorStop(1, `rgba(${rgb},0)`);
+      x.fillStyle = g; x.fillRect(cx - r0 - w * 6.5, cy - r0 - w * 6.5, (r0 + w * 6.5) * 2, (r0 + w * 6.5) * 2);
+    };
+    x.save();
+    x.globalCompositeOperation = "screen";
+    if (which === "day") {
+      const R = 0.004756 * px, g = x.createRadialGradient(cx, cy, 0, cx, cy, R * 2.3);
+      for (const [t, a] of [[0, 1], [0.35, 1], [0.48, 0.9], [0.61, 0.65], [0.74, 0.35], [0.87, 0.1], [1, 0]]) g.addColorStop(t, `rgba(255,251,240,${a})`);
+      x.fillStyle = g; x.fillRect(cx - R * 2.3, cy - R * 2.3, R * 4.6, R * 4.6);
+      ring(0, R * 2.6, 0.9, "255,242,214"); ring(0, R * 9, 0.5, "255,230,184");
+      ring(0, R * 34, 0.24, "255,214,158"); ring(0, R * 110, 0.09, "255,219,179");
+    } else {
+      const R = 0.00733 * px;
+      ring(R * 0.9, R * 1.5, 0.46, "219,232,255"); ring(R * 0.9, R * 5, 0.2, "179,204,255");
+      ring(R * 0.9, R * 18, 0.06, "140,173,255"); ring(R * 0.9, R * 60, 0.02, "128,158,255");
+      x.globalCompositeOperation = "source-over";
+      x.beginPath(); x.arc(cx, cy, R, 0, TAU); x.clip();
+      const face = x.createRadialGradient(cx, cy, 0, cx, cy, R);          // a little darker toward the limb
+      face.addColorStop(0, "rgb(255,249,235)"); face.addColorStop(0.7, "rgb(250,244,230)"); face.addColorStop(1, "rgb(228,222,209)");
+      x.fillStyle = face; x.fillRect(cx - R, cy - R, R * 2, R * 2);
+      for (const [mx, my, mr, depth] of [[-0.3, -0.38, 0.34, 0.2], [0.18, -0.3, 0.22, 0.17], [0.4, -0.05, 0.24, 0.16],
+        [-0.52, 0.02, 0.3, 0.15], [-0.18, 0.42, 0.22, 0.11], [0.3, 0.28, 0.16, 0.09], [0.55, -0.42, 0.13, 0.12]]) {   // the maria
+        const sx = cx + mx * R, sy = cy + my * R, sr = mr * R * 1.4, g = x.createRadialGradient(sx, sy, 0, sx, sy, sr);
+        g.addColorStop(0, `rgba(30,34,46,${depth})`); g.addColorStop(0.45, `rgba(30,34,46,${depth * 0.6})`); g.addColorStop(1, "rgba(30,34,46,0)");
+        x.fillStyle = g; x.fillRect(sx - sr, sy - sr, sr * 2, sr * 2);
+      }
+    }
+    x.restore();
+  }
   const imgs = new Map();                       // key -> decoded image (or null while loading)
   const texs = { day: null, night: null }, envs = { day: null, night: null };
   let shapeNow = "", horizon = { day: [0.6, 0.6, 0.62], night: [0.1, 0.12, 0.2] };
@@ -537,29 +591,43 @@ export function startSea(canvas, opts) {
     for (let h = 192, y = 0; h > 3; y += h, h /= 2) cx.drawImage(c, 0, y, aw, h, 0, y + h, aw, h / 2);
     return (img.env = c);
   }
-  function upload(which, img, unit) {
+  function upload(which, img, unit, shape) {
     if (!texs[which]) { texs[which] = gl.createTexture(); envs[which] = gl.createTexture(); }
-    tex2d(texs[which], img, unit);
-    tex2d(envs[which], envAtlas(img), which === "day" ? gl.TEXTURE3 : gl.TEXTURE4);
+    let src = img;
+    if (shape === "tall") {                                 // this render gets its sun or moon here
+      src = img.lit || (img.lit = document.createElement("canvas"));
+      src.width = img.width; src.height = img.height; src.env = null;
+      const x = src.getContext("2d");
+      x.drawImage(img, 0, 0);
+      paintLamp(x, which, src.width, src.height, shape);
+    }
+    tex2d(texs[which], src, unit);
+    tex2d(envs[which], envAtlas(src), which === "day" ? gl.TEXTURE3 : gl.TEXTURE4);
     horizon[which] = img.horizon || (img.horizon = horizonOf(img));
     have[which] = true;
   }
   // the title is DOM, so the scene hands it its light (see the last block of styles.css): the
   // colour of the haze on the waterline, and where the sun and moon stand relative to the letters
   const have = { day: false, night: false };
-  const lit = {};
-  const put = (k, v) => { if (lit[k] !== v) { lit[k] = v; wordEl.style.setProperty(k, v); } };   // an unchanged value must not repaint the title
+  const put = (k, v) => { if (wordEl.style.getPropertyValue(k) !== v) wordEl.style.setProperty(k, v); };   // an unchanged value must not repaint the title
   function lightWord(cr, wr, baseline, fs) {
     const which = getTheme() === "light" ? "day" : "night";
     if (have[which]) put("--hw-hz", `rgb(${horizon[which].map((v) => Math.round(v * 255)).join(" ")})`);
     if (!cr) return;
-    const P = PLATES[shapeFor()], F = focal(cr.width, cr.height);
+    const P = lampsOf(shapeFor()), F = focal(cr.width, cr.height);
     const ox = cr.width / 2 - (wr.left - cr.left), oy = baseline - (wr.top - cr.top);
     for (const k of ["sun", "moon"]) {
-      put(`--hw-${k}-x`, `${(ox + P[k][0] * F).toFixed(1)}px`);
-      put(`--hw-${k}-y`, `${(oy - P[k][1] * F).toFixed(1)}px`);
+      const x = ox + P[k][0] * F, y = oy - P[k][1] * F;
+      put(`--hw-${k}-x`, `${x.toFixed(1)}px`);
+      put(`--hw-${k}-y`, `${y.toFixed(1)}px`);
+      // how far the lamp stands from the letters (the box from cap line to baseline): its glare
+      // is at full strength there and dies away a set share of the title's size further in (most
+      // of a capital's height, or 38% of a short title's width), so it lights the edge of the
+      // title nearest it and leaves the body its own colour, whatever the size of title or screen
+      const dx = Math.max(-x, 0, x - wr.width), dy = Math.max(oy - fs * 0.75 - y, 0, y - oy);
+      put(`--hw-${k}-d`, `${Math.hypot(dx, dy).toFixed(1)}px`);
     }
-    put("--hw-lamp-r", `${(F * 0.5).toFixed(0)}px`);
+    put("--hw-reach", `${Math.min(wr.width * 0.38, fs * 0.62).toFixed(1)}px`);
     // the css caps the mist at .075em; capped here too, so a change of height alone changes nothing
     put("--hw-mist-h", `${Math.min(cr.height * 0.035, fs * 0.075).toFixed(1)}px`);
   }
@@ -571,8 +639,9 @@ export function startSea(canvas, opts) {
     shapeNow = shape;
     for (const which of order) {
       const key = `${shape}-${which}`;
+      const at = shape === "tall" ? key + "@" + lamps[which === "day" ? "sun" : "moon"].map((v) => v.toFixed(3)).join(",") : key;
       const img = imgs.get(key);
-      if (img) { if (fresh || !texs[which] || texs[which].key !== key) { upload(which, img, which === "day" ? gl.TEXTURE1 : gl.TEXTURE2); texs[which].key = key; lightWord(); } continue; }
+      if (img) { if (fresh || !texs[which] || texs[which].key !== at) { upload(which, img, which === "day" ? gl.TEXTURE1 : gl.TEXTURE2, shape); texs[which].key = at; lightWord(); } continue; }
       if (imgs.has(key)) continue;
       imgs.set(key, null);
       const im = new Image();
@@ -585,7 +654,7 @@ export function startSea(canvas, opts) {
       im.src = new URL(`assets/sky/${key}.webp`, import.meta.url).href;
     }
     // a missing half borrows the other until it arrives, so the shader never samples an empty unit
-    const haveDay = texs.day && texs.day.key === `${shape}-day`, haveNight = texs.night && texs.night.key === `${shape}-night`;
+    const haveDay = texs.day && texs.day.key.startsWith(`${shape}-day`), haveNight = texs.night && texs.night.key.startsWith(`${shape}-night`);
     const on = getTheme() === "light" ? haveDay : haveNight;
     each((u) => {
       gl.uniform1i(u("uWord"), 0);
@@ -614,7 +683,7 @@ export function startSea(canvas, opts) {
   const lerp3 = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
   const unit = ([x, y]) => { const l = Math.hypot(x, y, 1); return [x / l, y / l, 1 / l]; };
   function applyLook(t) {
-    const d = LOOK.light, n = LOOK.dark, p = PLATES[shapeNow || shapeFor()];
+    const d = LOOK.light, n = LOOK.dark, p = lampsOf(shapeNow || shapeFor());
     each((u) => {
       for (const [name, k] of LOOK_U) gl.uniform3fv(u(name), lerp3(hex(d[k]), hex(n[k]), t));
       gl.uniform1f(u("uStars"), lerp(d.stars, n.stars, t));
@@ -658,6 +727,7 @@ export function startSea(canvas, opts) {
     // row, so no sliver of bright sky can show between a letter and its reflection
     hz = Math.floor(baseline * dpr / asp - 0.25);
     const F = focal(cr.width, cr.height) * dpr, shape = shapeFor();
+    if (shape === "tall" && asp === 1) placeLamps(cr, baseline, fs);   // not while a resize is being followed
     const cw = cr.width, ih = Math.min(cr.height * 0.11, cw * 0.09);
     const left = wr.left - cr.left, text = wordEl.textContent;
     const key = [text, cs.fontWeight, fs, cs.letterSpacing, cs.fontFamily, left.toFixed(2), wr.width.toFixed(2), cw, dpr, ih.toFixed(1)].join("|");
