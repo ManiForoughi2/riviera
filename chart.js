@@ -6,7 +6,7 @@
 //                and a wet edge that laps a few pixels up and down the bank
 //   the course   the compass leaves its place by the shore, rides a pencilled line down the margin
 //                with the scroll, and comes to rest on the Greek Leadership Village at the foot
-//   the rest     the card's swing, the brass catching the light, the reading glass, the bar's lacquer
+//   the rest     the card's swing, the brass catching the light, the bar's lacquer
 
 const root = document.documentElement;
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -403,37 +403,3 @@ if (sheet) {
 chrome();
 stepCourse();
 wake();
-
-// =====================================================================================
-// the reading glass over the plans (mouse only)
-// =====================================================================================
-if (finePtr) $$(".plan").forEach((plan) => {
-  const host = plan.parentElement, page = $(".plan-sheet", plan), ink = $(".plan-ink", plan);
-  if (!host || !page || !ink) return;
-  const Z = 2.1;
-  let glass = null, big = null, on = false;
-  const make = () => {
-    glass = document.createElement("div"); glass.className = "loupe"; glass.setAttribute("aria-hidden", "true");
-    glass.innerHTML = '<div class="loupe-glass"><div class="loupe-ink"></div></div>';
-    big = glass.firstChild.firstChild;
-    host.append(glass);
-  };
-  const show = (v) => { if (v !== on) { on = v; host.classList.toggle("is-looking", v); } };
-  host.addEventListener("pointermove", (e) => {
-    const pr = plan.getBoundingClientRect(), hr = host.getBoundingClientRect();
-    // only over the engraving at full strength: on the sheet itself, clear of where the plan fades out
-    const top = Math.max(pr.top, hr.top) + 30, bottom = pr.bottom - pr.height * (host.classList.contains("port-band") ? 0.16 : 0.3);
-    const inside = e.clientX >= pr.left && e.clientX <= pr.right && e.clientY >= top && e.clientY <= bottom;
-    if (!inside || e.target.closest("a, button, .compass")) return show(false);
-    if (!glass) make();
-    const sr = page.getBoundingClientRect();
-    big.style.width = (sr.width * Z).toFixed(0) + "px"; big.style.height = (sr.height * Z).toFixed(0) + "px";
-    glass.style.setProperty("--lx", (e.clientX - hr.left).toFixed(1) + "px");
-    glass.style.setProperty("--ly", (e.clientY - hr.top).toFixed(1) + "px");
-    // the point under the pointer sits at the middle of the glass (91px is its inner radius)
-    big.style.setProperty("--ix", (91 - (e.clientX - sr.left) * Z).toFixed(1) + "px");
-    big.style.setProperty("--iy", (91 - (e.clientY - sr.top) * Z).toFixed(1) + "px");
-    show(true);
-  });
-  host.addEventListener("pointerleave", () => show(false));
-});
