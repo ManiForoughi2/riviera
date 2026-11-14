@@ -8,8 +8,8 @@
   html.chart.sub { --hh: max(62svh, 460px); }
   .chart .hero-sub .hero-base { top: calc(var(--hh) * .58 + 24px); bottom: auto; }
 
-  /* the bar: bare over the sky, navy lacquer once the sheet is behind it */
-  html.chart.js .rail::before { opacity: 0; background: linear-gradient(180deg, #19223d, #0f172b); }
+  /* the bar: bare over the sky, a band in the page's own glass once the sheet is behind it */
+  html.chart.js .rail::before { opacity: 0; background: var(--glass-solid); }
   html.chart.js.on-sheet .rail::before { opacity: 1; box-shadow: 0 6px 10px -8px rgba(4, 8, 18, .8); }
   html.chart.js .rail.open::before { opacity: 0; }
 
