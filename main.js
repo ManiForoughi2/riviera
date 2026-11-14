@@ -1,5 +1,5 @@
-import { startSea } from "./sea.js?v=98b58808";
-import { startWater } from "./under.js?v=98b58808";
+import { startSea } from "./sea.js?v=db6d581b";
+import { startWater } from "./under.js?v=db6d581b";
 
 const root = document.documentElement;
 root.classList.add("js");                         // the head script waits for this before trusting its opening state

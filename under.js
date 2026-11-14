@@ -29,17 +29,17 @@ float vnoise(vec2 p){
   vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
   return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
 }
-// water caustics: the well known iterated-sine pattern (after Dave Hoskins' "tileable water caustic")
+// water caustics, written for this site: light focused by two ripple layers that drift across each
+// other. each layer is the ridge line of a warped value noise; the web is bright where ridges run
 float caustic(vec2 uv, float t){
-  vec2 p = mod(uv * 6.2831853, 6.2831853) - 250.0;
-  vec2 i = p; float c = 1.0;
-  for (int n = 0; n < 4; n++) {
-    float tt = t * (1.0 - (3.5 / float(n + 1)));
-    i = p + vec2(cos(tt - i.x) + sin(tt + i.y), sin(tt - i.y) + cos(tt + i.x));
-    c += 1.0 / length(vec2(p.x / (sin(i.x + tt) / 0.005), p.y / (cos(i.y + tt) / 0.005)));
-  }
-  c /= 4.0; c = 1.17 - pow(c, 1.4);
-  return pow(abs(c), 8.0);
+  vec2 p = uv * 5.0;
+  vec2 w = vec2(vnoise(p * 0.8 + vec2(t * 0.31, 3.1)), vnoise(p * 0.8 + vec2(7.3, t * 0.27))) - 0.5;
+  float a = vnoise(p * 1.25 + w * 1.9 + vec2(0.0, t * 0.21));
+  float b = vnoise(p * 2.05 - w * 1.4 + vec2(t * 0.17, 9.1));
+  float ra = 1.0 - abs(a * 2.0 - 1.0);
+  float rb = 1.0 - abs(b * 2.0 - 1.0);
+  float web = pow(ra, 7.0) + 0.65 * pow(rb, 9.0);
+  return clamp(web * (0.4 + 0.3 * ra * rb), 0.0, 1.0);
 }
 
 void main(){
