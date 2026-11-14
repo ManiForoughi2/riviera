@@ -15,6 +15,11 @@
   .week-foot .btn-brass { min-height: 56px; }
   .page.page-next { padding-top: 24px; }
   .cards { grid-template-columns: 1fr; gap: 16px; }
+  .update { gap: 30px; }
+  .up-grid, .up-more { grid-template-columns: 1fr; gap: 16px; }
+  .up-input { min-height: 54px; font-size: 17px; }
+  .up-step small { display: block; margin: 6px 0 0; }
+  .up-send { width: 100%; min-height: 56px; }
   .card { padding: 28px 24px 30px; }
   .lede { margin: -14px 0 20px; font-size: 17px; }
   .values li { font-size: clamp(34px, 11vw, 46px); }
