@@ -15,12 +15,12 @@
   .motion .rail { animation: none; }
   .rail::before {
     content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
-    background: var(--bg);
-    transition: opacity .3s ease, background-color .3s ease;
+    background: var(--w3); opacity: 0;
+    transition: opacity .3s ease;
   }
-  /* bare over the sky, a band of water once the page has gone under (classes from main.js) */
-  .over .rail::before { opacity: 0; }
-  .under .rail::before { background: var(--w3); }
+  /* bare over the sky, a band of water once the page has gone under (classes from main.js). the band
+     is water-coloured at all times and only its opacity moves, so it can never fade through another colour */
+  .under .rail::before { opacity: 1; }
   .rail.open { --r-ink: var(--u); --r-ink2: var(--u2); --r-accent: var(--ua); }
   .rail.open::before { opacity: 0; transition-duration: .15s; }
   .rail > :not(.rail-links) { position: relative; z-index: 2; }

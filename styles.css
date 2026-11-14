@@ -302,11 +302,27 @@ html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; back
 :root { --pull: .36; }
 .dive .surface { margin-bottom: calc(var(--hh) * (-1 - var(--pull))); }   /* one margin: adjoining negative margins collapse */
 .dive .deep::before { clip-path: inset(var(--cut, 0px) 0 0 0); }
-.dive .hero { transition: transform .95s cubic-bezier(.5, 0, .2, 1); }
-.dive.plunged .hero { transform: translate3d(0, -26%, 0) scale(1.08); }
-/* touch: no clock. the scene leaves by exactly as much as the finger has pulled the water over it (--dp, 0 to 1) */
-.dive.follow .hero { transition: none; transform: translate3d(0, calc(var(--dp, 0) * -22%), 0) scale(calc(1 + var(--dp, 0) * .06)); }
-@media (prefers-reduced-motion: reduce) { .dive .hero { transition: none; } .dive.plunged .hero { transform: none; } .js .strip, .js .strip::after { animation: none; } }
+/* the scene leaves by exactly as much as the water has come over it (--dp, 0 to 1, from under.js through
+   main.js): the line and the scene are one motion. on touch --dp follows the finger instead of a clock */
+.dive .hero { will-change: transform; transform: translate3d(0, calc(var(--dp, 0) * -26%), 0) scale(calc(1 + var(--dp, 0) * .08)); }
+.dive.follow .hero { transform: translate3d(0, calc(var(--dp, 0) * -22%), 0) scale(calc(1 + var(--dp, 0) * .06)); }
+/* nothing in the page can show above the water: the first block is masked down to the deepest trough
+   of the line (--line, from under.js) and comes in softly below it. with no --line it is not masked */
+.dive .overture {
+  -webkit-mask-image: linear-gradient(to bottom, transparent var(--line, -200px), #000 calc(var(--line, -200px) + 80px));
+  mask-image: linear-gradient(to bottom, transparent var(--line, -200px), #000 calc(var(--line, -200px) + 80px));
+}
+@media (prefers-reduced-motion: reduce) { .dive .hero { transform: none; } .js .strip, .js .strip::after { animation: none; } }
+
+/* the shorter pages, with the lit water running: the line rests a little way up the header's foot
+   (--lap) and no trough dips lower than the foot (under.js), so the header's own sea is behind every
+   part of the line. the column's soft top would tint that strip, and the canvas paints it anyway */
+:root { --lap: 4.5vh; }
+@supports (height: 1lvh) { :root { --lap: 4.5lvh; } }
+.gl-water:not(.dive) .surface { margin-bottom: calc(var(--hh) * -1 - var(--lap)); }
+.gl-water:not(.dive) .deep { padding-top: var(--lap); }
+.gl-water:not(.dive) .deep::before { clip-path: inset(calc(var(--lap) + 8px) 0 0 0); }
+.hero-sub .hero-base { margin-bottom: var(--lap); }
 
 /* ---------- type ---------- */
 .title {
@@ -502,9 +518,8 @@ html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; back
 .slip-price b { display: block; font: 500 clamp(54px, 7.4vw, 104px)/1 var(--serif); font-variant-numeric: lining-nums; letter-spacing: -.02em; color: var(--u); }
 .slip-or { align-self: center; font: 500 20px/1 var(--serif); color: var(--u3); }
 .slip-btn { min-width: 220px; min-height: 54px; }
-.slip-note { grid-column: 1 / -1; font-size: 17px; line-height: 1.4; color: var(--u2); }
 /* back from checkout: the prices turn into the welcome */
-.slip.is-joined .slip-opt, .slip.is-joined .slip-or, .slip.is-joined .slip-note { display: none; }
+.slip.is-joined .slip-opt, .slip.is-joined .slip-or { display: none; }
 .slip-done { grid-column: 1 / -1; display: grid; gap: 14px; }
 .slip-done[hidden] { display: none; }
 .slip-done-head { font: 500 clamp(54px, 8vw, 112px)/1 var(--serif); letter-spacing: -.02em; }
