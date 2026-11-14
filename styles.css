@@ -281,29 +281,23 @@ html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; back
 }
 :root { --dune: clamp(90px, 12vw, 170px); --feather: 96px; --m: 110px; }
 .deep > section, .deep > .page { position: relative; z-index: 1; }
-/* the lit water (under.js): a canvas that rides with the screen, from just above the waterline down.
-   it only exists once the script has a WebGL context; main.js sets its height (--sh) */
-.water, .lens { display: none; }
-/* just above the waterline the scene behind bends and swims, more the closer it gets to the water:
-   a strip that refracts whatever is behind it (the title, the sky, the sea) through moving noise.
-   chromium takes the svg filter; other browsers keep the plain soft focus. pointer devices only */
-@media (hover: hover) and (pointer: fine) {
-  /* the line under the title stands clear of that strip, or it would swim at rest */
-  :root { --wh: calc(var(--m) + 26px); }
-  .gl-water .lens {
-    display: block; position: absolute; z-index: 0; left: 0; right: 0; pointer-events: none;
-    top: calc(var(--m) * -1 - 40px); height: calc(var(--m) + 90px);
-    -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
-    backdrop-filter: url(#fx-surface);
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.12) 18%, rgba(0,0,0,.45) 36%, rgba(0,0,0,.85) 54%, #000 68%);
-    mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.12) 18%, rgba(0,0,0,.45) 36%, rgba(0,0,0,.85) 54%, #000 68%);
-  }
-}
+.water { display: none; }
+/* the lit water (under.js): a canvas over the whole screen, one large viewport tall so it does not
+   resize while a phone's address bar comes and goes. it only exists once the script has WebGL */
 .gl-water .water {
-  display: block; position: sticky; z-index: 0; top: 0; width: 100%;
-  height: var(--sh, 100vh); margin-top: calc(var(--m) * -1); margin-bottom: calc(var(--m) - var(--sh, 100vh));
-  pointer-events: none;
+  display: block; position: fixed; z-index: 0; left: 0; top: 0; width: 100%;
+  height: 100vh; height: 100lvh; pointer-events: none;
 }
+/* home, with the script running: going under is an event, not a line dragged by the scroll.
+   the column starts a little way up the header so the first words are close when the lens goes
+   through, and it is clipped to the moving waterline (--cut, from under.js) so none of it shows
+   above the water. as the line washes over, the scene above goes up and away: the camera dropped */
+:root { --pull: .36; }
+.dive .surface { margin-bottom: calc(var(--hh) * (-1 - var(--pull))); }   /* one margin: adjoining negative margins collapse */
+.dive .deep::before { clip-path: inset(var(--cut, 0px) 0 0 0); }
+.dive .hero { transition: transform .95s cubic-bezier(.5, 0, .2, 1); }
+.dive.plunged .hero { transform: translate3d(0, -26%, 0) scale(1.08); }
+@media (prefers-reduced-motion: reduce) { .dive .hero { transition: none; } .dive.plunged .hero { transform: none; } .js .strip, .js .strip::after { animation: none; } }
 
 /* ---------- type ---------- */
 .title {
@@ -322,7 +316,7 @@ html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; back
 
 /* ---------- shots: full-bleed film that rises out of the water and sinks back into it ---------- */
 .shot { height: clamp(620px, 60vw, 124svh); }
-.shot-film, .relic-film, .strip { overflow: hidden; background: var(--w3); }
+.shot-film, .relic-film { overflow: hidden; background: var(--w3); }
 .shot-film {
   position: absolute; inset: 0; background: none;
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.02) 2.5%, rgba(0,0,0,.07) 5%, rgba(0,0,0,.16) 7.5%, rgba(0,0,0,.29) 10%, rgba(0,0,0,.45) 12.5%, rgba(0,0,0,.62) 15%, rgba(0,0,0,.78) 17.5%, rgba(0,0,0,.9) 20%, rgba(0,0,0,.97) 22.5%, #000 25%, #000 64%, rgba(0,0,0,.97) 67%, rgba(0,0,0,.9) 70%, rgba(0,0,0,.78) 73%, rgba(0,0,0,.62) 76.5%, rgba(0,0,0,.45) 80%, rgba(0,0,0,.29) 83.5%, rgba(0,0,0,.16) 87%, rgba(0,0,0,.07) 91%, rgba(0,0,0,.02) 95%, transparent 100%);
@@ -359,11 +353,37 @@ html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; back
 .season { padding: 2svh var(--g) 4svh; }
 .season .title { --max: 112px; max-width: 1240px; margin: 0 auto; }
 .strips { max-width: 1240px; margin: 5svh auto 0; display: grid; grid-template-columns: repeat(12, 1fr); column-gap: clamp(16px, 2.4vw, 36px); align-items: start; }
-.strip { position: relative; aspect-ratio: 9 / 16; border-radius: 6px; transform: translate3d(0, var(--py, 0px), 0) rotate(var(--t, 0deg)); }
-.strip img, .strip video, .relic-film img, .relic-film video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.js .strip video { opacity: 0; transition: opacity .45s ease; }
-.js .strip video.on { opacity: 1; }
-.strip::after, .relic-film::after { content: ""; position: absolute; inset: 0; background: var(--grain) 0 0 / 180px 180px; opacity: .18; mix-blend-mode: overlay; pointer-events: none; }
+/* each cut is a thick pane of glass hung in the water on two cords from the surface: an edge that
+   catches the light, a sheen that crosses it as the shafts move, a shadow falling away below, and
+   a slow sway from where the cords hold it. the bubbles and the light of the column pass behind */
+.strip {
+  --pad: clamp(7px, .85vw, 13px);
+  position: relative; aspect-ratio: 9 / 16; border-radius: 14px; overflow: visible;
+  background: linear-gradient(158deg, rgba(255, 255, 255, .3), rgba(255, 255, 255, .07) 26%, rgba(150, 195, 235, .06) 62%, rgba(255, 255, 255, .16));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .6), inset 1px 0 0 rgba(255, 255, 255, .2), inset -1px 0 0 rgba(255, 255, 255, .08),
+    inset 0 -1px 0 rgba(6, 16, 34, .55), 0 36px 40px -24px rgba(2, 8, 20, .72), 0 12px 14px -9px rgba(2, 8, 20, .5);
+  transform: translate3d(0, var(--py, 0px), 0); rotate: var(--t, 0deg); transform-origin: 50% -45%;
+}
+.js .strip { animation: sway 8s ease-in-out infinite alternate; }
+.js .strip:nth-child(2) { animation-duration: 10.5s; animation-delay: -4s; }
+.js .strip:nth-child(3) { animation-duration: 9s; animation-delay: -6s; }
+@keyframes sway { from { rotate: calc(var(--t, 0deg) - .55deg); } to { rotate: calc(var(--t, 0deg) + .55deg); } }
+.strip::before {
+  content: ""; position: absolute; left: 16%; right: 16%; bottom: calc(100% - 2px); height: 74vh; pointer-events: none;
+  background:
+    linear-gradient(to top, rgba(236, 220, 194, .62), rgba(236, 220, 194, .2) 40%, rgba(236, 220, 194, 0) 92%) 0 0 / 2px 100% no-repeat,
+    linear-gradient(to top, rgba(236, 220, 194, .62), rgba(236, 220, 194, .2) 40%, rgba(236, 220, 194, 0) 92%) 100% 0 / 2px 100% no-repeat;
+}
+.relic-film img, .relic-film video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.strip img, .strip video { position: absolute; left: var(--pad); top: var(--pad); width: calc(100% - 2 * var(--pad)); height: calc(100% - 2 * var(--pad)); object-fit: cover; border-radius: 5px; }
+.strip::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(112deg, transparent 32%, rgba(255, 255, 255, .17) 45%, rgba(255, 255, 255, .03) 53%, transparent 64%) 0 0 / 280% 100% no-repeat;
+}
+.js .strip::after { animation: sheen 11s ease-in-out infinite alternate; }
+@keyframes sheen { from { background-position: 0 0; } to { background-position: 100% 0; } }
+.relic-film::after { content: ""; position: absolute; inset: 0; background: var(--grain) 0 0 / 180px 180px; opacity: .18; mix-blend-mode: overlay; pointer-events: none; }
 .strip:nth-child(1) { grid-column: 1 / span 4; margin-top: 12svh; --t: -1.4deg; }
 .strip:nth-child(2) { grid-column: 5 / span 4; --t: .8deg; }
 .strip:nth-child(3) { grid-column: 9 / span 4; margin-top: 22svh; --t: -.6deg; }

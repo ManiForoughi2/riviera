@@ -16,8 +16,8 @@
   .season .title { padding: 0 var(--g); }
   .strips {
     --sw: min(64vw, 280px);
-    display: flex; gap: 14px; margin: 34px 0 0; max-width: none;
-    padding: 0 calc((100vw - var(--sw)) / 2);
+    display: flex; gap: 14px; margin: 0; max-width: none; padding-top: 74px;
+    padding-inline: calc((100vw - var(--sw)) / 2); padding-bottom: 44px;
     overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none;
   }
   .strips::-webkit-scrollbar { display: none; }
