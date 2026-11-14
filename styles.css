@@ -472,6 +472,7 @@ html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; back
 .night-where { font: 500 16px/1.2 var(--body); color: var(--u2); text-align: right; }
 .night.is-closed .night-what { color: var(--u3); }
 .week-foot { margin-top: 6svh; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 22px 40px; }
+.who { display: flex; flex-wrap: wrap; gap: 14px 44px; }
 .chairs { font-size: 18px; line-height: 1.4; color: var(--u); }
 .chairs span { display: block; font-size: 15px; font-weight: 600; color: var(--ua); margin-bottom: 4px; }
 
