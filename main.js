@@ -441,7 +441,7 @@ if (!reduced && finePointer) {
 // ---------- once the page is up and still: the next page and the next visit (idle.js) ----------
 // after the load, and never while the splash is playing: nothing may share the main thread with it
 {
-  const later = () => import("./idle.js?v=2abfc311").catch(() => {});
+  const later = () => import("./idle.js?v=f7e8fb91").catch(() => {});
   const whenIdle = () => {
     if (root.classList.contains("splash")) return setTimeout(whenIdle, 500);
     window.requestIdleCallback ? requestIdleCallback(later, { timeout: 4000 }) : setTimeout(later, 1200);
