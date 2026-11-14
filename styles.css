@@ -589,6 +589,50 @@ a.card:hover .card-arrow { transform: translateX(4px); }
 .slip-done-head { font: 500 clamp(54px, 8vw, 112px)/1 var(--serif); letter-spacing: -.02em; }
 .slip-done-line { font-size: 19px; line-height: 1.4; color: var(--u2); }
 
+/* giving: the two club amounts, then any amount */
+.slip:has(.give-tiers) { display: grid; grid-template-columns: 1fr; justify-items: stretch; }
+.give-tiers { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 24px; }
+.tier {
+  display: grid; justify-items: center; gap: 10px; padding: 22px 14px 20px; border: 0; border-radius: 16px;
+  background: none; color: inherit; font: inherit; cursor: pointer;
+  box-shadow: inset 0 0 0 1px transparent; transition: background-color .25s ease, box-shadow .25s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (hover: hover) { .tier:hover { background: rgba(236, 220, 194, .05); } }
+.tier.is-on { background: rgba(150, 110, 210, .16); box-shadow: inset 0 0 0 1.5px var(--brass-hi); }
+.tier-what { font: 600 15px/1.2 var(--body); color: var(--ua); }
+.give-form { display: grid; justify-items: center; gap: 18px; max-width: 520px; width: 100%; margin: 4svh auto 0; }
+.give-lead { font-size: 18px; color: var(--u2); }
+.give-freq { display: inline-grid; grid-template-columns: 1fr 1fr; padding: 4px; border-radius: 999px; background: rgba(236, 220, 194, .08); box-shadow: inset 0 0 0 1px rgba(236, 220, 194, .16); }
+.give-freq label { position: relative; }
+.give-freq input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.give-freq span { display: block; min-width: 128px; padding: 12px 20px; border-radius: 999px; font: 600 15px/1 var(--body); text-align: center; color: var(--u2); pointer-events: none; transition: background-color .25s ease, color .25s ease; }
+.give-freq input:checked + span { background: var(--brass); color: #f6efe3; }
+.give-freq input:focus-visible + span { outline: 2px solid var(--brass-hi); outline-offset: 2px; }
+.give-amt {
+  display: flex; align-items: baseline; justify-content: center; gap: 4px; width: 100%; padding: 10px 18px; border-radius: 14px;
+  background: rgba(236, 220, 194, .07); box-shadow: inset 0 1px 0 rgba(6, 12, 24, .35), inset 0 0 0 1px rgba(236, 220, 194, .16);
+}
+.give-amt:focus-within { outline: 2px solid var(--brass-hi); outline-offset: 1px; }
+.give-cur { font: 500 clamp(36px, 4vw, 52px)/1 var(--serif); color: var(--u3); }
+.give-amt input {
+  width: 6.2ch; min-width: 0; padding: 0; border: 0; background: none; outline: 0; color: var(--u);
+  font: 500 clamp(44px, 5vw, 68px)/1.1 var(--serif); font-variant-numeric: lining-nums; letter-spacing: -.02em; text-align: left;
+}
+.give-presets { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.give-chip {
+  min-height: 42px; padding: 0 16px; border: 0; border-radius: 999px; cursor: pointer;
+  background: rgba(236, 220, 194, .07); box-shadow: inset 0 0 0 1px rgba(236, 220, 194, .18);
+  font: 600 15px/1 var(--body); color: var(--u); transition: background-color .2s ease, box-shadow .2s ease;
+}
+.give-chip[aria-pressed="true"] { background: rgba(150, 110, 210, .34); box-shadow: inset 0 0 0 1.5px var(--brass-hi); }
+.give-status { min-height: 1.4em; font: 600 16px/1.4 var(--body); text-align: center; color: var(--u2); }
+.give-form.is-club .give-status { color: var(--ua); }
+.give-form.is-club .give-status::before { content: "\2713  "; }
+.give-btn { min-width: 260px; }
+.give-btn:disabled { opacity: .55; }
+.slip.is-joined .give-tiers, .slip.is-joined .give-form { display: none; }
+
 /* internships: real marks, one tone, sized by area */
 .logo-wall { max-width: 1180px; margin: 0 auto; display: flex; flex-wrap: wrap; justify-content: center; font-size: 10px; }
 .logo-wall .logo { flex: 0 0 23em; }

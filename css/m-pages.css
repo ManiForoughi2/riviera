@@ -36,6 +36,10 @@
   .slip-opt { gap: 16px; }
   .slip-btn { width: 100%; min-height: 56px; }
   .slip-price b { font-size: clamp(56px, 17vw, 76px); }
+  .give-tiers { grid-template-columns: 1fr; gap: 6px; }
+  .give-freq span { min-width: 0; }
+  .give-freq { display: grid; width: 100%; }
+  .give-btn { width: 100%; min-height: 56px; }
 
   /* internships: two even columns, every mark scaled to the column */
   .logo-wall {

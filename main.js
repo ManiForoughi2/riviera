@@ -1,5 +1,5 @@
-import { startSea } from "./sea.js?v=1644c0ec";
-import { startWater } from "./under.js?v=1644c0ec";
+import { startSea } from "./sea.js?v=25f50e63";
+import { startWater } from "./under.js?v=25f50e63";
 
 const root = document.documentElement;
 root.classList.add("js");                         // the head script waits for this before trusting its opening state
@@ -413,9 +413,16 @@ if (!reduced && finePointer && !phoneMQ.matches) {
 
 // ---------- club 1848: back from stripe checkout ----------
 const slip = document.querySelector(".slip");
-if (slip && new URLSearchParams(location.search).has("joined")) {
+const back = new URLSearchParams(location.search);
+if (slip && (back.has("joined") || back.has("gave"))) {
   slip.classList.add("is-joined");
-  slip.querySelector(".slip-done").hidden = false;
+  const done = slip.querySelector(".slip-done");
+  // a gift under the club amounts: thanks, without the welcome
+  if (back.has("gave")) {
+    done.querySelector(".slip-done-head").textContent = "Thank you.";
+    done.querySelector(".slip-done-line").textContent = "Your gift is in. Your receipt is in your email.";
+  }
+  done.hidden = false;
   history.replaceState(null, "", location.pathname);
   addEventListener("load", () => slip.scrollIntoView({ block: "center", behavior: reduced ? "auto" : "smooth" }));
 }
@@ -440,14 +447,14 @@ if (!reduced && finePointer) {
 
 // it is asked for here, apart from the modules above, so on a first visit it never stands between the
 // page and its splash; on a page reached through a page change it is already in the cache
-import("./transit.js?v=1644c0ec")
+import("./transit.js?v=25f50e63")
   .then((m) => m.startTransit({ root, reduced, phone: phoneMQ.matches, seaCanvas, menuIsOpen: () => menuOpen }))
   .catch(() => root.classList.remove("arriving"));
 
 // ---------- once the page is up and still: the next page and the next visit (idle.js) ----------
 // after the load, and never while the splash is playing: nothing may share the main thread with it
 {
-  const later = () => import("./idle.js?v=1644c0ec").catch(() => {});
+  const later = () => import("./idle.js?v=25f50e63").catch(() => {});
   const whenIdle = () => {
     if (root.classList.contains("splash")) return setTimeout(whenIdle, 500);
     window.requestIdleCallback ? requestIdleCallback(later, { timeout: 4000 }) : setTimeout(later, 1200);

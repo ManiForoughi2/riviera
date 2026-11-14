@@ -73,7 +73,7 @@
         if (as) l.as = as;
         document.head.appendChild(l);
       };
-      add("modulepreload", "sea.js?v=1644c0ec"); add("modulepreload", "under.js?v=1644c0ec");
+      add("modulepreload", "sea.js?v=25f50e63"); add("modulepreload", "under.js?v=25f50e63");
       if (d.classList.contains("splash")) ["splash", "wild-type", "loud-burst"].forEach(function (m) { add("modulepreload", "vendor/design-how/" + m + ".js"); });
       try {
         [].forEach.call(document.querySelectorAll('link[rel="preload"][as="image"][media]'), function (l) {
@@ -84,12 +84,12 @@
     });
   })();
 </script>
-<link rel="stylesheet" href="styles.css?v=1644c0ec">
-<link rel="stylesheet" href="css/m-global.css?v=1644c0ec">
-<link rel="stylesheet" href="css/m-perf.css?v=1644c0ec">
-<link rel="stylesheet" href="css/m-nav.css?v=1644c0ec">
-<link rel="stylesheet" href="css/m-home.css?v=1644c0ec">
-<link rel="stylesheet" href="css/m-pages.css?v=1644c0ec">
+<link rel="stylesheet" href="styles.css?v=25f50e63">
+<link rel="stylesheet" href="css/m-global.css?v=25f50e63">
+<link rel="stylesheet" href="css/m-perf.css?v=25f50e63">
+<link rel="stylesheet" href="css/m-nav.css?v=25f50e63">
+<link rel="stylesheet" href="css/m-home.css?v=25f50e63">
+<link rel="stylesheet" href="css/m-pages.css?v=25f50e63">
 </head>
 <body>
 
@@ -181,16 +181,23 @@
       <li class="perk"><span class="perk-name">First look</span><span class="perk-what">Résumés from brothers looking for internships.</span></li>
       <li class="perk"><span class="perk-name">The pin</span><span class="perk-what">A Club 1848 lapel pin, mailed when you join.</span></li>
     </ul>
-    <div class="slip" id="join">
-      <div class="slip-opt">
-        <p class="slip-price"><b>$18.48</b> a month</p>
-        <a class="btn-brass magnetic slip-btn" href="https://buy.stripe.com/test_28E7sK5Wc0m6bL3fSfbjW00">Give monthly</a>
+    <div class="slip" id="give">
+      <div class="give-tiers">
+        <button class="tier" type="button" data-freq="monthly" data-amount="18.48"><span class="slip-price"><b>$18.48</b> a month</span><span class="tier-what">Club 1848 member</span></button>
+        <p class="slip-or">or</p>
+        <button class="tier" type="button" data-freq="once" data-amount="1848"><span class="slip-price"><b>$1,848</b> once</span><span class="tier-what">Club 1848 for life</span></button>
       </div>
-      <p class="slip-or">or</p>
-      <div class="slip-opt">
-        <p class="slip-price"><b>$1,848</b> once</p>
-        <a class="btn-brass magnetic slip-btn" href="https://buy.stripe.com/test_14A8wO3O41qa5mF5dBbjW01">Give once</a>
-      </div>
+      <form class="give-form" novalidate>
+        <p class="give-lead">Or give any amount.</p>
+        <div class="give-freq" role="radiogroup" aria-label="How often">
+          <label><input type="radio" name="freq" value="monthly" checked><span>Monthly</span></label>
+          <label><input type="radio" name="freq" value="once"><span>One time</span></label>
+        </div>
+        <label class="give-amt"><span class="sr-only">Amount in dollars</span><span class="give-cur" aria-hidden="true">$</span><input name="amount" inputmode="decimal" autocomplete="off" value="18.48"></label>
+        <div class="give-presets"></div>
+        <p class="give-status" aria-live="polite"></p>
+        <button class="btn-brass btn-lg magnetic give-btn" type="submit">Give</button>
+      </form>
       <div class="slip-done" hidden>
         <p class="slip-done-head">You're in.</p>
         <p class="slip-done-line">Welcome to Club 1848. Your receipt is in your email.</p>
@@ -207,6 +214,7 @@
   <div class="wordmark" aria-hidden="true">PHI GAMMA DELTA</div>
 </footer>
 
-<script type="module" src="main.js?v=1644c0ec"></script>
+<script type="module" src="give.js?v=25f50e63"></script>
+<script type="module" src="main.js?v=25f50e63"></script>
 </body>
 </html>
