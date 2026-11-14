@@ -14,18 +14,18 @@
   }
   .motion .rail { animation: none; }
   /* under water the bar is not a band with an edge: it is the water itself getting thicker toward the
-     top of the screen. a light tint of the deep colour over a blur of whatever is passing behind, both
-     fading out below the buttons, so the page dissolves up into it at any depth and over any film.
+     top of the screen. a tint of the deep colour that fades out below the buttons, so the page
+     dissolves up into it at any depth and over any film. no blur: a full-width blur over the moving
+     water costs a pass every frame on a phone (m-perf.css keeps it off).
      (the solid colour is only for browsers without color-mix) */
   .rail::before {
     content: ""; position: absolute; inset: 0 0 -30px 0; z-index: 0; pointer-events: none;
     background: var(--w3);
     background: linear-gradient(to bottom,
-      color-mix(in srgb, var(--w5) 62%, transparent) 0%,
-      color-mix(in srgb, var(--w5) 46%, transparent) 45%,
-      color-mix(in srgb, var(--w4) 22%, transparent) 78%,
+      color-mix(in srgb, var(--w5) 78%, transparent) 0%,
+      color-mix(in srgb, var(--w5) 62%, transparent) 45%,
+      color-mix(in srgb, var(--w4) 30%, transparent) 78%,
       color-mix(in srgb, var(--w4) 0%, transparent) 100%);
-    -webkit-backdrop-filter: blur(16px) saturate(1.25); backdrop-filter: blur(16px) saturate(1.25);
     -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 52%, rgba(0,0,0,.72) 66%, rgba(0,0,0,.36) 80%, rgba(0,0,0,.1) 92%, transparent 100%);
     mask-image: linear-gradient(to bottom, #000 0, #000 52%, rgba(0,0,0,.72) 66%, rgba(0,0,0,.36) 80%, rgba(0,0,0,.1) 92%, transparent 100%);
     opacity: 0;

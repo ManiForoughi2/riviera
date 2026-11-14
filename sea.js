@@ -129,6 +129,10 @@ float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
 vec3 plate(vec3 d) {
   vec2 t = d.xy / d.z;
   vec2 uv = vec2(0.5 + t.x / (2.0 * uPlateT.x), 1.0 - clamp(t.y, 0.0, uPlateT.y) / uPlateT.y);
+  // one lookup while the scene is all day or all night (which is always, but for the second a theme
+  // switch takes): mixing by 0 or 1 gives that side back, as env does for the reflection
+  if (uNight <= 0.0) return texture2D(uPlateDay, uv).rgb;
+  if (uNight >= 1.0) return texture2D(uPlateNight, uv).rgb;
   return mix(texture2D(uPlateDay, uv).rgb, texture2D(uPlateNight, uv).rgb, uNight);
 }
 
@@ -205,9 +209,11 @@ void main() {
   if (dy <= 0.0) discard;
   if (uPlateOn > 0.5) {
     col = plate(d);
-    // stars come out only in the dark upper sky of the night render
+    // stars come out only in the dark upper sky of the night render (by day uStars is 0, they
+    // would add nothing, and their lookup is skipped)
     vec2 sp = px / (uQ * 3.0);
-    float h = hash(floor(sp));
+    float h = 0.0;
+    if (uStars > 0.0) h = hash(floor(sp));
     if (h > 0.997) {
       float dark = 1.0 - smoothstep(0.08, 0.3, dot(col, vec3(0.3, 0.5, 0.2)));
       float tw = 0.6 + 0.4 * sin(uTime * (1.0 + h * 3.0) + h * 40.0);
@@ -435,6 +441,14 @@ export function startSea(canvas, opts) {
   let dpr = 1, raf = 0, visible = true, lost = false, last = 0;
   let level = 0, W = 1, H = 1, hz = 0, acc = 0, n = 0, bad = 0, wordKey = "";
   let scrollT = -1e9, cw = 0, ch = 0;
+  // two times the scene cannot be seen although it is on screen, and is not drawn:
+  //  covered  the water has risen over the whole screen (under.js knows when; main.js passes it on
+  //           through setCovered). the header stays pinned behind it for another screen or two
+  //  veiled   the splash's cover is up (first page of a visit). its frames are heavy, and timing
+  //           this scene under them used to cost it a rung of quality before anyone had seen it
+  // in both cases the frame is drawn again in the same task that brings the scene back
+  const rootEl = document.documentElement;
+  let covered = false, veiled = rootEl.classList.contains("splash"), veilAt = 0;
 
   function init() {
     const sh = (type, src) => {
@@ -933,6 +947,7 @@ export function startSea(canvas, opts) {
 
   function loop(now) {
     raf = requestAnimationFrame(loop);
+    if (veiled) { veilAt = now; last = 0; acc = n = 0; return; }   // the frame's time is kept for the moment the cover lifts
     const iv = 1000 / LEVELS[level].fps, el = now - last;
     if (el < iv * 0.75) return;
     // the browser's own pacing: two windows of 30 frames well over budget means the device cannot
@@ -958,9 +973,19 @@ export function startSea(canvas, opts) {
   }
 
   const run = (on) => {
+    on = on && !covered;
     if (on && !raf && !reduced && !lost) { last = 0; raf = requestAnimationFrame(loop); }
     if (!on && raf) { cancelAnimationFrame(raf); raf = 0; }
   };
+  if (veiled) {
+    const lift = new MutationObserver(() => {
+      if (rootEl.classList.contains("splash")) return;
+      lift.disconnect(); veiled = false;
+      settle = performance.now() + 900;                        // let the splash's last darts go before a frame is timed
+      if (!lost && visible && !covered && !reduced) draw((veilAt || performance.now()) / 1000 * 0.55);
+    });
+    lift.observe(rootEl, { attributes: true, attributeFilter: ["class"] });
+  }
 
   try { init(); } catch (e) { console.warn("sea shader:", e); return null; }
   setLook(); size();
@@ -1003,6 +1028,14 @@ export function startSea(canvas, opts) {
 
   return {
     redraw() { if (lost) return; wordKey = ""; setLook(); size(); draw(performance.now() / 1000 * 0.55); },
+    // the water is over the whole screen (true), or the scene shows again (false: drawn at once,
+    // for the frame time the caller is drawing, so both canvases show the same instant)
+    setCovered(c, now) {
+      c = !!c; if (c === covered) return;
+      covered = c;
+      if (!c && visible && !lost && !reduced) draw((now || performance.now()) / 1000 * 0.55);
+      run(visible);
+    },
     // the camera sinking toward the surface (1 = standing height, toward 0 = lens at the water)
     setEye(v) { v = Math.max(0.08, Math.min(1, v)); if (v === eye) return; eye = v; if (reduced && !lost) draw(3.0); },
   };
