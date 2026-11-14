@@ -1,6 +1,6 @@
 // Work for after the page is up and still: nothing here is needed to show or use the page, and
-// main.js imports it only once the load is over. It makes the next thing quick: the next page,
-// the first film frame, and the next visit (sw.js).
+// main.js imports it only once the load is over. It makes the next thing quick: the next page
+// and the next visit (sw.js).
 
 const conn = navigator.connection;
 const saving = !!(conn && conn.saveData);         // the visitor asked the browser to spare data
@@ -46,9 +46,3 @@ if (pages.size && !saving) {
     }
   }
 }
-
-// ---------- the first film frame ----------
-// the still under the first shot is fetched now if the browser has not already done it, so it is
-// there when the camera comes down to it. (the film itself still waits for the scroll)
-const still = document.querySelector(".shot-film img[loading=lazy]");
-if (still && !saving && !still.complete) still.loading = "eager";

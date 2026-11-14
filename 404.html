@@ -41,9 +41,9 @@
     // (on this host what is asked for first is delivered first, and a late script waits behind them):
     //   the modules main.js imports and, when the splash is on, the splash's own three, which were
     //   otherwise found only once main.js had run;
-    //   both sky renders for this screen, the one for this theme first (the tags above have usually
-    //   asked for it already). sea.js takes both in as they arrive, and that work must be over
-    //   before the splash moves, not land in the middle of it.
+    //   the sky render for this screen and this theme. the tags above have nearly always asked for
+    //   it already; they go by the device's colour scheme, and a theme picked with the switch on a
+    //   desktop can differ from it.
     // (the text face the css asks for in this same frame's layout follows these by itself)
     requestAnimationFrame(function () {
       var add = function (rel, href, as) {
@@ -51,12 +51,12 @@
         if (as) l.as = as;
         document.head.appendChild(l);
       };
-      add("modulepreload", "/sea.js?v=9e2be012"); add("modulepreload", "/under.js?v=9e2be012");
+      add("modulepreload", "/sea.js?v=2abfc311"); add("modulepreload", "/under.js?v=2abfc311");
       if (d.classList.contains("splash")) ["splash", "wild-type", "loud-burst"].forEach(function (m) { add("modulepreload", "/vendor/design-how/" + m + ".js"); });
       try {
         [].forEach.call(document.querySelectorAll('link[rel="preload"][as="image"][media]'), function (l) {
           var m = /^(.*\/sky\/(?:tall|wide)-)(?:day|night)(\.webp.*)$/.exec(l.getAttribute("href"));
-          if (m && matchMedia(l.media).matches) (t === "light" ? ["day", "night"] : ["night", "day"]).forEach(function (w) { add("preload", m[1] + w + m[2], "image"); });
+          if (m && matchMedia(l.media).matches) add("preload", m[1] + (t === "light" ? "day" : "night") + m[2], "image");
         });
       } catch (e) {}
     });

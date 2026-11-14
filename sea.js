@@ -635,22 +635,38 @@ export function startSea(canvas, opts) {
     // the css caps the mist at .075em; capped here too, so a change of height alone changes nothing
     put("--hw-mist-h", `${Math.min(cr.height * 0.035, fs * 0.075).toFixed(1)}px`);
   }
-  // load both renders for this screen shape, the one on screen first
+  // the render for this screen shape and this theme is loaded at once. the one for the other theme is
+  // not part of the first load: it is fetched as soon as the page has loaded, held decoded, and
+  // taken into the scene (the upload, the mirror atlas, the horizon read: main-thread work) only
+  // when the theme turns to it. setLook comes through here with the new theme first, so its render
+  // is in before the first frame of the turn; one asked for before it has arrived borrows, as below
+  let loaded = false;
+  {
+    const now = () => setTimeout(() => { loaded = true; if (!lost && progs) usePlate(); }, 0);
+    if (navigator.connection && navigator.connection.saveData) { /* asked to spare data: only on demand */ }
+    else if (document.readyState === "complete") now();
+    else addEventListener("load", now, { once: true });
+  }
   function usePlate() {
     const shape = shapeFor();
     const order = getTheme() === "light" ? ["day", "night"] : ["night", "day"];
     const fresh = shape !== shapeNow;
     shapeNow = shape;
     for (const which of order) {
+      const shown = which === order[0];
       const key = `${shape}-${which}`;
       const at = shape === "tall" ? key + "@" + lamps[which === "day" ? "sun" : "moon"].map((v) => v.toFixed(3)).join(",") : key;
       const img = imgs.get(key);
-      if (img) { if (fresh || !texs[which] || texs[which].key !== at) { upload(which, img, which === "day" ? gl.TEXTURE1 : gl.TEXTURE2, shape); texs[which].key = at; lightWord(); } continue; }
-      if (imgs.has(key)) continue;
+      if (img) { if ((shown || texs[which]) && (fresh || !texs[which] || texs[which].key !== at)) { upload(which, img, which === "day" ? gl.TEXTURE1 : gl.TEXTURE2, shape); texs[which].key = at; lightWord(); } continue; }
+      if (imgs.has(key) || !(shown || loaded)) continue;
       imgs.set(key, null);
       const im = new Image();
       im.decoding = "async";
-      const ready = () => { if (imgs.get(key)) return; imgs.set(key, im); if (!lost) { usePlate(); applyLook(nightNow); draw(performance.now() / 1000 * 0.55); } };
+      const ready = () => {
+        if (imgs.get(key)) return;
+        imgs.set(key, im);
+        if (!lost && which === (getTheme() === "light" ? "day" : "night")) { usePlate(); applyLook(nightNow); draw(performance.now() / 1000 * 0.55); }
+      };
       // decode off the main thread when the browser will, but never wait on it: a tab that is not
       // being painted (opened in the background) leaves decode() pending until it is shown
       im.onload = () => { im.decode().then(ready, ready); setTimeout(ready, 300); };
