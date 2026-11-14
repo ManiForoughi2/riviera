@@ -92,10 +92,11 @@ const FRAG = (part, oct = 4) => `
 precision highp float;
 uniform vec2 uRes;        // canvas size, device px
 uniform float uHz;        // horizon, device px from the top (= the word's baseline)
+uniform float uAsp;       // 1, or how far a canvas row is from square while a resize is being followed (see size)
 uniform float uTime;
 uniform float uEye;        // eye height above the water, 1 at rest; the page lowers it as it scrolls toward the surface
 uniform float uF;         // focal length, device px
-uniform float uQ;         // render scale, keeps the star grid in full-res px
+uniform float uQ;         // canvas px per 1.5 css px: keeps stars and the finest waves the same size on any screen
 uniform float uStars;     // 1 at night, 0 by day
 uniform sampler2D uWord;  // word alpha for the area above the horizon; bottom row = horizon
 uniform sampler2D uPlateDay, uPlateNight; // blender-rendered sky + islands; bottom row = horizon (see asufiji-render)
@@ -196,7 +197,7 @@ float glitter(vec3 v, vec3 l, vec2 g, float var) {
 
 void main() {
   vec2 px = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);   // y from the top
-  float dy = uHz - px.y;                                     // + above the horizon
+  float dy = (uHz - px.y) * uAsp;                            // + above the horizon
   vec3 d = normalize(vec3((px.x - uRes.x * 0.5) / uF, (dy - 0.75) / uF, 1.0));
   vec3 col;
 
@@ -240,9 +241,12 @@ void main() {
     col = mix(col, cc, cm * uClouds);
   }
   // islands on the horizon, the far one already half lost in the haze
-  vec4 sc = texture2D(uWord, vec2(px.x / uWordRes.x, px.y / uWordRes.y));
-  col = mix(col, uIsleFar, sc.b);
-  col = mix(col, uIsle, sc.g);
+  float wy = uWordHz - dy;                                   // the word texture hangs from the horizon
+  if (wy > 0.0) {
+    vec4 sc = texture2D(uWord, vec2(px.x / uWordRes.x, wy / uWordRes.y));
+    col = mix(col, uIsleFar, sc.b);
+    col = mix(col, uIsle, sc.g);
+  }
   }
 #else
   if (dy > 0.0) discard;
@@ -250,7 +254,7 @@ void main() {
   vec3 p = vec3((px.x - uRes.x * 0.5) * fp, -1.0, uF * fp);  // where the view ray meets the water
   // a lower eye meets the same rays nearer on the water: the waves loom and their detail opens up
   vec2 q = p.xz * uEye;
-  vec3 w = waveField(q, fp * uEye, abs(q.x));
+  vec3 w = waveField(q, fp * uEye * max(uQ, 0.75), abs(q.x));
   // the chop is at the viewer's feet; out toward the islands the water lies nearly flat, which is
   // what lets it hold their reflections (full strength inside ~5 eye heights, then ~1/distance)
   float cz = q.y * ${f(1 / CALM)}; cz *= cz;
@@ -308,7 +312,7 @@ void main() {
   }
 
   vec3 far = uPlateOn > 0.5 ? uHorizon : uHaze;            // the horizon's own color
-  float depth01 = clamp(-dy / (uRes.y - uHz), 0.0, 1.0);
+  float depth01 = clamp(-dy / ((uRes.y - uHz) * uAsp), 0.0, 1.0);
   vec3 body = mix(uBody, uDeep, depth01) * (0.85 + 0.15 * n.z);
   col = mix(body, refl, fres);
 
@@ -328,7 +332,7 @@ void main() {
 #endif
 
   // one band of mist straddles the horizon so sky and sea meet without a seam
-  float mist = exp(-abs(dy) / (uRes.y * 0.035));
+  float mist = exp(-abs(dy) / (uRes.y * uAsp * 0.035));
   float mx = (px.x / uRes.x - 0.5) * 2.4;
 #ifdef SEA
   mist *= 1.0 - keep;
@@ -385,15 +389,34 @@ function island(ctx, cx, base, w, h, palms) {
   }
 }
 
-// quality ladder for slow gpus: drop to 30fps first (waves are slow, it reads the same),
-// then render scale, never below 0.75
-const LEVELS = [{ q: 1, ms: 1000 / 60 }, { q: 1, ms: 1000 / 30 }, { q: 0.85, ms: 1000 / 30 }, { q: 0.75, ms: 1000 / 30 }];
+// quality ladder. every screen starts on the top rung, at its own resolution with the whole
+// shader; the frame cost is then measured and the scene moves down a rung when the gpu cannot
+// hold it and back up when there is room. the frame rate goes first (the waves are slow, 30 a
+// second reads the same and halves the heat), then resolution, never below 1x.
+const LEVELS = [
+  { fps: 60, s: 1, rip: 1 },
+  { fps: 30, s: 1, rip: 1 },
+  { fps: 30, s: 0.82, rip: 1 },
+  { fps: 30, s: 0.67, rip: 1 },
+  { fps: 30, s: 0.55, rip: 0 },
+];
+// gpu ms a frame may cost at each rate (the page, the title and the scroll need the rest), the
+// headroom wanted before climbing, and how many canvas pixels the top rung may have
+const BUDGET = { 60: 8, 30: 20 }, CLIMB = 0.7, MAX_PX = 3.0e6;
 
 const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
 
-// phones and tablets: weaker gpus that also have to composite a touch scroll. same scene, fewer
-// pixels, 30fps and 3 cloud octaves; it keeps moving while you scroll
+// phones and tablets get a lighter stand-in sky (3 cloud octaves) for the seconds before the
+// render arrives; nothing else depends on the kind of device
 const TOUCH = matchMedia("(hover: none) and (pointer: coarse)");
+
+// the camera. landscape and desktop: the field is set by the longer side, as it always was.
+// a phone-width screen held upright: the field across is fixed (tan .30 to either edge) whatever
+// the height, so the title, the islands, the sun and the moon sit in the same places on every
+// phone and in every in-app browser, and a toolbar sliding away moves nothing sideways.
+const PHONE_EDGE = 0.30;
+const phoneFrame = (cw, ch) => cw <= 760 && cw < ch * 1.2;
+const focal = (cw, ch) => (phoneFrame(cw, ch) ? cw / (2 * PHONE_EDGE) : Math.max(cw, ch * 1.1) * 0.95);
 
 export function startSea(canvas, opts) {
   let eye = 1;
@@ -410,7 +433,7 @@ export function startSea(canvas, opts) {
 
   let progs, sky, sea, tex, rip;
   let dpr = 1, raf = 0, visible = true, lost = false, last = 0;
-  let level = 0, W = 1, H = 1, hz = 0, acc = 0, n = 0, bad = 0;
+  let level = 0, W = 1, H = 1, hz = 0, acc = 0, n = 0, bad = 0, wordKey = "";
   let scrollT = -1e9, cw = 0, ch = 0;
 
   function init() {
@@ -440,7 +463,7 @@ export function startSea(canvas, opts) {
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     gl.enable(gl.SCISSOR_TEST);
 
-    texs.day = texs.night = envs.day = envs.night = null; shapeNow = "";   // a restored context needs the renders uploaded again
+    texs.day = texs.night = envs.day = envs.night = null; shapeNow = ""; wordKey = "";   // a restored context needs every texture again
     gl.activeTexture(gl.TEXTURE5);
     gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
@@ -462,22 +485,20 @@ export function startSea(canvas, opts) {
   const each = (fn) => { for (const P of progs) { gl.useProgram(P.p); fn(P.u); } };
 
   // ---- the blender render (asufiji-render/build_scene.py) ----
-  // wide: desktop/landscape framing; tall: phones, where the islands sit just outside the word.
-  // sun = the day render's sun, moon = the night render's moon, both in tan(angle). they stand in
-  // open sky clear of any title: wide, over the islands (titles stop at tan .29); tall, above it
+  // wide: desktop/landscape framing; tall: the phone camera (see focal), whose frame is the same
+  // on every phone. sun = the day render's sun, moon = the night render's moon, in tan(angle).
+  // both stand in open sky over the islands, clear of any title: "inner" is where the islands
+  // begin, and fitWord keeps every title inside it
   const PLATES = {
-    wide: { tx: 0.56, tv: 0.672, sun: [0.36, 0.14], moon: [-0.37, 0.22] },
-    tall: { tx: 0.25, tv: 0.66, sun: [0.135, 0.235], moon: [-0.13, 0.26] },
+    wide: { tx: 0.56, tv: 0.672, sun: [0.36, 0.14], moon: [-0.37, 0.22], inner: 0.29 },
+    tall: { tx: PHONE_EDGE, tv: 0.8, sun: [0.25, 0.22], moon: [-0.25, 0.235], inner: 0.20 },
   };
   const imgs = new Map();                       // key -> decoded image (or null while loading)
   const texs = { day: null, night: null }, envs = { day: null, night: null };
   let shapeNow = "", horizon = { day: [0.6, 0.6, 0.62], night: [0.1, 0.12, 0.2] };
   let nightNow = getTheme() === "light" ? 0 : 1, fadeRaf = 0;
 
-  const shapeFor = () => {
-    const edge = (canvas.clientWidth / 2) / (Math.max(canvas.clientWidth, canvas.clientHeight * 1.1) * 0.95);
-    return edge <= PLATES.tall.tx ? "tall" : "wide";
-  };
+  const shapeFor = () => (phoneFrame(canvas.clientWidth, canvas.clientHeight) ? "tall" : "wide");
   function horizonOf(img) {
     const c = document.createElement("canvas"); c.width = 256; c.height = 8;
     const x = c.getContext("2d", { willReadFrequently: true });
@@ -526,18 +547,21 @@ export function startSea(canvas, opts) {
   // the title is DOM, so the scene hands it its light (see the last block of styles.css): the
   // colour of the haze on the waterline, and where the sun and moon stand relative to the letters
   const have = { day: false, night: false };
-  function lightWord(cr, wr, baseline) {
-    const st = wordEl.style, which = getTheme() === "light" ? "day" : "night";
-    if (have[which]) st.setProperty("--hw-hz", `rgb(${horizon[which].map((v) => Math.round(v * 255)).join(" ")})`);
+  const lit = {};
+  const put = (k, v) => { if (lit[k] !== v) { lit[k] = v; wordEl.style.setProperty(k, v); } };   // an unchanged value must not repaint the title
+  function lightWord(cr, wr, baseline, fs) {
+    const which = getTheme() === "light" ? "day" : "night";
+    if (have[which]) put("--hw-hz", `rgb(${horizon[which].map((v) => Math.round(v * 255)).join(" ")})`);
     if (!cr) return;
-    const P = PLATES[shapeFor()], F = Math.max(cr.width, cr.height * 1.1) * 0.95;
+    const P = PLATES[shapeFor()], F = focal(cr.width, cr.height);
     const ox = cr.width / 2 - (wr.left - cr.left), oy = baseline - (wr.top - cr.top);
     for (const k of ["sun", "moon"]) {
-      st.setProperty(`--hw-${k}-x`, `${(ox + P[k][0] * F).toFixed(1)}px`);
-      st.setProperty(`--hw-${k}-y`, `${(oy - P[k][1] * F).toFixed(1)}px`);
+      put(`--hw-${k}-x`, `${(ox + P[k][0] * F).toFixed(1)}px`);
+      put(`--hw-${k}-y`, `${(oy - P[k][1] * F).toFixed(1)}px`);
     }
-    st.setProperty("--hw-lamp-r", `${(F * 0.5).toFixed(0)}px`);
-    st.setProperty("--hw-mist-h", `${(cr.height * 0.035).toFixed(1)}px`);
+    put("--hw-lamp-r", `${(F * 0.5).toFixed(0)}px`);
+    // the css caps the mist at .075em; capped here too, so a change of height alone changes nothing
+    put("--hw-mist-h", `${Math.min(cr.height * 0.035, fs * 0.075).toFixed(1)}px`);
   }
   // load both renders for this screen shape, the one on screen first
   function usePlate() {
@@ -620,7 +644,9 @@ export function startSea(canvas, opts) {
     fadeRaf = requestAnimationFrame(step);
   }
 
-  // horizon = the word's baseline; paint the word into a texture of the area above it
+  // horizon = the word's baseline. the word is painted into a texture that hangs from that
+  // line, so it depends on the word alone: when only the height of the screen changes (a phone
+  // toolbar sliding away) nothing is repainted or uploaded, the horizon just moves
   const sq = document.createElement("canvas"), sqx = sq.getContext("2d");
   function paintWord() {
     const cr = canvas.getBoundingClientRect();
@@ -630,100 +656,124 @@ export function startSea(canvas, opts) {
     const baseline = wr.top - cr.top + fs * 0.87;          // line-height 1, Recia metrics
     // the sea starts a fraction of a pixel above the baseline, tucked behind the letters' last
     // row, so no sliver of bright sky can show between a letter and its reflection
-    hz = Math.floor(baseline * dpr - 0.25);
-    // level 0 = the scene at full size, with room under the baseline for the mirror image; under
-    // it sit copies squeezed to 1/8 .. 1/256 of the height, which the sea reads as the blurred word
-    const h0 = Math.ceil((baseline + fs * 0.32) * dpr / 256) * 256;
-    wc.width = Math.max(1, Math.round(cr.width * dpr));
-    wc.height = h0 * 1.25;
-    wctx.clearRect(0, 0, wc.width, wc.height);
-    wctx.save();
-    wctx.scale(dpr, dpr);
-    wctx.font = `${cs.fontWeight} ${fs}px ${cs.fontFamily}`;
-    if ("letterSpacing" in wctx) wctx.letterSpacing = cs.letterSpacing;
-    wctx.textBaseline = "alphabetic";
-    // each layer in its own channel; additive so overlaps don't steal coverage from each other
-    wctx.globalCompositeOperation = "lighter";
-    wctx.fillStyle = "#f00";
-    const tx = wr.left - cr.left + parseFloat(cs.textIndent || 0);
-    wctx.fillText(wordEl.textContent, tx, baseline);
-    // the same word upside down below the waterline: a blurred lookup right at the letters' feet
-    // then averages letter with letter, and the reflection stays solid where it meets them
-    wctx.save();
-    wctx.beginPath(); wctx.rect(0, baseline, cr.width, h0 / dpr - baseline); wctx.clip();
-    wctx.translate(0, 2 * baseline); wctx.scale(1, -1);
-    wctx.fillText(wordEl.textContent, tx, baseline);
-    wctx.restore();
-    // islands sit in the open water beside the word, sized to the gap they have
+    hz = Math.floor(baseline * dpr / asp - 0.25);
+    const F = focal(cr.width, cr.height) * dpr, shape = shapeFor();
     const cw = cr.width, ih = Math.min(cr.height * 0.11, cw * 0.09);
-    const gapL = wr.left - cr.left, gapR = cr.right - wr.right;
-    const fit = (gap, w, h) => { const k = Math.min(1, (gap * 0.86) / w); return [w * k, h * k]; };
-    if (gapL > 34) {
-      const [w, h] = fit(gapL, ih * 2.2, ih * 0.55);
-      wctx.fillStyle = "#00f";
-      island(wctx, gapL / 2, baseline + 0.5, w, h, [{ x: 0.02, y: 0.28, s: 0.62, r: -0.08 }]);
+    const left = wr.left - cr.left, text = wordEl.textContent;
+    const key = [text, cs.fontWeight, fs, cs.letterSpacing, cs.fontFamily, left.toFixed(2), wr.width.toFixed(2), cw, dpr, ih.toFixed(1)].join("|");
+    if (key !== wordKey) {
+      wordKey = key;
+      // level 0 = the word at full size: "up" css px of room above the baseline, and room under
+      // it for the mirror image; under that sit copies squeezed to 1/8 .. 1/256 of the height,
+      // which the sea reads as the blurred word
+      const up = Math.max(fs * 0.92, ih * 1.3 + 4);
+      const h0 = Math.ceil((up + fs * 0.32) * dpr / 256) * 256;
+      wc.width = Math.max(1, Math.round(cw * dpr));
+      wc.height = h0 * 1.25;
+      wctx.clearRect(0, 0, wc.width, wc.height);
+      wctx.save();
+      wctx.scale(dpr, dpr);
+      wctx.font = `${cs.fontWeight} ${fs}px ${cs.fontFamily}`;
+      if ("letterSpacing" in wctx) wctx.letterSpacing = cs.letterSpacing;
+      wctx.textBaseline = "alphabetic";
+      // each layer in its own channel; additive so overlaps don't steal coverage from each other
+      wctx.globalCompositeOperation = "lighter";
+      wctx.fillStyle = "#f00";
+      const tx = left + parseFloat(cs.textIndent || 0);
+      wctx.fillText(text, tx, up);
+      // the same word upside down below the waterline: a blurred lookup right at the letters' feet
+      // then averages letter with letter, and the reflection stays solid where it meets them
+      wctx.save();
+      wctx.beginPath(); wctx.rect(0, up, cw, h0 / dpr - up); wctx.clip();
+      wctx.translate(0, 2 * up); wctx.scale(1, -1);
+      wctx.fillText(text, tx, up);
+      wctx.restore();
+      // stand-in islands (only seen if the render never loads) in the open water beside the word
+      const gapL = left, gapR = cr.right - wr.right;
+      const fit = (gap, w, h) => { const k = Math.min(1, (gap * 0.86) / w); return [w * k, h * k]; };
+      if (gapL > 34) {
+        const [w, h] = fit(gapL, ih * 2.2, ih * 0.55);
+        wctx.fillStyle = "#00f";
+        island(wctx, gapL / 2, up + 0.5, w, h, [{ x: 0.02, y: 0.28, s: 0.62, r: -0.08 }]);
+      }
+      if (gapR > 34) {
+        const [w, h] = fit(gapR, ih * 3.2, ih);
+        wctx.fillStyle = "#0f0";
+        island(wctx, cw - gapR / 2, up + 0.5, w, h, [
+          { x: -0.08, y: 0.28, s: 0.95, r: -0.1 },
+          { x: 0.1, y: 0.3, s: 0.7, r: 0.12, flip: true },
+        ]);
+      }
+      wctx.restore();
+      // squeeze by halves (each row a true average): 1/2 and 1/4 in a scratch canvas, 1/8 .. 1/256
+      // kept. the kept ones are also narrower, since water never mirrors a hard side edge: a quarter
+      // as wide for a big title, less for small ones so their thin strokes survive
+      const ww = wc.width, qw = Math.ceil(ww / Math.max(1, Math.min(4, Math.round(fs * dpr / 100))));
+      const hw = Math.max(qw, Math.ceil(ww / 2));
+      sq.width = ww; sq.height = h0 * 0.75;
+      sqx.drawImage(wc, 0, 0, ww, h0, 0, 0, hw, h0 / 2);
+      sqx.drawImage(sq, 0, 0, hw, h0 / 2, 0, h0 / 2, qw, h0 / 4);
+      wctx.drawImage(sq, 0, h0 / 2, qw, h0 / 4, 0, h0, qw, h0 / 8);
+      for (let h = h0 / 8, y = h0; h > h0 / 256; y += h, h /= 2) wctx.drawImage(wc, 0, y, qw, h, 0, y + h, qw, h / 2);
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, wc);
+      each((u) => {
+        gl.uniform2f(u("uWordRes"), wc.width, wc.height);
+        gl.uniform1f(u("uWordQ"), qw / ww / ww);
+        gl.uniform1f(u("uWordHz"), up * dpr); gl.uniform1f(u("uWordH0"), h0);
+        gl.uniform2f(u("uWordX"), left * dpr - 2, (wr.right - cr.left) * dpr + 2);
+      });
     }
-    if (gapR > 34) {
-      const [w, h] = fit(gapR, ih * 3.2, ih);
-      wctx.fillStyle = "#0f0";
-      island(wctx, cw - gapR / 2, baseline + 0.5, w, h, [
-        { x: -0.08, y: 0.28, s: 0.95, r: -0.1 },
-        { x: 0.1, y: 0.3, s: 0.7, r: 0.12, flip: true },
-      ]);
-    }
-    wctx.restore();
-    // squeeze by halves (each row a true average): 1/2 and 1/4 in a scratch canvas, 1/8 .. 1/256
-    // kept. the kept ones are also narrower, since water never mirrors a hard side edge: a quarter
-    // as wide for a big title, less for small ones so their thin strokes survive
-    const ww = wc.width, qw = Math.ceil(ww / Math.max(1, Math.min(4, Math.round(fs * dpr / 100))));
-    const hw = Math.max(qw, Math.ceil(ww / 2));
-    sq.width = ww; sq.height = h0 * 0.75;
-    sqx.drawImage(wc, 0, 0, ww, h0, 0, 0, hw, h0 / 2);
-    sqx.drawImage(sq, 0, 0, hw, h0 / 2, 0, h0 / 2, qw, h0 / 4);
-    wctx.drawImage(sq, 0, h0 / 2, qw, h0 / 4, 0, h0, qw, h0 / 8);
-    for (let h = h0 / 8, y = h0; h > h0 / 256; y += h, h /= 2) wctx.drawImage(wc, 0, y, qw, h, 0, y + h, qw, h / 2);
-    gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, wc);
-    const F = Math.max(W, H * 1.1) * 0.95, shape = shapeFor();
     each((u) => {
-      gl.uniform1f(u("uHz"), hz); gl.uniform2f(u("uWordRes"), wc.width, wc.height);
-      gl.uniform1f(u("uWordQ"), qw / ww / ww);
-      gl.uniform1f(u("uWordHz"), baseline * dpr); gl.uniform1f(u("uWordH0"), h0);
+      gl.uniform1f(u("uHz"), hz);
       gl.uniform1f(u("uWLod"), Math.log2(PLATES[shape].tv * F / 192));
-      gl.uniform2f(u("uWordX"), (wr.left - cr.left) * dpr - 2, (wr.right - cr.left) * dpr + 2);
     });
-    lightWord(cr, wr, baseline);
+    lightWord(cr, wr, baseline, fs);
   }
 
 
-  function size() {
-    const q = LEVELS[level].q;
-    dpr = Math.min(window.devicePixelRatio || 1, touch ? 1.25 : 1.5) * q;
+  // hard = fit the canvas to the box exactly. soft = the box only changed height (a phone
+  // toolbar sliding in or out resizes the page many times a second): keep the canvas the browser
+  // already has, which it stretches to the box, and draw into it with rows that are not quite
+  // square so the picture on screen is right. no reallocation, no clear, nothing to flash; the
+  // exact fit follows once the height has stopped moving
+  let asp = 1, sizedW = -1;
+  function size(hard = true) {
     cw = canvas.clientWidth; ch = canvas.clientHeight;
-    W = Math.max(1, Math.round(canvas.clientWidth * dpr)); H = Math.max(1, Math.round(canvas.clientHeight * dpr));
-    if (canvas.width !== W) canvas.width = W;
-    if (canvas.height !== H) canvas.height = H;
+    // the top rung: the screen's own pixels, up to 3x and to a 3-megapixel canvas, but never
+    // under the 1.5x a large desktop canvas has always had
+    const top = Math.min(window.devicePixelRatio || 1, 3, Math.max(1.5, Math.sqrt(MAX_PX / Math.max(1, cw * ch))));
+    const d = Math.max(top * LEVELS[level].s, Math.min(top, 1));
+    const a = dpr * ch / canvas.height;                      // css stretch of the canvas we already have
+    if (!hard && cw === sizedW && Math.abs(d - dpr) < 0.12 && a > 0.85 && a < 1.18) asp = a;
+    else {
+      dpr = d; asp = 1; sizedW = cw;
+      W = Math.max(1, Math.round(cw * dpr)); H = Math.max(1, Math.round(ch * dpr));
+      if (canvas.width !== W) canvas.width = W;
+      if (canvas.height !== H) canvas.height = H;
+    }
     gl.viewport(0, 0, W, H);
     each((u) => {
       gl.uniform2f(u("uRes"), W, H);
-      gl.uniform1f(u("uF"), Math.max(W, H * 1.1) * 0.95);
-      gl.uniform1f(u("uQ"), q);
-      gl.uniform1f(u("uRipA"), level < 2 ? RIP_SLOPE * 4 : 0);   // a gpu already on reduced resolution skips the ripples
+      gl.uniform1f(u("uAsp"), asp);
+      gl.uniform1f(u("uF"), focal(cw, ch) * dpr);
+      gl.uniform1f(u("uQ"), dpr / 1.5);
+      gl.uniform1f(u("uRipA"), LEVELS[level].rip ? RIP_SLOPE * 4 : 0);   // the bottom rung drops the ripples too
     });
     fitWord();
     paintWord();
     usePlate();
     applyLook(nightNow);
+    settle = performance.now() + 400;                        // let the new size run before it is timed
   }
 
   // the islands are baked into the sky, so the title shrinks to fit the open water between them
   const heroEl = wordEl.closest(".hero");
   function fitWord() {
     if (!heroEl) return;
-    heroEl.style.removeProperty("--kw");
-    const inner = shapeFor() === "tall" ? 0.16 : 0.29;      // tan of the islands' inner edges
-    const room = 2 * inner * Math.max(canvas.clientWidth, canvas.clientHeight * 1.1) * 0.95;
+    if (heroEl.style.getPropertyValue("--kw")) heroEl.style.removeProperty("--kw");
+    const room = 2 * PLATES[shapeFor()].inner * focal(canvas.clientWidth, canvas.clientHeight);
     const w = wordEl.getBoundingClientRect().width;
     if (w > room) heroEl.style.setProperty("--kw", `${parseFloat(getComputedStyle(wordEl).fontSize) * room / w}px`);
   }
@@ -746,43 +796,75 @@ export function startSea(canvas, opts) {
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 
-  // one-off gpu cost probe: a blocking 1px read waits for the frame to finish (one read per
-  // frame, or a tile gpu folds the overdrawn frames into one)
+  // ---- adaptive quality ----
+  // a timed frame: draw, then a blocking 1px read that returns only when the gpu has finished it
+  // (one read per frame, or a tile gpu folds the overdrawn frames into one)
+  const sync = () => gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px1);
   function probe() {
-    const sync = () => gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px1);
     draw(3.0); sync();                                       // warm up (driver compiles lazily)
     const t0 = performance.now();
     draw(3.0); sync(); draw(3.0); sync();
     return (performance.now() - t0) / 2;
   }
-
-  function pick(ms) {
-    // ~11ms leaves room at 60fps; at 30fps aim for ~22ms of gpu per frame
-    level = ms < 11 ? 0 : ms < 22 ? 1 : ms * 0.7225 < 22 ? 2 : 3;
+  // what a frame that costs ms on this rung would cost on rung L (cost follows the pixel count)
+  const costOn = (L, ms) => ms * (LEVELS[L].s / LEVELS[level].s) ** 2;
+  let settle = 0, nextT = 0, taken = 0, samples = [], upHold = 0, upAt = -1e9, upFails = 0;
+  function setLevel(L, now) {
+    L = Math.max(0, Math.min(LEVELS.length - 1, L));
+    if (L === level) return;
+    const was = LEVELS[level];
+    level = L;
+    samples = []; taken = 0; acc = n = bad = 0;
+    if (LEVELS[L].s !== was.s || LEVELS[L].rip !== was.rip) { size(); draw(now / 1000 * 0.55); }
+    settle = now + 400;
   }
-
-  function degrade() {
-    if (level >= LEVELS.length - 1) return;
-    const q = LEVELS[level].q;
-    level++;
-    acc = n = bad = 0;
-    if (LEVELS[level].q !== q) size();
+  // a rung is left downward when two timed frames running are over its budget (or the browser's
+  // own frame pacing says so, see loop), and upward when three running would fit the rung above
+  // with room to spare. a climb that does not hold is not tried again for a while, longer each time
+  function stepDown(to, now) {
+    if (now - upAt < 30000) upFails++;
+    upHold = now + Math.min(300000, 15000 * 2 ** upFails);
+    setLevel(to, now);
+  }
+  function judge(ms, now) {
+    samples.push(ms); if (samples.length > 3) samples.shift();
+    const k = samples.length, cur = LEVELS[level];
+    if (k >= 2 && Math.min(samples[k - 1], samples[k - 2]) > BUDGET[cur.fps]) {
+      if (level >= LEVELS.length - 1) return;
+      const m = Math.min(samples[k - 1], samples[k - 2]);
+      let L = level + 1;
+      while (L < LEVELS.length - 1 && costOn(L, m) > BUDGET[LEVELS[L].fps] * 0.9) L++;
+      stepDown(L, now);
+    } else if (level > 0 && k >= 3 && now > upHold && costOn(level - 1, Math.max(...samples)) <= BUDGET[LEVELS[level - 1].fps] * CLIMB) {
+      upAt = now;
+      setLevel(level - 1, now);
+    }
   }
 
   function loop(now) {
     raf = requestAnimationFrame(loop);
-    const iv = LEVELS[level].ms, el = now - last;
+    const iv = 1000 / LEVELS[level].fps, el = now - last;
     if (el < iv * 0.75) return;
-    // watch real pacing: two windows of 30 frames well over budget means the gpu can't keep up
+    // the browser's own pacing: two windows of 30 frames well over budget means the device cannot
+    // keep this rung up, whatever the gpu timing says (a busy page, a low-power mode)
     if (last && el < 250) {
       acc += el;
       if (++n === 30) {
-        if (acc / 30 > iv * 1.5) { if (++bad >= 2) degrade(); } else bad = 0;
+        if (acc / 30 > iv * 1.5) { if (++bad >= 2 && level < LEVELS.length - 1) stepDown(level + 1, now); } else bad = 0;
         acc = n = 0;
       }
     } else acc = n = 0;
     last = now;
+    // time a frame now and then: every half second while a rung is new, then every four. not
+    // while the page is scrolling the camera down (eye < 1), which is a different picture
+    const timed = now >= nextT && now >= settle && eye === 1;
+    const t0 = timed ? performance.now() : 0;
     draw(now / 1000 * 0.55);
+    if (timed) {
+      sync();
+      nextT = now + (taken++ < 6 ? 500 : 4000);
+      judge(performance.now() - t0, now);
+    }
   }
 
   const run = (on) => {
@@ -793,16 +875,25 @@ export function startSea(canvas, opts) {
   try { init(); } catch (e) { console.warn("sea shader:", e); return null; }
   setLook(); size();
   if (!reduced) {
-    pick(probe());
-    if (touch) level = Math.max(level, 1);                   // waves are slow, 30fps reads the same
-    if (LEVELS[level].q !== 1) size();
+    // a first guess from two cold frames, read generously (start-up timing runs slow): it only
+    // spares a slow gpu its first second on a rung it cannot hold. the loop decides from there
+    const ms = probe();
+    let L = 0;
+    while (L < LEVELS.length - 1 && costOn(L, ms) > BUDGET[LEVELS[L].fps] * 1.5) L++;
+    if (L) { const s0 = LEVELS[level].s; level = L; if (LEVELS[L].s !== s0 || !LEVELS[L].rip) size(); }
   }
   draw(3.0);
-  (document.fonts?.ready || Promise.resolve()).then(() => { size(); draw(3.0); });
-  const resized = () => { if (!lost) { size(); draw(performance.now() / 1000 * 0.55); } };
-  let rt = 0;
-  // resizing clears the canvas, so always redraw in the same frame (the phone url bar resizes
-  // the page while you scroll; skipping this left a stretched or blank sky)
+  (document.fonts?.ready || Promise.resolve()).then(() => { if (lost) return; wordKey = ""; size(); draw(3.0); });
+  let fitT = 0;
+  const resized = () => {
+    if (lost) return;
+    size(false); draw(performance.now() / 1000 * 0.55);
+    clearTimeout(fitT);
+    if (asp !== 1) fitT = setTimeout(() => { if (!lost && asp !== 1) { size(); draw(performance.now() / 1000 * 0.55); } }, 180);
+  };
+  // always redraw in the same frame as a resize (skipping this left a stretched or blank sky).
+  // when only the height moved, nothing is reallocated, repainted or uploaded and the title's
+  // style is not touched (see size and paintWord), so a sliding toolbar costs one plain frame
   new ResizeObserver(resized).observe(canvas);
   if ("IntersectionObserver" in window) {
     new IntersectionObserver(([e]) => {
@@ -821,7 +912,7 @@ export function startSea(canvas, opts) {
   run(true);
 
   return {
-    redraw() { if (lost) return; setLook(); size(); draw(performance.now() / 1000 * 0.55); },
+    redraw() { if (lost) return; wordKey = ""; setLook(); size(); draw(performance.now() / 1000 * 0.55); },
     // the camera sinking toward the surface (1 = standing height, toward 0 = lens at the water)
     setEye(v) { v = Math.max(0.08, Math.min(1, v)); if (v === eye) return; eye = v; if (reduced && !lost) draw(3.0); },
   };

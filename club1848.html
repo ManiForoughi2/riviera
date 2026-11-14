@@ -23,10 +23,11 @@
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="preload" href="assets/fonts/recia-600.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/recia-display.woff2?v=4" as="font" type="font/woff2" crossorigin>
-<link rel="preload" as="image" href="assets/sky/wide-day.webp" media="(min-aspect-ratio: 13/25) and (prefers-color-scheme: light)">
-<link rel="preload" as="image" href="assets/sky/wide-night.webp" media="(min-aspect-ratio: 13/25) and (prefers-color-scheme: dark)">
-<link rel="preload" as="image" href="assets/sky/tall-day.webp" media="(max-aspect-ratio: 13/25) and (prefers-color-scheme: light)">
-<link rel="preload" as="image" href="assets/sky/tall-night.webp" media="(max-aspect-ratio: 13/25) and (prefers-color-scheme: dark)">
+<!-- sky render for this screen: these queries mirror phoneFrame() in sea.js (phone-width and upright = tall) -->
+<link rel="preload" as="image" href="assets/sky/wide-day.webp" media="(min-width: 761px) and (prefers-color-scheme: light), (min-width: 504px) and (min-aspect-ratio: 697/1000) and (prefers-color-scheme: light), (orientation: landscape) and (prefers-color-scheme: light)">
+<link rel="preload" as="image" href="assets/sky/wide-night.webp" media="(min-width: 761px) and (prefers-color-scheme: dark), (min-width: 504px) and (min-aspect-ratio: 697/1000) and (prefers-color-scheme: dark), (orientation: landscape) and (prefers-color-scheme: dark)">
+<link rel="preload" as="image" href="assets/sky/tall-day.webp" media="(max-width: 503px) and (orientation: portrait) and (prefers-color-scheme: light), (max-width: 760px) and (max-aspect-ratio: 87/125) and (prefers-color-scheme: light)">
+<link rel="preload" as="image" href="assets/sky/tall-night.webp" media="(max-width: 503px) and (orientation: portrait) and (prefers-color-scheme: dark), (max-width: 760px) and (max-aspect-ratio: 87/125) and (prefers-color-scheme: dark)">
 <script>
   (function () {
     var d = document.documentElement, t = null;
@@ -49,12 +50,12 @@
     } catch (e) {}
   })();
 </script>
-<link rel="stylesheet" href="styles.css?v=e9aa154b">
-<link rel="stylesheet" href="css/m-global.css?v=e9aa154b">
-<link rel="stylesheet" href="css/m-perf.css?v=e9aa154b">
-<link rel="stylesheet" href="css/m-nav.css?v=e9aa154b">
-<link rel="stylesheet" href="css/m-home.css?v=e9aa154b">
-<link rel="stylesheet" href="css/m-pages.css?v=e9aa154b">
+<link rel="stylesheet" href="styles.css?v=f1aeb1b6">
+<link rel="stylesheet" href="css/m-global.css?v=f1aeb1b6">
+<link rel="stylesheet" href="css/m-perf.css?v=f1aeb1b6">
+<link rel="stylesheet" href="css/m-nav.css?v=f1aeb1b6">
+<link rel="stylesheet" href="css/m-home.css?v=f1aeb1b6">
+<link rel="stylesheet" href="css/m-pages.css?v=f1aeb1b6">
 </head>
 <body>
 
@@ -116,7 +117,6 @@
 </div>
 
 <main class="deep">
-  <div class="lens" aria-hidden="true"></div>
   <canvas class="water" aria-hidden="true"></canvas>
 
   <section class="page" id="benefits">
@@ -156,6 +156,6 @@
   <div class="wordmark" aria-hidden="true">PHI GAMMA DELTA</div>
 </footer>
 
-<script type="module" src="main.js?v=e9aa154b"></script>
+<script type="module" src="main.js?v=f1aeb1b6"></script>
 </body>
 </html>
