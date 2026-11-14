@@ -271,7 +271,13 @@ export function startWater(canvas, { deep, reduced, phone, dive, follow, onPlung
       } else if (reduced) p = target;
       else if (p !== target) p = target > p ? Math.min(1, p + dt / 0.85) : Math.max(0, p - dt / 0.7);
       if (!follow) burst = Math.max(0, burst - dt / 1.5);
-      const e = ease(p);
+      let e = ease(p);
+      // a fast scroll must never outrun the wash: once the dive has begun, the line is at least as far
+      // up as the scroll has carried the page, so nothing below ever shows over the sky above the water
+      if (!follow && !reduced && target === 1) {
+        const carried = Math.min(1, Math.max(0, (y - vhCss * 0.03) / (vhCss * 0.62)));
+        if (carried > e) { e = carried; if (carried >= 1) p = 1; }
+      }
       const rest = vhCss + 14 - Math.min(y, 140) * 0.3;          // at rest the water only laps at the bottom edge
       surf = rest + (-(vhCss * 0.1 + 150) - rest) * e;
       depth = p >= 1 ? Math.max(0, (y - y0) / vhCss) : 0;
