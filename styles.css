@@ -293,7 +293,7 @@ html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; back
    through, and it is clipped to the moving waterline (--cut, from under.js) so none of it shows
    above the water. as the line washes over, the scene above goes up and away: the camera dropped */
 :root { --pull: .36; }
-.dive .deep { margin-top: calc(var(--hh) * var(--pull) * -1); }
+.dive .surface { margin-bottom: calc(var(--hh) * (-1 - var(--pull))); }   /* one margin: adjoining negative margins collapse */
 .dive .deep::before { clip-path: inset(var(--cut, 0px) 0 0 0); }
 .dive .hero { transition: transform .95s cubic-bezier(.5, 0, .2, 1); }
 .dive.plunged .hero { transform: translate3d(0, -26%, 0) scale(1.08); }

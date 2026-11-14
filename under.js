@@ -176,7 +176,7 @@ export function startWater(canvas, { deep, reduced, phone, dive, onPlunge }) {
   // step down if the frames run long; a capable phone never sees the lower rungs
   const dpr = window.devicePixelRatio || 1;
   const LADDER = phone ? [Math.min(dpr, 3) * 0.6, 1.3, 1.0, 0.7, 0.5].filter((v, i, a) => i === 0 || v < a[0])
-                       : [Math.min(1, 0.6 * dpr), 0.75, 0.55];
+                       : [Math.min(1.4, 0.7 * dpr), 1.0, 0.75, 0.55].filter((v, i, a) => i === 0 || v < a[0]);
   let level = 0, scale = LADDER[0], W = 1, H = 1, lost = false, vhCss = innerHeight;
   const probe = document.createElement("i");
   probe.style.cssText = "position:absolute;visibility:hidden;pointer-events:none;width:var(--feather);height:var(--band)";
@@ -193,8 +193,8 @@ export function startWater(canvas, { deep, reduced, phone, dive, onPlunge }) {
     gl.uniform1f(U.uAmp, phone ? 0.8 : 1.0);
   }
   function size() {
-    // never more than about 1.5 million pixels, however large the window
-    scale = Math.min(LADDER[level], Math.sqrt(1.5e6 / Math.max(1, canvas.clientWidth * canvas.clientHeight)));
+    // never more than about 2.6 million pixels, however large the window
+    scale = Math.min(LADDER[level], Math.sqrt(2.6e6 / Math.max(1, canvas.clientWidth * canvas.clientHeight)));
     W = Math.max(1, Math.round(canvas.clientWidth * scale)); H = Math.max(1, Math.round(canvas.clientHeight * scale));
     if (canvas.width !== W) canvas.width = W;
     if (canvas.height !== H) canvas.height = H;
@@ -218,7 +218,7 @@ export function startWater(canvas, { deep, reduced, phone, dive, onPlunge }) {
   // the dive: p runs 0 (above) to 1 (under) on its own clock once it is asked to
   let target = 0, p = 0, burst = 0, y0 = 0, lastNow = 0, cutNow = -1, pSent = -1;
   const ease = (k) => k * k * k * (k * (k * 6 - 15) + 10);
-  let raf = 0, visible = true, t0 = performance.now(), blank = false, acc = 0, n = 0, slow = 0;
+  let raf = 0, visible = true, t0 = performance.now(), blank = false, acc = 0, n = 0, slow = 0, fast = 0, ups = 0;
   function draw(now) {
     const dt = lastNow ? Math.min(0.1, (now - lastNow) / 1000) : 0;
     lastNow = now;
@@ -264,7 +264,11 @@ export function startWater(canvas, { deep, reduced, phone, dive, onPlunge }) {
       acc += el;
       if (++n === 40) {
         api.frameMs = acc / 40;
-        if (api.frameMs > 21 && level < LADDER.length - 1) { if (++slow >= 2) { level++; slow = 0; size(); } } else slow = 0;
+        // down only after three slow windows in a row (one hitch from a video starting or a tab
+        // waking must not cost quality for good); back up after a long steady run, at most twice
+        if (api.frameMs > 21 && level < LADDER.length - 1) { fast = 0; if (++slow >= 3) { level++; slow = 0; size(); } }
+        else if (api.frameMs < 18 && level > 0 && ups < 2) { slow = 0; if (++fast >= 8) { level--; ups++; fast = 0; size(); } }
+        else { slow = 0; fast = 0; }
         acc = n = 0;
       }
     }
