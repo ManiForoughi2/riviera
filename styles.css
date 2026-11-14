@@ -528,6 +528,8 @@ a.card:active { transform: scale(.985); }
 .card-name { font: 500 clamp(24px, 2.3vw, 30px)/1.2 var(--serif); letter-spacing: -.006em; }
 .card-arrow { display: inline-block; color: var(--ua); transition: transform .4s var(--ease); }
 a.card:hover .card-arrow { transform: translateX(4px); }
+/* the info update card opens the form below it: its arrow points down while the form is open */
+a.card[aria-expanded="true"] .card-arrow { transform: rotate(90deg); }
 .card-what { font-size: 17px; line-height: 1.55; color: var(--u2); }
 .card-soon { margin-top: 4px; font: 600 14px/1.3 var(--body); color: var(--u3); }
 .lede { max-width: 900px; margin: -2svh auto 3svh; font-size: 19px; line-height: 1.5; color: var(--u2); }

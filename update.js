@@ -22,14 +22,21 @@ const section = document.querySelector("#update");
 const opener = document.querySelector('a.card[href="#update"]');
 if (section && opener) {
   if (location.hash !== "#update") section.hidden = true;
+  opener.setAttribute("aria-controls", "update");
+  const mark = () => opener.setAttribute("aria-expanded", String(!section.hidden));
+  mark();
+  // pressed again, it folds the form away
   opener.addEventListener("click", (e) => {
     e.preventDefault();
-    const was = section.hidden;
-    section.hidden = false;
-    if (was) section.classList.add("is-opening");
-    history.replaceState(null, "", "#update");
-    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    requestAnimationFrame(() => section.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "start" }));
+    const open = section.hidden;
+    section.hidden = !open;
+    section.classList.toggle("is-opening", open);
+    history.replaceState(null, "", open ? "#update" : location.pathname + location.search);
+    mark();
+    if (open) {
+      const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      requestAnimationFrame(() => section.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "start" }));
+    }
   });
 }
 
