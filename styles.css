@@ -194,7 +194,7 @@ html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; back
 
 /* ---------- the surface: the page title standing on the water (sea.js draws sky, sea, reflection) ---------- */
 /* the header holds still for one screen while the water below rises over it, then lets go */
-.surface { position: relative; z-index: 0; height: calc(var(--hh) * 2); margin-bottom: calc(var(--hh) * -1); }
+.surface { position: relative; z-index: 0; overflow-x: clip; height: calc(var(--hh) * 2); margin-bottom: calc(var(--hh) * -1); }
 .hero {
   --kw: min(51vw, 52svh);
   --sea-top: var(--hz);
@@ -300,6 +300,8 @@ html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; back
 .dive .deep::before { clip-path: inset(var(--cut, 0px) 0 0 0); }
 .dive .hero { transition: transform .95s cubic-bezier(.5, 0, .2, 1); }
 .dive.plunged .hero { transform: translate3d(0, -26%, 0) scale(1.08); }
+/* touch: no clock. the scene leaves by exactly as much as the finger has pulled the water over it (--dp, 0 to 1) */
+.dive.follow .hero { transition: none; transform: translate3d(0, calc(var(--dp, 0) * -22%), 0) scale(calc(1 + var(--dp, 0) * .06)); }
 @media (prefers-reduced-motion: reduce) { .dive .hero { transition: none; } .dive.plunged .hero { transform: none; } .js .strip, .js .strip::after { animation: none; } }
 
 /* ---------- type ---------- */
