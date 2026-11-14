@@ -1,5 +1,5 @@
-import { startSea } from "./sea.js?v=1baf0d6b";
-import { startWater } from "./under.js?v=1baf0d6b";
+import { startSea } from "./sea.js?v=0b9754fa";
+import { startWater } from "./under.js?v=0b9754fa";
 
 const root = document.documentElement;
 root.classList.add("js");                         // the head script waits for this before trusting its opening state
@@ -447,14 +447,14 @@ if (!reduced && finePointer) {
 
 // it is asked for here, apart from the modules above, so on a first visit it never stands between the
 // page and its splash; on a page reached through a page change it is already in the cache
-import("./transit.js?v=1baf0d6b")
+import("./transit.js?v=0b9754fa")
   .then((m) => m.startTransit({ root, reduced, phone: phoneMQ.matches, seaCanvas, menuIsOpen: () => menuOpen }))
   .catch(() => root.classList.remove("arriving"));
 
 // ---------- once the page is up and still: the next page and the next visit (idle.js) ----------
 // after the load, and never while the splash is playing: nothing may share the main thread with it
 {
-  const later = () => import("./idle.js?v=1baf0d6b").catch(() => {});
+  const later = () => import("./idle.js?v=0b9754fa").catch(() => {});
   const whenIdle = () => {
     if (root.classList.contains("splash")) return setTimeout(whenIdle, 500);
     window.requestIdleCallback ? requestIdleCallback(later, { timeout: 4000 }) : setTimeout(later, 1200);

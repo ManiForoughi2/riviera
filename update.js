@@ -17,6 +17,22 @@ const FORM = {
   },
 };
 
+// the form stays folded away until the "Info update" card is pressed (or the address ends in #update)
+const section = document.querySelector("#update");
+const opener = document.querySelector('a.card[href="#update"]');
+if (section && opener) {
+  if (location.hash !== "#update") section.hidden = true;
+  opener.addEventListener("click", (e) => {
+    e.preventDefault();
+    const was = section.hidden;
+    section.hidden = false;
+    if (was) section.classList.add("is-opening");
+    history.replaceState(null, "", "#update");
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    requestAnimationFrame(() => section.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "start" }));
+  });
+}
+
 const form = document.querySelector(".update");
 if (form) {
   const msg = form.querySelector(".up-msg");
