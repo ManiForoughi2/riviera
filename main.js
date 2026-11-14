@@ -1,9 +1,12 @@
-import { startSea } from "./sea.js?v=3380403a";
-import { startWater } from "./under.js?v=3380403a";
-import { startTransit } from "./transit.js?v=3380403a";
+import { startSea } from "./sea.js?v=b0a590b3";
+import { startWater } from "./under.js?v=b0a590b3";
 
 const root = document.documentElement;
 root.classList.add("js");                         // the head script waits for this before trusting its opening state
+// the splash's modules are asked for before the scenes are built, so they load while that work is done
+// (the head script has already preloaded them where the browser can)
+const splashMod = root.classList.contains("splash") ? import("./vendor/design-how/splash.js") : null;
+splashMod?.catch(() => {});                       // a failure is reported where it is awaited, below
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const theme = () => (root.getAttribute("data-theme") === "light" ? "light" : "dark");
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -121,7 +124,7 @@ if (root.classList.contains("splash")) {
       stage.setAttribute("aria-hidden", "true");
       document.body.append(stage);
       const [mod] = await Promise.all([
-        import("./vendor/design-how/splash.js"),
+        splashMod,
         Promise.race([document.fonts?.ready, new Promise((r) => setTimeout(r, 700))]),
       ]);
       // two frames, so sea.js has fitted the title between the islands before it is measured
@@ -435,5 +438,20 @@ if (!reduced && finePointer) {
   });
 }
 
-// ---------- changing pages (transit.js) ----------
-startTransit({ root, reduced, phone: phoneMQ.matches, seaCanvas, menuIsOpen: () => menuOpen });
+// it is asked for here, apart from the modules above, so on a first visit it never stands between the
+// page and its splash; on a page reached through a page change it is already in the cache
+import("./transit.js?v=b0a590b3")
+  .then((m) => m.startTransit({ root, reduced, phone: phoneMQ.matches, seaCanvas, menuIsOpen: () => menuOpen }))
+  .catch(() => root.classList.remove("arriving"));
+
+// ---------- once the page is up and still: the next page and the next visit (idle.js) ----------
+// after the load, and never while the splash is playing: nothing may share the main thread with it
+{
+  const later = () => import("./idle.js?v=b0a590b3").catch(() => {});
+  const whenIdle = () => {
+    if (root.classList.contains("splash")) return setTimeout(whenIdle, 500);
+    window.requestIdleCallback ? requestIdleCallback(later, { timeout: 4000 }) : setTimeout(later, 1200);
+  };
+  if (document.readyState === "complete") whenIdle();
+  else addEventListener("load", whenIdle, { once: true });
+}

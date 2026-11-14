@@ -57,16 +57,41 @@
         window.__splashT = setTimeout(function () { d.classList.remove("splash"); }, 3200);
       }
     } catch (e) {}
+    // second wave. the first frame cannot start until the css below has loaded, and this runs at the
+    // start of that frame, before its layout asks for any picture in the page. so these requests go
+    // out after the css (which the first paint needs whole, undiluted) and ahead of the film stills
+    // (on this host what is asked for first is delivered first, and a late script waits behind them):
+    //   the modules main.js imports and, when the splash is on, the splash's own three, which were
+    //   otherwise found only once main.js had run;
+    //   the sky render for this screen and this theme. the tags above have nearly always asked for
+    //   it already; they go by the device's colour scheme, and a theme picked with the switch on a
+    //   desktop can differ from it.
+    // (the text face the css asks for in this same frame's layout follows these by itself)
+    requestAnimationFrame(function () {
+      var add = function (rel, href, as) {
+        var l = document.createElement("link"); l.rel = rel; l.href = href;
+        if (as) l.as = as;
+        document.head.appendChild(l);
+      };
+      add("modulepreload", "sea.js?v=b0a590b3"); add("modulepreload", "under.js?v=b0a590b3");
+      if (d.classList.contains("splash")) ["splash", "wild-type", "loud-burst"].forEach(function (m) { add("modulepreload", "vendor/design-how/" + m + ".js"); });
+      try {
+        [].forEach.call(document.querySelectorAll('link[rel="preload"][as="image"][media]'), function (l) {
+          var m = /^(.*\/sky\/(?:tall|wide)-)(?:day|night)(\.webp.*)$/.exec(l.getAttribute("href"));
+          if (m && matchMedia(l.media).matches) add("preload", m[1] + (t === "light" ? "day" : "night") + m[2], "image");
+        });
+      } catch (e) {}
+    });
   })();
 </script>
-<link rel="stylesheet" href="styles.css?v=3380403a">
-<link rel="stylesheet" href="css/m-global.css?v=3380403a">
-<link rel="stylesheet" href="css/m-perf.css?v=3380403a">
-<link rel="stylesheet" href="css/m-nav.css?v=3380403a">
-<link rel="stylesheet" href="css/m-home.css?v=3380403a">
-<link rel="stylesheet" href="css/m-pages.css?v=3380403a">
-<link rel="stylesheet" href="css/chart.css?v=3380403a">
-<link rel="stylesheet" href="css/chart-m.css?v=3380403a">
+<link rel="stylesheet" href="styles.css?v=b0a590b3">
+<link rel="stylesheet" href="css/m-global.css?v=b0a590b3">
+<link rel="stylesheet" href="css/m-perf.css?v=b0a590b3">
+<link rel="stylesheet" href="css/m-nav.css?v=b0a590b3">
+<link rel="stylesheet" href="css/m-home.css?v=b0a590b3">
+<link rel="stylesheet" href="css/m-pages.css?v=b0a590b3">
+<link rel="stylesheet" href="css/chart.css?v=b0a590b3">
+<link rel="stylesheet" href="css/chart-m.css?v=b0a590b3">
 </head>
 <body>
 
@@ -184,7 +209,7 @@
   <div class="wordmark" aria-hidden="true">PHI GAMMA DELTA</div>
 </footer>
 
-<script type="module" src="main.js?v=3380403a"></script>
-<script type="module" src="chart.js?v=3380403a"></script>
+<script type="module" src="main.js?v=b0a590b3"></script>
+<script type="module" src="chart.js?v=b0a590b3"></script>
 </body>
 </html>
