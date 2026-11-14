@@ -1,0 +1,49 @@
+/* the chart room on phones (internships.html and faq.html only). desktop must stay unchanged.
+   the plan is drawn at twice the width so the lake, the butte and the stadium read at phone size;
+   the compass sits on its lower corner. everything is in place at load: nothing fades in on scroll. */
+
+@media (max-width: 760px) {
+  html.chart { --F: 76px; }
+  .chart .hero-sub .hero-base { bottom: calc(env(safe-area-inset-bottom) + var(--F) + 10px); }
+
+  /* the bar: bare over the sky, navy lacquer once the sheet is behind it */
+  html.chart.js .rail::before { opacity: 0; background: linear-gradient(180deg, #19223d, #0f172b); }
+  html.chart.js.on-sheet .rail::before { opacity: 1; box-shadow: 0 6px 10px -8px rgba(4, 8, 18, .8); }
+  html.chart.js .rail.open::before { opacity: 0; }
+
+  .plan-band .plan { --plan-h: 300px; --plan-w: 212vw; --plan-x: -34vw; --plan-y: -22vw; }
+  .plan-band .compass, .plan-band.is-west .compass { top: auto; bottom: -58px; left: auto; right: var(--g); --size: 178px; }
+  .plan-band .c-text { display: none; }
+  .plan-label { font-size: 10px; }
+  .lab-lake, .is-west .lab-lake { left: 36%; top: 19.3%; }
+  .lab-town { display: none; }
+  .plan-credit { margin-top: 40px; }
+
+  /* faq: full-row tap targets, every question on one line */
+  .ask { padding-top: 78px; }
+  .q summary {
+    min-height: 68px; gap: 14px; padding: 20px 2px; white-space: nowrap;
+    font-size: min(21px, calc((100vw - 2 * var(--g) - 44px) / 13.2)); line-height: 1.3;
+  }
+  .q p { padding: 0 2px 26px; font-size: 17px; }
+  .sheet-note { margin-top: 44px; font-size: 17px; text-wrap: balance; }
+  .sheet-note a { display: inline-block; padding-block: 13px; }
+
+  /* internships */
+  .sheet .logo-wall { padding-top: 74px; }
+}
+
+/* touch: a tapped logo shouldn't stay lit like it's selected */
+@media (max-width: 760px) and (hover: none) {
+  .sheet .logo:hover .logo-mark { color: inherit; }
+}
+
+/* landscape phones */
+@media (max-height: 500px) and (orientation: landscape) {
+  html.chart { --F: 70px; }
+}
+
+@media (max-width: 760px), (hover: none) and (pointer: coarse) {
+  /* the engraved plan is a large masked layer: paint it once and leave it alone */
+  .plan-ink { will-change: transform; }
+}

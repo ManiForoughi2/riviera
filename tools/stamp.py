@@ -2,9 +2,9 @@
 # run before each push: python3 tools/stamp.py
 import hashlib, re, pathlib
 root = pathlib.Path(__file__).resolve().parent.parent
-assets = ["styles.css", "main.js", "sea.js", "under.js"] + sorted(str(p.relative_to(root)) for p in (root / "css").glob("*.css"))
+assets = ["styles.css", "main.js", "sea.js", "under.js", "chart.js"] + sorted(str(p.relative_to(root)) for p in (root / "css").glob("*.css"))
 v = hashlib.sha1(b"".join((root / a).read_bytes() for a in assets)).hexdigest()[:8]
-pat = re.compile(r'((?:/|\./)?(?:styles\.css|css/m-[a-z]+\.css|main\.js|sea\.js|under\.js|members\.js))(?:\?v=[0-9a-f]+)?(["\'])')
+pat = re.compile(r'((?:/|\./)?(?:styles\.css|css/m-[a-z]+\.css|css/chart(?:-m)?\.css|main\.js|sea\.js|under\.js|chart\.js|members\.js))(?:\?v=[0-9a-f]+)?(["\'])')
 for f in list(root.glob("*.html")) + [root / "main.js"]:
     s = f.read_text()
     t = pat.sub(lambda m: f"{m.group(1)}?v={v}{m.group(2)}", s)
