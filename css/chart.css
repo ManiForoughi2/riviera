@@ -76,16 +76,12 @@ html.chart.sub { --hh: max(68svh, 480px); }
 .sheet .wrap { max-width: var(--wrap); margin: 0 auto; padding-inline: var(--g); }
 
 /* ---------- chrome over the sheet ----------
-   over the sky the bar is the site's own. these pages never go under water, so where the other pages
-   turn the bar to deep-water glass, here it becomes navy lacquer once the sheet is behind it
-   (chart.js sets .on-sheet). scoped to .js so that with scripts off the site's plain filled bar stays. */
+   the bar is the site's own glass in the page's theme, over the sky and over the sheet alike: light
+   glass on the day chart, dark glass on the night one. scoped to .js so that with scripts off the
+   site's plain filled bar stays. */
 html.chart.js .rail, html.chart.js .theme-toggle {
   --r-ink: var(--ink); --r-ink2: var(--ink-2); --r-accent: var(--accent-text);
   --r-fill: var(--glass); --r-lip: var(--glass-lip); --r-edge: var(--glass-edge);
-}
-html.chart.js.on-sheet .rail, html.chart.js.on-sheet .theme-toggle {
-  --r-ink: #ecdcc2; --r-ink2: rgba(236, 220, 194, .8); --r-accent: #cdb8f0;
-  --r-fill: rgba(17, 26, 48, .95); --r-lip: rgba(255, 255, 255, .15); --r-edge: rgba(0, 0, 0, .28);
 }
 html.chart.js .rail.open { --r-ink: var(--u); --r-ink2: var(--u2); --r-accent: var(--ua); }
 
