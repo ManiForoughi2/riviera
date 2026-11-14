@@ -1,5 +1,5 @@
-import { startSea } from "./sea.js?v=56012f33";
-import { startWater } from "./under.js?v=56012f33";
+import { startSea } from "./sea.js?v=f5f058b5";
+import { startWater } from "./under.js?v=f5f058b5";
 
 const root = document.documentElement;
 root.classList.add("js");                         // the head script waits for this before trusting its opening state
@@ -67,7 +67,16 @@ addEventListener("resize", aimLight, { passive: true });
 const themeMeta = document.querySelector('meta[name="theme-color"]');
 const scheme = matchMedia("(prefers-color-scheme: light)");
 const toggle = document.querySelector(".theme-toggle");
+// a theme change dissolves the whole page on the same clock as the sky going from sun to moon
+// (1.1s, the sea's own crossfade), so nothing below the hero flips while the scene is still turning
 function applyTheme(t) {
+  if (reduced || !document.startViewTransition) return setTheme(t);
+  root.classList.add("theming");
+  let vt;
+  try { vt = document.startViewTransition(() => setTheme(t)); } catch { root.classList.remove("theming"); return setTheme(t); }
+  vt.finished.finally(() => root.classList.remove("theming"));
+}
+function setTheme(t) {
   root.setAttribute("data-theme", t);
   if (themeMeta) themeMeta.content = BAR[t];
   toggle?.setAttribute("aria-label", t === "dark" ? "Switch to day" : "Switch to night");
