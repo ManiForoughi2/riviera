@@ -22,6 +22,7 @@ uniform float uFloor;            // how much light is left far below the surface
 uniform vec3 uMouse;             // pointer x, y in canvas px, z = presence 0..1
 uniform float uLean;             // -0.5..0.5, the light leans toward the pointer
 uniform float uAmp;              // swell size (smaller on phones)
+uniform float uSunX;             // where the hero's sun or moon stands, 0..1 across the screen
 
 float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float vnoise(vec2 p){
@@ -73,21 +74,23 @@ void main(){
   pl += normalize(m + 0.0001) * sin(ml * 44.0 - t * 5.5) * 0.05 * exp(-ml * 6.5) * uMouse.z;
   float c = caustic(pl * 0.42 + vec2(t * 0.012, t * 0.02), t * 0.6);
   float fog = exp(-(z - 1.0) * 0.20) * (1.0 - smoothstep(0.66, 1.0, v));
-  float window = exp(-v * 4.2);                                 // straight up, the sky shows through
+  float xn = fc.x / uRes.x;
+  float sunw = exp(-pow((xn - uSunX) * 2.4, 2.0));              // the light enters where the hero's sun or moon is
+  float window = exp(-v * 4.2) * (0.35 + 1.1 * sunw);           // and there, straight up, the sky shows through
   // lit water, not white: the brightest it gets is the surface colour lifted part of the way to the sky
   vec3 bright = mix(uW0, uSky, 0.42);
-  float ck = clamp((c * 0.62 + window * 0.16 + c * window * 0.5) * fog, 0.0, 0.86);
+  float ck = clamp((c * (0.34 + 0.4 * sunw) + window * 0.16 + c * window * 0.5) * fog, 0.0, 0.86);
   // right under the lip the surface mirrors the dark below it
   base *= 1.0 - 0.34 * exp(-max(d, 0.0) / (9.0 * uPx)) * (0.6 + 0.4 * vnoise(vec2(xa * 21.0, t * 0.4)));
 
   // shafts of light from the surface, with caustics travelling down them
-  float u1 = xa + s * (-0.46 + uLean * 0.5);
+  float u1 = xa + s * ((xn - uSunX) * 1.1 + uLean * 0.5);      // the shafts fan out from the sun's side
   float r = pow(vnoise(vec2(u1 * 2.6 + t * 0.04, t * 0.07)), 2.4) * 1.0
           + pow(vnoise(vec2(u1 * 6.4 - t * 0.06, 5.0 + t * 0.11)), 3.2) * 0.7
           + pow(vnoise(vec2(u1 * 15.0 + t * 0.09, 9.0 - t * 0.15)), 4.0) * 0.35;
   float fall = max(exp(-s * 1.15), uFloor) * smoothstep(0.0, 0.10, s);
   float c2 = caustic(vec2(u1 * 0.33, s * 0.7 - t * 0.02), t * 0.42);
-  vec3 light = uRay * r * fall * (0.62 + c2 * 1.6) * uLight;
+  vec3 light = uRay * r * fall * (0.62 + c2 * 1.6) * uLight * (0.5 + 0.9 * sunw);
 
   // the lip: light caught along the waterline, thicker and thinner as it goes
   float lw = (1.2 + 2.2 * vnoise(vec2(xa * 8.0 - t * 0.5, t * 0.35))) * uPx;
@@ -124,7 +127,7 @@ export function startWater(canvas, { deep, reduced, phone }) {
     const loc = gl.getAttribLocation(prog, "p");
     gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
     U = {};
-    for (const n of ["uRes", "uTime", "uSurf", "uVH", "uPx", "uFeather", "uBand", "uW0", "uW1", "uW2", "uSky", "uRay", "uLight", "uFloor", "uMouse", "uLean", "uAmp"]) U[n] = gl.getUniformLocation(prog, n);
+    for (const n of ["uRes", "uTime", "uSurf", "uVH", "uPx", "uFeather", "uBand", "uW0", "uW1", "uW2", "uSky", "uRay", "uLight", "uFloor", "uMouse", "uLean", "uAmp", "uSunX"]) U[n] = gl.getUniformLocation(prog, n);
   };
   try { build(); } catch (e) { console.warn("water shader:", e); return null; }
 
@@ -139,7 +142,7 @@ export function startWater(canvas, { deep, reduced, phone }) {
     const light = document.documentElement.getAttribute("data-theme") === "light";
     const v = (n) => hex(css.getPropertyValue(n).trim());
     gl.uniform3fv(U.uW0, v("--w0")); gl.uniform3fv(U.uW1, v("--w1")); gl.uniform3fv(U.uW2, v("--w2"));
-    gl.uniform3fv(U.uSky, light ? [0.96, 0.94, 0.86] : [0.50, 0.60, 0.82]);
+    gl.uniform3fv(U.uSky, light ? [1.0, 0.965, 0.886] : [0.62, 0.66, 0.76]);   // the hero sea's glint colours
     gl.uniform3fv(U.uRay, light ? [1.0, 0.86, 0.62] : [0.56, 0.68, 0.95]);
     gl.uniform1f(U.uLight, light ? 0.30 : 0.20);
     gl.uniform1f(U.uFloor, phone ? 0.0 : 0.16);
@@ -166,6 +169,7 @@ export function startWater(canvas, { deep, reduced, phone }) {
     document.addEventListener("pointerleave", () => { mTarget = 0; });
   }
 
+  let sunX = 0.5;
   let raf = 0, visible = true, last = 0, t0 = performance.now(), blank = false;
   function draw(now) {
     const cr = canvas.getBoundingClientRect();
@@ -182,6 +186,7 @@ export function startWater(canvas, { deep, reduced, phone }) {
     gl.uniform1f(U.uSurf, surf * scale);
     gl.uniform3f(U.uMouse, mx, my, mOn);
     gl.uniform1f(U.uLean, lean);
+    gl.uniform1f(U.uSunX, sunX);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
   const iv = phone ? 1000 / 30 : 1000 / 60;
@@ -208,5 +213,5 @@ export function startWater(canvas, { deep, reduced, phone }) {
   canvas.addEventListener("webglcontextlost", (e) => { e.preventDefault(); lost = true; run(false); });
   canvas.addEventListener("webglcontextrestored", () => { try { build(); } catch { return; } lost = false; redraw(); run(visible); });
   run(true);
-  return { redraw };
+  return { redraw, setSun(x) { if (isFinite(x)) sunX = Math.max(-0.2, Math.min(1.2, x)); } };
 }

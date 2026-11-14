@@ -1,5 +1,5 @@
-import { startSea } from "./sea.js?v=042c1b2d";
-import { startWater } from "./under.js?v=042c1b2d";
+import { startSea } from "./sea.js?v=98b58808";
+import { startWater } from "./under.js?v=98b58808";
 
 const root = document.documentElement;
 root.classList.add("js");                         // the head script waits for this before trusting its opening state
@@ -43,6 +43,17 @@ if (deep && waterCanvas) {
   }
 }
 
+// the light under the water comes from where the hero's sun or moon stands (sea.js publishes both
+// on the title once its sky has loaded)
+function aimLight() {
+  if (!water || !wordEl) return;
+  const v = parseFloat(wordEl.style.getPropertyValue(theme() === "light" ? "--hw-sun-x" : "--hw-moon-x"));
+  water.setSun((wordEl.getBoundingClientRect().left + v) / innerWidth);
+}
+aimLight();
+[400, 1500, 4000].forEach((ms) => setTimeout(aimLight, ms));
+addEventListener("resize", aimLight, { passive: true });
+
 // ---------- theme follows the device setting ----------
 const themeMeta = document.querySelector('meta[name="theme-color"]');
 const scheme = matchMedia("(prefers-color-scheme: light)");
@@ -53,6 +64,7 @@ function applyTheme(t) {
   toggle?.setAttribute("aria-label", t === "dark" ? "Switch to day" : "Switch to night");
   sea?.redraw();
   water?.redraw();
+  aimLight();
 }
 // phones always follow the phone's own setting; the saved pick is desktop-only
 function savedTheme() {
@@ -294,6 +306,8 @@ function frame() {
     root.classList.toggle("under", y > top - 72);
     root.classList.toggle("over", y <= top - 72);
   }
+  // the camera sinks: the hero sea's eye drops toward the water as the surface comes up the screen
+  if (sea && top > 0 && y < top * 1.2) sea.setEye(1 - 0.9 * Math.pow(clamp(y / top, 0, 1), 0.8));
   if (reduced || phoneMQ.matches) return;
   // every read first, then every write
   const boxes = drift.map(([el]) => el.getBoundingClientRect());

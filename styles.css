@@ -46,8 +46,9 @@
   --glass-lip: rgba(255, 255, 255, .14);
   --glass-edge: rgba(224, 193, 154, .16);
   --grain-op: .12;
-  /* night: the water column, surface to floor, lit by the moon */
-  --w0: #1e3152; --w1: #162742; --w2: #0f1c31; --w3: #0b1526; --w4: #080f1c; --w5: #060b15;
+  /* night: the water column, surface to floor, lit by the moon. the first stops are the hero sea's
+     own body and deep colours (sea.js LOOK), so the water you sink into is the water you were looking at */
+  --w0: #17233f; --w1: #111b33; --w2: #0c1528; --w3: #0a1322; --w4: #080f1c; --w5: #060b15;
   --deep-glass: rgba(8, 14, 26, .58);
   --sand-a: #2a3147; --sand-b: #1b2236;
   --sand-ink: rgba(236, 220, 194, .74); --sand-hot: #ecdcc2;
@@ -74,7 +75,7 @@
   --glass-edge: rgba(122, 90, 60, .2);
   --grain-op: .09;
   /* day: the same column with the sun in it */
-  --w0: #86afd6; --w1: #4b80b3; --w2: #244f7e; --w3: #1b3e68; --w4: #142e4e; --w5: #0f223b;
+  --w0: #3a6a95; --w1: #2c5a86; --w2: #22496f; --w3: #1b3e68; --w4: #142e4e; --w5: #0f223b;
   --deep-glass: rgba(15, 34, 59, .58);
   --sand-a: #e9d9bb; --sand-b: #d3bf9b;
   --sand-ink: rgba(25, 32, 58, .78); --sand-hot: #19203a;
@@ -254,7 +255,7 @@ html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; back
   background: radial-gradient(50% 50% at 50% 50%, var(--tag-haze) 0%, var(--tag-haze) 34%, transparent 100%);
 }
 :root { --tag-haze: rgba(9, 15, 28, .62); }
-:root[data-theme="light"] { --tag-haze: rgba(238, 229, 212, .82); }
+:root[data-theme="light"] { --tag-haze: rgba(240, 232, 216, .93); }
 .tagline {
   position: relative;
   font: 600 clamp(12px, 1.08vw, 15px)/1.4 var(--serif); letter-spacing: .3em; text-indent: .3em; text-transform: uppercase;
@@ -287,6 +288,8 @@ html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; back
    a strip that refracts whatever is behind it (the title, the sky, the sea) through moving noise.
    chromium takes the svg filter; other browsers keep the plain soft focus. pointer devices only */
 @media (hover: hover) and (pointer: fine) {
+  /* the line under the title stands clear of that strip, or it would swim at rest */
+  :root { --wh: calc(var(--m) + 26px); }
   .gl-water .lens {
     display: block; position: absolute; z-index: 0; left: 0; right: 0; pointer-events: none;
     top: calc(var(--m) * -1 - 40px); height: calc(var(--m) + 90px);
@@ -515,4 +518,59 @@ html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; back
   a, button, summary, label, .rail-menu, .theme-toggle, [role="button"] { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='-20 -20 296 296'%3E%3Cpath d='M239.55 226.65A8 8 0 0 1 232 232H24a8 8 0 0 1-5-14.25c1.63-1.3 38.53-30.26 98.29-33.45a120 120 0 0 1-3.29-37.93c1.73-21.71 10.91-50.63 42.95-72.48a66.3 66.3 0 0 0-15-1.87h-1.67c-19 .62-30.94 11.71-36.5 33.92A8 8 0 0 1 96 112a7.7 7.7 0 0 1-2-.24a8 8 0 0 1-5.82-9.7c9.25-36.95 33.11-45.42 51.5-46a81.4 81.4 0 0 1 21.68 2.45c-3.82-6.33-9.42-12.93-17.21-16.25c-10-4.24-22.17-2.39-36.31 5.51a8 8 0 0 1-7.8-14c18.74-10.45 35.72-12.54 50.48-6.2c12.49 5.36 20.73 15.78 25.88 25c6.17-9.64 13.87-16.17 22.38-18.94c11.86-3.87 24.64-.72 38 9.37a8 8 0 0 1-9.64 12.76c-8.91-6.73-16.77-9.06-23.34-6.93c-7.3 2.35-12.87 10-16.38 16.61A70.5 70.5 0 0 1 208 73.07c14.61 8.35 32 26.05 32 62.94a8 8 0 0 1-16 0c0-23.46-8.06-40-24-49a51 51 0 0 0-5.75-2.8a55.64 55.64 0 0 1 5.06 33.06a59.4 59.4 0 0 1-8.86 23.41a8 8 0 0 1-13.09-9.2c.75-1.09 16.33-24.38-3.26-49.37c-27 15.21-41.89 37.25-44.16 65.59a104.3 104.3 0 0 0 3.83 36.44c62.65 1.81 101.52 32.33 103.2 33.66a8 8 0 0 1 2.58 8.85M52 168a28 28 0 1 0-28-28a28 28 0 0 0 28 28' fill='%23e0c19a' stroke='%230d1322' stroke-width='18' stroke-linejoin='round' paint-order='stroke'/%3E%3C/svg%3E") 10 14, pointer; }
   .shot-film, .strip, .relic-film {  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='-20 -20 296 296'%3E%3Cpath d='M237.22 151.9v-.1a1.4 1.4 0 0 0-.07-.22a49 49 0 0 0-2.31-5.3L193.27 51.8a8 8 0 0 0-1.67-2.44a32 32 0 0 0-45.26 0A8 8 0 0 0 144 55v25h-32V55a8 8 0 0 0-2.34-5.66a32 32 0 0 0-45.26 0a8 8 0 0 0-1.67 2.44l-41.53 94.5a49 49 0 0 0-2.31 5.3a2 2 0 0 0-.07.21s0 .08 0 .11a48 48 0 0 0 90.32 32.51a47.5 47.5 0 0 0 2.9-16.59V96h32v71.83a47.5 47.5 0 0 0 2.9 16.59a48 48 0 0 0 90.32-32.51Zm-143.15 27a32 32 0 0 1-60.2-21.71l1.81-4.13A32 32 0 0 1 96 167.88v.12a32 32 0 0 1-1.93 10.94ZM203 198.07A32 32 0 0 1 160 168v-.11a32 32 0 0 1 60.32-14.78l1.81 4.13A32 32 0 0 1 203 198.07' fill='%23ecdcc2' stroke='%230d1322' stroke-width='18' stroke-linejoin='round' paint-order='stroke'/%3E%3C/svg%3E") 11 11, crosshair; }
   input { cursor: text; }
+}
+
+/* ==========================================================================================
+   HERO SCENE (design/hero): the title standing in the scene's light. Keep this block last.
+   The letters are DOM, the scene behind them is WebGL (sea.js), so sea.js publishes its light
+   on the title element and the letters pick it up here:
+     --hw-hz                    the sky render's colour at the horizon (the haze on the waterline)
+     --hw-sun-x/y, --hw-moon-x/y  where the sun and moon stand, px from the title's top left
+     --hw-lamp-r                how far their glare reaches;  --hw-mist-h  depth of the mist band
+   Without WebGL none of these are set and the letters fall back to the plain two-tone fill.
+   The colours are registered so a theme switch crossfades the letters with the scene (1.1s)
+   instead of snapping while the sky is still turning.
+   ========================================================================================== */
+@property --hw-ink  { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --hw-foot { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --hw-hz   { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --hw-sun  { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --hw-moon { syntax: "<color>"; inherits: true; initial-value: transparent; }
+.hero .word:not(.word-refl) {
+  /* night: cream letters, a touch cooler and dimmer toward the dark water, the moon's glare faint */
+  --hw-ink: var(--word);
+  --hw-foot: color-mix(in srgb, #8da0cc 20%, var(--word));
+  --hw-sun: rgba(255, 232, 196, 0);
+  --hw-moon: rgba(206, 220, 255, .12);
+  --hw-m: min(var(--hw-mist-h, 30px), .075em);   /* small titles keep most of their height clear */
+  background:
+    /* glare: the sun's bloom veils whatever stands near it, the letters included */
+    radial-gradient(circle at var(--hw-sun-x, 130%) var(--hw-sun-y, 30%),
+      var(--hw-sun) 0, color-mix(in srgb, var(--hw-sun) 46%, transparent) calc(var(--hw-lamp-r, 600px) * .26),
+      color-mix(in srgb, var(--hw-sun) 15%, transparent) calc(var(--hw-lamp-r, 600px) * .58), transparent var(--hw-lamp-r, 600px)),
+    radial-gradient(circle at var(--hw-moon-x, -30%) var(--hw-moon-y, 30%),
+      var(--hw-moon) 0, color-mix(in srgb, var(--hw-moon) 46%, transparent) calc(var(--hw-lamp-r, 600px) * .26),
+      color-mix(in srgb, var(--hw-moon) 15%, transparent) calc(var(--hw-lamp-r, 600px) * .58), transparent var(--hw-lamp-r, 600px)),
+    /* the same mist the scene lays along the horizon, rising a little way up the letters' feet */
+    linear-gradient(to top, transparent calc(.13em - 1px),
+      color-mix(in srgb, var(--hw-hz) 30%, transparent) .13em,
+      color-mix(in srgb, var(--hw-hz) 19%, transparent) calc(.13em + var(--hw-m) * .5),
+      color-mix(in srgb, var(--hw-hz) 11%, transparent) calc(.13em + var(--hw-m)),
+      color-mix(in srgb, var(--hw-hz) 4%, transparent) calc(.13em + var(--hw-m) * 2),
+      transparent calc(.13em + var(--hw-m) * 3)),
+    /* the face: its own colour, turning toward the light off the water near the waterline */
+    linear-gradient(to bottom, var(--hw-ink) 0%, var(--hw-ink) 50%, var(--hw-foot) 87%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  transition: --hw-ink 1.1s cubic-bezier(.45, 0, .55, 1), --hw-foot 1.1s cubic-bezier(.45, 0, .55, 1),
+    --hw-hz 1.1s cubic-bezier(.45, 0, .55, 1), --hw-sun 1.1s cubic-bezier(.45, 0, .55, 1),
+    --hw-moon 1.1s cubic-bezier(.45, 0, .55, 1);
+}
+:root[data-theme="light"] .hero .word:not(.word-refl) {
+  /* day: navy letters against the light, warmed at the foot, the sun's glare on the side nearest it */
+  --hw-foot: color-mix(in srgb, #6a4a52 34%, var(--word));
+  --hw-sun: rgba(255, 232, 196, .28);
+  --hw-moon: rgba(206, 220, 255, 0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero .word:not(.word-refl) { transition: none; }
 }
