@@ -205,5 +205,14 @@
     "kind": "wordmark",
     "aspect": 1.0194,
     "notes": "From elysiumjet.com header (white SVG): compass/jet emblem + Elysium PRIVATE JET. Matches graphic exactly."
+  },
+  {
+    "name": "GT Securities",
+    "file": "assets/logos/gt-securities.png",
+    "source_url": "supplied by the chapter (pasted in chat, 2026-11-14)",
+    "format": "png",
+    "kind": "wordmark",
+    "aspect": 7.2424,
+    "notes": "Swoosh and wordmark; the 'Member FINRA, SIPC' line is cropped off. Alpha-only mask made from the supplied JPEG-quality image, scaled 2x."
   }
 ]

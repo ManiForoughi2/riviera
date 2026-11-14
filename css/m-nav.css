@@ -63,7 +63,7 @@
   }
   /* the two rules close into one: the sheet folds back into the bar */
   .rail.open .rail-menu::before { background-position: 0 50%, 0 50%; }
-  .rail-menu:active { background: rgba(194, 159, 128, .14); }
+  .rail-menu:active { background: rgba(150, 110, 210, .14); }
 
   /* the sheet */
   .rail-links {

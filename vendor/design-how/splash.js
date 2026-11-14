@@ -51,8 +51,8 @@ const NAVY = "#19203a";
 const DEEP = "#0d1322";
 const PARCHMENT = "#ecdcc2";
 const PAPER = "#e9dcc6";
-const BRASS = "#c29f80";
-const BRASS_HI = "#e0c19a";
+const BRASS = "#6a3fa8";
+const BRASS_HI = "#b89ae6";
 const SEA = "#7293bd";
 
 const THEMES = {

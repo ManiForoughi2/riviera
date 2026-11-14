@@ -1,7 +1,8 @@
 /* FIJI at Arizona State. static, no build.
    one continuous take: the title stands on the water at the surface, the page sinks under it,
    and everything below floats in the same water column down to the sand.
-   navy, parchment, brass and sea blue come from the chapter's own graphics; Recia is self-hosted. */
+   navy, parchment and sea blue come from the chapter's own graphics, royal purple is FIJI's colour;
+   Recia is self-hosted. the --brass names are kept, they hold the purple now. */
 
 @font-face { font-family: "Recia"; src: url("assets/fonts/recia-500.woff2") format("woff2"); font-weight: 500; font-display: swap; }
 @font-face { font-family: "Recia"; src: url("assets/fonts/recia-600.woff2") format("woff2"); font-weight: 600; font-display: swap; }
@@ -27,36 +28,36 @@
   --navy-deep: #0d1322;
   --parchment: #ecdcc2;
   --umber: #3e3428;
-  --brass: #c29f80;
-  --brass-hi: #e0c19a;
-  --brass-ink: #7a5a3c;
+  --brass: #6a3fa8;
+  --brass-hi: #b89ae6;
+  --brass-ink: #4a2380;
 
   /* under the surface the type is the same in both themes: parchment in the water */
   --u: #ecdcc2;
   --u2: rgba(236, 220, 194, .8);
   --u3: rgba(236, 220, 194, .6);
-  --ua: #efd3ab;
+  --ua: #cdb8f0;
 
   /* night (default): above the surface */
   --bg: #0d1322;
   --ink: #ecdcc2;
   --ink-2: rgba(236, 220, 194, .72);
-  --accent-text: #e0c19a;
+  --accent-text: #cdb8f0;
   --word: #ecdcc2;
   --sky: linear-gradient(to bottom, #0a1020 0%, #0f182c 40%, #18253f 78%, #22324f 100%);
   --haze: rgba(194, 159, 128, .16);
   --sea-fallback: linear-gradient(to bottom, #1a2a44, #101b30 60%, #0d1322);
   --glass: rgba(13, 19, 34, .5); --glass-solid: rgba(13, 19, 34, .88);
   --glass-lip: rgba(255, 255, 255, .14);
-  --glass-edge: rgba(224, 193, 154, .16);
+  --glass-edge: rgba(205, 184, 240, .16);
   --grain-op: .12;
   /* night: the water column, surface to floor, lit by the moon. the first stops are the hero sea's
      own body and deep colours (sea.js LOOK), so the water you sink into is the water you were looking at */
-  --w0: #17233f; --w1: #111b33; --w2: #0c1528; --w3: #0a1322; --w4: #080f1c; --w5: #060b15;
-  --deep-glass: rgba(8, 14, 26, .58);
-  --sand-a: #2a3147; --sand-b: #1b2236;
+  --w0: #1e1842; --w1: #171236; --w2: #100c2a; --w3: #0d0a23; --w4: #0a081c; --w5: #070616;
+  --deep-glass: rgba(11, 8, 27, .58);
+  --sand-a: #312948; --sand-b: #211a37;
   --sand-ink: rgba(236, 220, 194, .74); --sand-hot: #ecdcc2;
-  --sand-mark: #474e68;
+  --sand-mark: #50456a;
   --splash: #0d1322;
 
   --hh: max(100svh, 620px);
@@ -69,18 +70,18 @@
   --bg: #e9dcc6;
   --ink: #19203a;
   --ink-2: rgba(25, 32, 58, .74);
-  --accent-text: #7a5a3c;
+  --accent-text: #5a2f92;
   --word: #19203a;
   --sky: linear-gradient(to bottom, #efe5d3 0%, #e9e2d4 38%, #d2dbe2 80%, #bccbdb 100%);
   --haze: rgba(194, 159, 128, .22);
   --sea-fallback: linear-gradient(to bottom, #9db4d0, #7f9dc4 60%, #7293bd);
   --glass: rgba(244, 232, 212, .55); --glass-solid: rgba(244, 232, 212, .92);
   --glass-lip: rgba(255, 255, 255, .8);
-  --glass-edge: rgba(122, 90, 60, .2);
+  --glass-edge: rgba(90, 47, 146, .2);
   --grain-op: .09;
   /* day: the same column with the sun in it */
-  --w0: #3a6a95; --w1: #2c5a86; --w2: #22496f; --w3: #1b3e68; --w4: #142e4e; --w5: #0f223b;
-  --deep-glass: rgba(15, 34, 59, .58);
+  --w0: #44499a; --w1: #363a8a; --w2: #2b2d72; --w3: #27236b; --w4: #1d1a50; --w5: #17143d;
+  --deep-glass: rgba(24, 15, 59, .58);
   --sand-a: #e9d9bb; --sand-b: #d3bf9b;
   --sand-ink: rgba(25, 32, 58, .78); --sand-hot: #19203a;
   --sand-mark: #bca580;
@@ -111,7 +112,7 @@ a { color: inherit; text-decoration: none; }
 h1, h2, h3, p, ul, ol, figure { margin: 0; padding: 0; }
 ul, ol { list-style: none; }
 svg { display: block; }
-::selection { background: var(--brass); color: var(--navy); }
+::selection { background: var(--brass); color: #fff; }
 :focus-visible { outline: 2px solid var(--brass-hi); outline-offset: 3px; border-radius: 4px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
@@ -146,18 +147,18 @@ html.arriving.clearing::before {
 .splash-stage canvas { display: block; }
 @media (prefers-reduced-motion: reduce) { html.splash::before { display: none; } }
 
-/* ---------- brushed-brass button ---------- */
+/* ---------- the button: royal purple with a soft sheen (the class keeps its old name) ---------- */
 .btn-brass {
   --mx: 0px; --my: 0px; --press: 1;
   position: relative; display: inline-flex; align-items: center; justify-content: center;
   padding: 15px 24px; border: 0; border-radius: 10px;
   font: 600 15px/1 var(--serif); letter-spacing: .1em; text-indent: .1em; text-transform: uppercase;
-  color: var(--navy);
+  color: #f6efe3;
   background:
     var(--grain) 0 0 / 120px 120px,
-    linear-gradient(170deg, #f3e0bf 0%, #dcbf98 30%, #c29f80 68%, #94704f 100%);
+    linear-gradient(170deg, #9d7cd2 0%, #7650b3 30%, #5a3093 68%, #3d1c6b 100%);
   background-blend-mode: soft-light, normal;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), inset 0 -1px 0 rgba(80, 52, 28, .35), 0 2px 3px rgba(40, 26, 12, .28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .34), inset 0 -1px 0 rgba(22, 6, 46, .45), 0 2px 3px rgba(18, 8, 36, .32);
   transform: translate(var(--mx), var(--my)) scale(var(--press));
   transition: transform .5s var(--ease), filter .25s ease;
   white-space: nowrap; -webkit-tap-highlight-color: transparent;
@@ -196,7 +197,7 @@ html.arriving.clearing::before {
 .rail-brand { padding: 8px 12px 8px 10px; font: 600 16px/1 var(--serif); letter-spacing: .1em; text-indent: .1em; color: var(--r-accent); border-radius: 8px; transition: color .3s ease; }
 .rail-links { display: flex; align-items: center; gap: 2px; }
 .rail-link { padding: 10px 14px; border-radius: 8px; font: 600 14px/1 var(--body); color: var(--r-ink2); transition: color .2s ease, background-color .2s ease; }
-.rail-link:hover, .rail-brand:hover { color: var(--r-ink); background: rgba(194, 159, 128, .16); }
+.rail-link:hover, .rail-brand:hover { color: var(--r-ink); background: rgba(150, 110, 210, .16); }
 .rail-link:active { opacity: .7; }
 .rail-link[aria-current="page"] { color: var(--r-accent); }
 .rail .btn-brass { margin-left: 2px; }
@@ -500,6 +501,14 @@ html.arriving.clearing::before {
 .week-foot { margin-top: 6svh; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 22px 40px; }
 .who { display: flex; flex-wrap: wrap; gap: 14px 44px; }
 .chairs { font-size: 18px; line-height: 1.4; color: var(--u); }
+/* a second block on the same page: it starts well below the water's bright band, not under it */
+.page.page-next { padding-top: 6svh; }
+.page-next > .title { margin-bottom: 4svh; }
+/* history */
+.story .perks, .page-next .faq { max-width: 900px; }
+.values { max-width: 900px; margin: 0 auto; padding: 0; list-style: none; }
+.values li { padding: clamp(4px, 1svh, 10px) 0; font: 500 clamp(36px, 5.6vw, 76px)/1.06 var(--serif); letter-spacing: -.014em; }
+.values li:nth-child(even) { padding-left: 1.2em; color: var(--u2); }
 .chairs span { display: block; font-size: 15px; font-weight: 600; color: var(--ua); margin-bottom: 4px; }
 
 /* faq */

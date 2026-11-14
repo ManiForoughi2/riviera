@@ -26,18 +26,18 @@ html.chart {
   --s-ink: #ecdcc2;
   --s-ink2: rgba(236, 220, 194, .78);
   --s-ink3: rgba(236, 220, 194, .6);
-  --s-accent: #e0c19a;
+  --s-accent: #cdb8f0;
   --s-tex: var(--grain); --s-tex-size: 180px 180px; --s-blend: soft-light;
   --plan-ink: #cfae86; --plan-op: .5;
   --dots: rgba(236, 220, 194, .42);
-  --course: #e0c19a;
+  --course: #cdb8f0;
 }
 html.chart[data-theme="light"] {
   --s-bg: #e9dcc6;
   --s-ink: #19203a;
   --s-ink2: rgba(25, 32, 58, .8);
   --s-ink3: rgba(25, 32, 58, .72);
-  --s-accent: #6b4a28;
+  --s-accent: #5a2f92;
   --s-tex: var(--fiber); --s-tex-size: 300px 300px; --s-blend: multiply;
   --plan-ink: #19203a; --plan-op: .52;
   --dots: rgba(25, 32, 58, .4);
@@ -84,7 +84,7 @@ html.chart.js .rail, html.chart.js .theme-toggle {
   --r-fill: var(--glass); --r-lip: var(--glass-lip); --r-edge: var(--glass-edge);
 }
 html.chart.js.on-sheet .rail, html.chart.js.on-sheet .theme-toggle {
-  --r-ink: #ecdcc2; --r-ink2: rgba(236, 220, 194, .8); --r-accent: #e0c19a;
+  --r-ink: #ecdcc2; --r-ink2: rgba(236, 220, 194, .8); --r-accent: #cdb8f0;
   --r-fill: rgba(17, 26, 48, .95); --r-lip: rgba(255, 255, 255, .15); --r-edge: rgba(0, 0, 0, .28);
 }
 html.chart.js .rail.open { --r-ink: var(--u); --r-ink2: var(--u2); --r-accent: var(--ua); }
