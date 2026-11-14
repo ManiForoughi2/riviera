@@ -20,8 +20,10 @@ const sea = seaCanvas ? startSea(seaCanvas, { getTheme: theme, reduced, hero: he
 // the title face may land after the first paint; repaint the reflection with the real letters
 document.fonts?.ready.then(() => sea?.redraw());
 if (sea) heroEl.classList.add("gl-sea");
-// the reflection ripple is SMIL; freeze it for reduced motion
-if (reduced) document.querySelector("svg")?.pauseAnimations?.();
+// the reflection ripple is SMIL; freeze it for reduced motion. and with the webgl sea running
+// nothing shows it at all (the css reflection is display: none), so its clock is stopped: left
+// running, it asks the browser for a frame sixty times a second on every page, forever
+if (reduced || sea) document.querySelector("svg")?.pauseAnimations?.();
 
 // ---------- under the surface: the lit water (under.js) ----------
 const deep = document.querySelector(".deep");
@@ -39,6 +41,8 @@ if (deep && waterCanvas) {
   if (dive) root.classList.add("dive");
   water = startWater(waterCanvas, {
     deep, reduced, phone: phoneMQ.matches, dive, follow: touchDive,
+    // while the water is over the whole screen the hero behind it is not drawn (it is still pinned there)
+    onCover: (c, now) => sea?.setCovered(c, now),
     // the camera sinks with the wash: the hero sea's eye drops to the surface as the line comes over the lens
     onPlunge: (e) => {
       sea?.setEye(1 - 0.9 * e);
@@ -240,6 +244,20 @@ if (strips.length && !reduced && "IntersectionObserver" in window) {
   strips.forEach((v) => stio.observe(v));
   document.addEventListener("visibilitychange", tick);
   setInterval(tick, 1500);
+  // the panes' sway and sheen are css animations, and the sheen restyles and repaints its pane on
+  // every frame wherever the page is. more than a screen away they are paused; when a pane comes
+  // back within a screen each is put on its own clock again (the start time it always had), so it
+  // is exactly where it would have been had it never stopped. (a second in, so they have started)
+  if (typeof CSSAnimation !== "undefined" && Element.prototype.getAnimations) {
+    const hold = new IntersectionObserver((entries) => {
+      for (const e of entries) for (const a of e.target.getAnimations({ subtree: true })) {
+        if (!(a instanceof CSSAnimation)) continue;
+        if (e.isIntersecting) { if (a.playState === "paused" && a._t0 != null) a.startTime = a._t0; }
+        else if (a.playState === "running" && a.startTime != null) { a._t0 = a.startTime; a.pause(); }
+      }
+    }, { rootMargin: "100% 0px" });
+    setTimeout(() => strips.forEach((v) => hold.observe(v.parentElement)), 1000);
+  }
 }
 
 // ---------- sign-in shell: accounts aren't live yet, so say so on submit ----------

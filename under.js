@@ -14,6 +14,16 @@
 
 const VERT = "attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }";
 
+// the swell of the waterline, in screen heights: four waves; on the pages where the line rests on
+// screen (uLive) they run LIVE_GAIN higher and one slow wave is added (LIVE_WAVE); and while the lens
+// is going through (uBurst) all of it is thrown about by BOOST and one fast wave added (KICK). the
+// shader is written from these numbers and so is reachOf, which the script uses to know where no
+// water can be: change the swell here and both follow. (anything else that can lift the line must
+// be added to reachOf. uDip only flattens troughs, so it needs nothing)
+const SWELL = [0.074, 0.034, 0.011, 0.0032], LIVE_GAIN = 0.3, LIVE_WAVE = 0.006, BOOST = 0.9, KICK = 0.07;
+// the furthest the line can stand from uSurf, in screen heights at uAmp 1 (a noise term is within +-0.5, the sine within +-1)
+const reachOf = (burst, live) => (SWELL.reduce((a, b) => a + b, 0) / 2 * (1 + LIVE_GAIN * live) + LIVE_WAVE * live) * (1 + BOOST * burst) + KICK / 2 * burst;
+
 const FRAG = `
 precision highp float;
 uniform vec2 uRes;        // canvas px
@@ -103,12 +113,13 @@ void main(){
 
   // the waterline: a slow swell, shorter ones crossing it, chop; all of it thrown about as the lens goes through
   float tw = t * (1.0 + 1.5 * uLive);
-  float sw = (vnoise(vec2(xa * 0.9 + tw * 0.11, tw * 0.07)) - 0.5) * 0.074
-           + (vnoise(vec2(xa * 2.9 - tw * 0.23, 3.0 + tw * 0.13)) - 0.5) * 0.034
-           + (vnoise(vec2(xa * 8.0 + tw * 0.42, 7.0 - tw * 0.3)) - 0.5) * 0.011
-           + (vnoise(vec2(xa * 24.0 - tw * 0.9, 11.0 + tw * 0.5)) - 0.5) * 0.0032;
-  sw = sw * (1.0 + 0.3 * uLive) + sin(t * 0.9 + xa * 1.7) * 0.006 * uLive;
-  sw = sw * (1.0 + uBurst * 0.9) + (vnoise(vec2(xa * 6.0 + t * 2.6, t * 3.1)) - 0.5) * 0.07 * uBurst;
+  float sw = (vnoise(vec2(xa * 0.9 + tw * 0.11, tw * 0.07)) - 0.5) * ${SWELL[0]}
+           + (vnoise(vec2(xa * 2.9 - tw * 0.23, 3.0 + tw * 0.13)) - 0.5) * ${SWELL[1]}
+           + (vnoise(vec2(xa * 8.0 + tw * 0.42, 7.0 - tw * 0.3)) - 0.5) * ${SWELL[2]}
+           + (vnoise(vec2(xa * 24.0 - tw * 0.9, 11.0 + tw * 0.5)) - 0.5) * ${SWELL[3]};
+  sw = sw * (1.0 + ${LIVE_GAIN} * uLive) + sin(t * 0.9 + xa * 1.7) * ${LIVE_WAVE} * uLive;
+  // (with no burst these terms change nothing, and under 1e-9 they cannot move a pixel: skipped, they save a noise lookup)
+  if (uBurst > 1.0e-9) sw = sw * (1.0 + uBurst * ${BOOST}) + (vnoise(vec2(xa * 6.0 + t * 2.6, t * 3.1)) - 0.5) * ${KICK} * uBurst;
   // where the line rests at the foot of a header there is nothing behind it below that foot, so a
   // trough flattens out as it nears it (crests are left alone)
   if (uDip < 50.0) { float dn = max(sw, 0.0); sw = min(sw, 0.0) + uDip * (1.0 - exp(-dn / uDip)); }
@@ -133,17 +144,24 @@ void main(){
   float sunw = exp(-pow((xn - uSunX) * 2.4, 2.0));              // the light enters where the hero's sun or moon is
   float D = 0.36 * uVH / (1.0 + uDepth * 2.4);
   float v = clamp(d / D, 0.0, 1.0);
-  float z = 1.0 / (1.0 - v * 0.965);
-  vec2 pl = vec2((xn - 0.5) * asp * z * 0.62, z * 0.62);
-  vec2 m = (fc - uMouse.xy) / uVH;
-  float ml = length(m * vec2(1.0, 2.4));
-  pl += normalize(m + 0.0001) * sin(ml * 44.0 - t * 5.5) * 0.05 * exp(-ml * 6.5) * uMouse.z;
-  float c = caustic(pl * 0.42 + vec2(t * 0.012, t * 0.02), t * (0.6 + 0.5 * uLive));
-  float fog = exp(-(z - 1.0) * 0.20) * (1.0 - smoothstep(0.66, 1.0, v)) * exp(-uDepth * 0.9);
-  float window = exp(-v * 4.2) * (0.35 + 1.1 * sunw);
   vec3 bright = mix(uW0, uSky, 0.42);                           // lit water, never white
-  float ck = clamp((c * (0.34 + 0.4 * sunw) + window * 0.16 + c * window * 0.5) * fog, 0.0, 0.86);
-  base *= 1.0 - 0.34 * exp(-max(d, 0.0) / (9.0 * uPx)) * (0.6 + 0.4 * vnoise(vec2(xa * 21.0, t * 0.4)));
+  // the surface is only overhead down to D below the line: past it (v = 1) this factor of its fog
+  // is 0, so ck is 0 and none of it is worked out. once the camera is under, that is most of the screen
+  float clear = 1.0 - smoothstep(0.66, 1.0, v);
+  float ck = 0.0;
+  if (clear > 0.0) {
+    float z = 1.0 / (1.0 - v * 0.965);
+    vec2 pl = vec2((xn - 0.5) * asp * z * 0.62, z * 0.62);
+    vec2 m = (fc - uMouse.xy) / uVH;
+    float ml = length(m * vec2(1.0, 2.4));
+    pl += normalize(m + 0.0001) * sin(ml * 44.0 - t * 5.5) * 0.05 * exp(-ml * 6.5) * uMouse.z;
+    float c = caustic(pl * 0.42 + vec2(t * 0.012, t * 0.02), t * (0.6 + 0.5 * uLive));
+    float fog = exp(-(z - 1.0) * 0.20) * clear * exp(-uDepth * 0.9);
+    float window = exp(-v * 4.2) * (0.35 + 1.1 * sunw);
+    ck = clamp((c * (0.34 + 0.4 * sunw) + window * 0.16 + c * window * 0.5) * fog, 0.0, 0.86);
+  }
+  // the dark seam under the line: 200 px down its factor is 1 to the last bit of a float
+  if (d < 200.0 * uPx) base *= 1.0 - 0.34 * exp(-max(d, 0.0) / (9.0 * uPx)) * (0.6 + 0.4 * vnoise(vec2(xa * 21.0, t * 0.4)));
 
   // shafts of light fanning out from the sun's side, caustics travelling down them, dying with depth
   float u1 = xa + s * ((xn - uSunX) * 1.1 + uLean * 0.5);
@@ -174,10 +192,16 @@ void main(){
 
   // the lip: light caught along the waterline, with a soft bloom so the line is never a cut,
   // and froth torn off it while the lens is going through
-  float lw = (1.2 + 2.2 * vnoise(vec2(xa * 8.0 - t * 0.5, t * 0.35))) * uPx;
-  float lip = exp(-(d * d) / (lw * lw)) * (0.35 + 0.8 * vnoise(vec2(xa * 26.0 + t * 0.7, 2.0)));
+  // (the lip is at most 3.4 px wide: 48 px from the line it has underflowed to exactly 0. the froth
+  // is the burst's alone. neither is worked out where it is nothing)
+  float lip = 0.0;
+  if (abs(d) < 48.0 * uPx) {
+    float lw = (1.2 + 2.2 * vnoise(vec2(xa * 8.0 - t * 0.5, t * 0.35))) * uPx;
+    lip = exp(-(d * d) / (lw * lw)) * (0.35 + 0.8 * vnoise(vec2(xa * 26.0 + t * 0.7, 2.0)));
+  }
   float halo = exp(-abs(d) / (7.0 * uPx)) * 0.20;
-  float froth = uBurst * smoothstep(0.48, 0.78, vnoise(vec2(xa * 13.0 + t * 0.8, ys * 24.0 - t * 5.0)))
+  float froth = 0.0;
+  if (uBurst > 1.0e-9) froth = uBurst * smoothstep(0.48, 0.78, vnoise(vec2(xa * 13.0 + t * 0.8, ys * 24.0 - t * 5.0)))
               * exp(-abs(d) / (0.075 * uVH)) * 0.85;
   vec3 lipc = bright * (lip + halo) + mix(bright, uSky, 0.7) * froth;
 
@@ -193,7 +217,7 @@ void main(){
 const hex = (h) => { const n = parseInt(h.replace("#", ""), 16); return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; };
 const NAMES = ["uRes", "uTime", "uSurf", "uCol", "uVH", "uPx", "uFeather", "uBand", "uW3At", "uW4At", "uW5At", "uW4", "uW5", "uFade", "uLive", "uW0", "uW1", "uW2", "uW3", "uSky", "uRay", "uLight", "uFloor", "uMouse", "uLean", "uAmp", "uSunX", "uBurst", "uDepth", "uRise", "uDip"];
 
-export function startWater(canvas, { deep, reduced, phone, dive, follow, onPlunge }) {
+export function startWater(canvas, { deep, reduced, phone, dive, follow, onPlunge, onCover }) {
   const gl = canvas.getContext("webgl", { alpha: true, premultipliedAlpha: true, antialias: false, depth: false, stencil: false });
   if (!gl) return null;
   let U = {};
@@ -210,6 +234,8 @@ export function startWater(canvas, { deep, reduced, phone, dive, follow, onPlung
     gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
     U = {};
     for (const n of NAMES) U[n] = gl.getUniformLocation(prog, n);
+    gl.enable(gl.SCISSOR_TEST);                   // draw only draws the rows that can hold water
+    gl.clearColor(0, 0, 0, 0);
   };
   try { build(); } catch (e) { console.warn("water shader:", e); return null; }
 
@@ -218,7 +244,7 @@ export function startWater(canvas, { deep, reduced, phone, dive, follow, onPlung
   const dpr = window.devicePixelRatio || 1;
   const LADDER = phone ? [Math.min(dpr, 3) * 0.6, 1.3, 1.0, 0.7, 0.5].filter((v, i, a) => i === 0 || v < a[0])
                        : [Math.min(1.4, 0.7 * dpr), 1.0, 0.75, 0.55].filter((v, i, a) => i === 0 || v < a[0]);
-  let level = 0, scale = LADDER[0], W = 1, H = 1, lost = false, vhCss = innerHeight;
+  let level = 0, scale = LADDER[0], W = 1, H = 1, lost = false, vhCss = innerHeight, amp = 1;
   const probe = document.createElement("i");
   probe.style.cssText = "position:absolute;visibility:hidden;pointer-events:none;width:var(--feather);height:var(--band)";
   const lapProbe = document.createElement("i");
@@ -235,7 +261,8 @@ export function startWater(canvas, { deep, reduced, phone, dive, follow, onPlung
     gl.uniform3fv(U.uRay, light ? [1.0, 0.86, 0.62] : [0.56, 0.68, 0.95]);
     gl.uniform1f(U.uLight, light ? 0.30 : 0.20);
     gl.uniform1f(U.uFloor, 0.14);
-    gl.uniform1f(U.uAmp, phone ? 0.8 : 1.0);
+    amp = phone ? 0.8 : 1.0;                      // kept: draw needs it to know how high the line can stand
+    gl.uniform1f(U.uAmp, amp);
   }
   function size() {
     // never more than about 2.6 million pixels, however large the window
@@ -272,7 +299,9 @@ export function startWater(canvas, { deep, reduced, phone, dive, follow, onPlung
   const unease = (v) => { let lo = 0, hi = 1; for (let i = 0; i < 14; i++) { const m = (lo + hi) / 2; if (ease(m) < v) lo = m; else hi = m; } return hi; };
   const clamp01 = (v) => Math.min(1, Math.max(0, v));
   let raf = 0, visible = true, t0 = performance.now(), blank = false, acc = 0, n = 0, slow = 0, fast = 0, ups = 0;
-  function draw(now) {
+  let overNow = false;
+  // still: draw the frame again without moving the pointer's easing on (see the splash, below)
+  function draw(now, still) {
     const dt = lastNow ? Math.min(0.1, (now - lastNow) / 1000) : 0;
     lastNow = now;
     const colTop = deep.getBoundingClientRect().top, y = scrollY;
@@ -328,12 +357,26 @@ export function startWater(canvas, { deep, reduced, phone, dive, follow, onPlung
     // far below there is nothing left to draw but a little light: phones stop painting there
     // (it fades out over most of a screen first, so the change is never a step)
     const fade = phone ? Math.min(1, Math.max(0, 1 - (depth - 2.6) / 0.8)) : 1;
-    if (fade <= 0 && burst <= 0) {
-      if (!blank) { gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); blank = true; }
+    // where the water can be. the line never stands more than reach from surf (reachOf, by the
+    // shader), and above it, past the 26 px its lip may glow into, the shader leaves every pixel
+    // clear. so:
+    //  - once that height is off the top of the screen, water is all there is to see: under the
+    //    line this canvas is opaque (and where a phone fades it out far below, the css column is).
+    //    whatever lies behind can stop drawing until the line comes back, and onCover says so
+    //    (main.js hands it to the hero's sea, which stays pinned there for another screen or two)
+    //  - the rows above that height are not drawn at all (scissor, further down). at rest on the
+    //    home page, where the water only laps at the foot of the screen, that is nine tenths of them
+    const reach = reachOf(air, dive ? 0 : 1) * amp * vhCss;
+    const over = surf + reach < -4;
+    if (over !== overNow) { overNow = over; onCover?.(over, now); }
+    const top = Math.max(0, Math.min(H, Math.floor((surf - reach - 26) * scale) - 2));    // first canvas row that can hold water
+    // (nor is there anything to draw while the whole line is under the foot of the screen)
+    if (top >= H || (fade <= 0 && burst <= 0)) {
+      if (!blank) { gl.scissor(0, 0, W, H); gl.clear(gl.COLOR_BUFFER_BIT); blank = true; }
       return;
     }
     blank = false;
-    mOn += (mTarget - mOn) * 0.06; lean += (leanTarget - lean) * 0.04;
+    if (!still) { mOn += (mTarget - mOn) * 0.06; lean += (leanTarget - lean) * 0.04; }
     gl.uniform1f(U.uTime, reduced ? 12.0 : (now - t0) / 1000);
     gl.uniform1f(U.uFade, fade);
     gl.uniform1f(U.uSurf, surf * scale);
@@ -344,33 +387,73 @@ export function startWater(canvas, { deep, reduced, phone, dive, follow, onPlung
     gl.uniform3f(U.uMouse, cx * scale, cy * scale, mOn);
     gl.uniform1f(U.uLean, lean);
     gl.uniform1f(U.uSunX, sunX);
+    // the rows over the water are cleared, not shaded: the same clear pixels the shader would write
+    // (cleared by hand because two draws can share a frame, and the line may have moved between them)
+    gl.scissor(0, 0, W, H);
+    if (top > 0) gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.scissor(0, 0, W, H - top);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
+  // a frame cap is not load. where the browser holds a page to 30 frames a second whatever it draws
+  // (an iPhone in Low Power Mode does), every window below reads slow on every rung, and the canvas
+  // used to walk down to the lowest rung and stay there for nothing. so the pace at the top rung is
+  // kept on the way down (topMs), and if the bottom rung is no faster, the descent bought nothing:
+  // the canvas goes back to the top and that pace counts as normal from then on (capMs, kept for
+  // the visit so the next page does not walk down again). one window of quicker frames clears it,
+  // and it is concluded at most twice a page, so a phone that is only busy cannot flap between rungs.
+  // a phone whose frames do get quicker on a lower rung never comes this way: for it nothing changed
+  let topMs = 0, capMs = 0, caps = 0;
+  try { capMs = +sessionStorage.getItem("asufiji-cap") || 0; } catch {}
+  const setCap = (ms) => { capMs = ms; try { if (ms) sessionStorage.setItem("asufiji-cap", ms.toFixed(1)); else sessionStorage.removeItem("asufiji-cap"); } catch {} };
+  // the splash (first page of a visit) covers the whole screen for its two seconds. nothing is drawn
+  // under it, and its heavy frames are not held against this canvas; the frame it would have shown is
+  // drawn in the same task that lifts the cover (the observer below), so the page opens on the same picture
+  const rootEl = document.documentElement;
+  let veiled = rootEl.classList.contains("splash"), veilAt = 0;
   let prev = 0;
   function loop(now) {
     raf = requestAnimationFrame(loop);
+    if (veiled) { veilAt = lastNow = now; prev = 0; mOn += (mTarget - mOn) * 0.06; lean += (leanTarget - lean) * 0.04; api.pre?.(now); return; }
     // watch real pacing: two windows of 40 frames well over budget and the canvas drops a rung
     const el = now - prev; prev = now;
     if (el > 0 && el < 200 && !blank) {
       acc += el;
       if (++n === 40) {
-        api.frameMs = acc / 40;
+        const ms = api.frameMs = acc / 40;
+        if (capMs && ms < capMs * 0.85) setCap(0);                        // quicker frames after all: no cap
+        const slowNow = ms > 21 && !(capMs && ms < capMs * 1.15);         // the capped pace is not slow
+        const quick = capMs ? ms < capMs * 1.08 : ms < 18;
         // down only after three slow windows in a row (one hitch from a video starting or a tab
         // waking must not cost quality for good); back up after a long steady run, at most twice
-        if (api.frameMs > 21 && level < LADDER.length - 1) { fast = 0; if (++slow >= 3) { level++; slow = 0; size(); } }
-        else if (api.frameMs < 18 && level > 0 && ups < 2) { slow = 0; if (++fast >= 8) { level--; ups++; fast = 0; size(); } }
+        if (slowNow && level < LADDER.length - 1) { fast = 0; if (++slow >= 3) { if (!level) topMs = ms; level++; slow = 0; size(); } }
+        else if (slowNow && level > 0 && topMs && ms > topMs * 0.9 && caps < 2) { fast = 0; if (++slow >= 2) { caps++; setCap(ms); level = 0; slow = 0; size(); } }
+        else if (quick && level > 0 && ups < 2) { slow = 0; if (++fast >= 8) { level--; ups++; fast = 0; size(); } }
         else { slow = 0; fast = 0; }
         acc = n = 0;
       }
     }
     api.pre?.(now);                               // whatever moves the page this frame goes first, so the water is drawn where the page is
     draw(now);
+    // nothing drawn and nothing in motion (a phone far down the page): the loop stops too, so a page
+    // at rest asks nothing of the phone sixty times a second. the next scroll starts it again, in
+    // the same frame (a frame's scroll events come before its callbacks), so nothing is late.
+    // (never while the smooth wheel is riding this loop through api.pre, nor in a timed dive)
+    if (blank && burst <= 0 && !airing && !api.pre && (follow || !dive)) { cancelAnimationFrame(raf); raf = 0; }
   }
   const run = (on) => {
     if (on && !raf && !lost && !reduced) { prev = 0; lastNow = 0; raf = requestAnimationFrame(loop); }
     if (!on && raf) { cancelAnimationFrame(raf); raf = 0; }
   };
-  const redraw = () => { if (!lost) { look(); size(); draw(performance.now()); } };
+  if (veiled) {
+    const lift = new MutationObserver(() => {
+      if (rootEl.classList.contains("splash")) return;
+      lift.disconnect(); veiled = false;
+      if (!lost) draw(veilAt || performance.now(), true);
+    });
+    lift.observe(rootEl, { attributes: true, attributeFilter: ["class"] });
+  }
+  const wake = () => run(visible && document.visibilityState === "visible");
+  const redraw = () => { if (!lost) { look(); size(); draw(performance.now()); wake(); } };
   const api = {
     redraw, frameMs: 0, pre: null,
     get scale() { return scale; },
@@ -383,6 +466,7 @@ export function startWater(canvas, { deep, reduced, phone, dive, follow, onPlung
       if (v === target) return;
       target = v;
       if (v) { airing = true; y0 = Math.min(scrollY, vhCss * 0.15); }
+      wake();
       if (reduced) draw(performance.now());
     },
   };
@@ -390,10 +474,14 @@ export function startWater(canvas, { deep, reduced, phone, dive, follow, onPlung
   look(); size(); draw(performance.now());
   new ResizeObserver(redraw).observe(canvas);
   new ResizeObserver(redraw).observe(deep);         // the column's stops move when the page grows
-  document.addEventListener("visibilitychange", () => run(visible && document.visibilityState === "visible"));
+  document.addEventListener("visibilitychange", wake);
+  addEventListener("scroll", () => { if (!raf) wake(); }, { passive: true });
   // reduced motion: no loop, but the still frame has to follow the page
   if (reduced) addEventListener("scroll", () => requestAnimationFrame(() => draw(performance.now())), { passive: true });
-  canvas.addEventListener("webglcontextlost", (e) => { e.preventDefault(); lost = true; run(false); });
+  canvas.addEventListener("webglcontextlost", (e) => {
+    e.preventDefault(); lost = true; run(false);
+    if (overNow) { overNow = false; onCover?.(false, performance.now()); }     // a lost canvas covers nothing
+  });
   canvas.addEventListener("webglcontextrestored", () => { try { build(); } catch { return; } lost = false; redraw(); run(visible); });
   run(true);
   return api;
