@@ -323,6 +323,41 @@ addEventListener("scroll", queue, { passive: true });
 addEventListener("resize", queue, { passive: true });
 frame();
 
+// ---------- smooth wheel ----------
+// a mouse wheel notch moves the page a little less far and eases into it, so nothing is jumped past.
+// the page still scrolls natively (this only decides where to), so sticky parts, anchors, the keyboard
+// and every scroll listener work as before. a trackpad already sends a smooth stream of its own: its
+// small deltas are followed almost directly, never eased twice. touch is left alone, and so is
+// reduced motion
+if (!reduced && finePointer && !phoneMQ.matches) {
+  let goal = scrollY, cur = scrollY, rate = 8, moving = false, last = 0;
+  const limit = () => document.documentElement.scrollHeight - innerHeight;
+  const step = (now) => {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    cur += (goal - cur) * (1 - Math.exp(-dt * rate));
+    if (Math.abs(goal - cur) < 0.5) { cur = goal; moving = false; }
+    scrollTo(0, cur);
+    if (moving) requestAnimationFrame(step);
+  };
+  addEventListener("wheel", (e) => {
+    if (e.ctrlKey || e.metaKey || e.defaultPrevented || menuOpen || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    // anything that scrolls on its own inside the page keeps its wheel
+    for (let n = e.target; n && n !== document.documentElement; n = n.parentElement) {
+      if (n.scrollHeight > n.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(n).overflowY)) return;
+    }
+    e.preventDefault();
+    const px = e.deltaY * (e.deltaMode === 1 ? 34 : e.deltaMode === 2 ? innerHeight : 1);
+    const notch = e.deltaMode !== 0 || Math.abs(px) >= 60;     // a wheel click, not a trackpad stream
+    if (!moving) cur = goal = scrollY;
+    goal = clamp(goal + px * (notch ? 0.72 : 1), 0, limit());
+    rate = notch ? 7.5 : 26;
+    if (!moving) { moving = true; last = performance.now(); requestAnimationFrame(step); }
+  }, { passive: false });
+  // the keyboard, an anchor or a dragged scrollbar moved the page: take it from there
+  addEventListener("scroll", () => { if (moving && Math.abs(scrollY - cur) > 3) { cur = goal = scrollY; moving = false; } }, { passive: true });
+  root.style.scrollBehavior = "auto";
+}
+
 // ---------- club 1848: back from stripe checkout ----------
 const slip = document.querySelector(".slip");
 if (slip && new URLSearchParams(location.search).has("joined")) {
