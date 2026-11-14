@@ -1,5 +1,5 @@
-import { startSea } from "./sea.js?v=e9aa154b";
-import { startWater } from "./under.js?v=e9aa154b";
+import { startSea } from "./sea.js?v=7ef46f9c";
+import { startWater } from "./under.js?v=7ef46f9c";
 
 const root = document.documentElement;
 root.classList.add("js");                         // the head script waits for this before trusting its opening state
@@ -28,19 +28,18 @@ const deep = document.querySelector(".deep");
 const waterCanvas = document.querySelector(".water");
 let water = null;
 if (deep && waterCanvas) {
-  // the canvas rides with the screen; it is never taller than the water it sits in
-  const sizeStage = () => {
-    const m = parseFloat(getComputedStyle(root).getPropertyValue("--m")) || 72;
-    deep.style.setProperty("--sh", Math.round(Math.min(window.innerHeight + m + 120, deep.offsetHeight + m)) + "px");
-  };
+  // home: going under is an event the page triggers (see the scroll loop). the shorter pages keep
+  // the waterline tied to the scroll, because their water is already on screen at rest
+  const dive = !root.classList.contains("sub") && !!document.querySelector(".overture");
   root.classList.add("gl-water");
-  sizeStage();
-  water = startWater(waterCanvas, { deep, reduced, phone: phoneMQ.matches });
+  water = startWater(waterCanvas, {
+    deep, reduced, phone: phoneMQ.matches, dive,
+    // the camera sinks with the wash: the hero sea's eye drops to the surface as the line comes over the lens
+    onPlunge: (e) => sea?.setEye(1 - 0.9 * e),
+  });
   if (!water) root.classList.remove("gl-water");
-  else {
-    new ResizeObserver(sizeStage).observe(deep);
-    addEventListener("resize", sizeStage, { passive: true });
-  }
+  else if (dive) { root.classList.add("dive"); water.redraw(); }
+  window.__water = water;                         // read by hand when checking frame times
 }
 
 // the light under the water comes from where the hero's sun or moon stands (sea.js publishes both
@@ -198,44 +197,19 @@ if (shots.length && "IntersectionObserver" in window) {
   document.addEventListener("visibilitychange", sync);
   setInterval(sync, 2000);                        // a refused or interrupted play() gets another go
 }
-// the three tall cuts. on desktop every one that is on screen plays; on phones the ones in view
-// take turns. no cut loops on a jump: near its end it dissolves into its own still (which is its
-// first frame) and starts again from there. a slow watchdog restarts anything that should be
-// playing and is not (a play() the browser refused, a tab that was away)
+// the three tall cuts: every one that is on screen plays, each a plain loop of full-length shots
+// that restarts on a clean cut. a slow watchdog restarts anything that should be playing and is not
 const strips = [...document.querySelectorAll(".strip video")];
 if (strips.length && !reduced && "IntersectionObserver" in window) {
   const near = new Set();
-  let turn = 0, current = null;
-  const start = (v, rewind) => {
-    v.loop = false;
-    if (rewind || v.ended || (v.duration && v.currentTime > v.duration - 0.05)) { try { v.currentTime = 0; } catch {} }
-    v.play().catch(() => {});
-  };
   const tick = () => {
-    if (document.visibilityState !== "visible") return;
-    if (!phoneMQ.matches) {
-      for (const v of strips) {
-        if (near.has(v)) { if (v.paused) start(v); }
-        else if (!v.paused) v.pause();
-      }
-      return;
+    const live = document.visibilityState === "visible";
+    for (const v of strips) {
+      v.loop = true;
+      if (live && near.has(v)) { if (v.paused) v.play().catch(() => {}); }
+      else if (!v.paused) v.pause();
     }
-    if (current && !near.has(current)) { current.pause(); current = null; }
-    if (current && !current.paused) return;
-    if (current && !current.ended) return start(current);
-    for (let i = 0; i < strips.length; i++) {
-      const c = strips[(turn + i) % strips.length];
-      if (!near.has(c)) continue;
-      current = c; turn = (turn + i + 1) % strips.length;
-      return start(c, true);
-    }
-    current = null;
   };
-  strips.forEach((v) => {
-    v.addEventListener("playing", () => v.classList.add("on"));
-    v.addEventListener("timeupdate", () => { if (v.duration && v.currentTime > v.duration - 0.5) v.classList.remove("on"); });
-    v.addEventListener("ended", () => { v.classList.remove("on"); if (current === v) current = null; setTimeout(tick, 320); });
-  });
   const stio = new IntersectionObserver((entries) => {
     for (const e of entries) e.isIntersecting ? near.add(e.target) : near.delete(e.target);
     tick();
@@ -292,22 +266,31 @@ const setVar = (el, k, v) => {
   const c = el._sv || (el._sv = {});
   if (c[k] !== v) { c[k] = v; el.style.setProperty(k, v); }
 };
-let queued = false, state = "";
+let queued = false, state = "", plunged = false;
 function frame() {
   queued = false;
   const vh = innerHeight, y = scrollY;
   const top = deep ? deep.offsetTop : 0;          // where the water starts = the header's height
 
   // chrome: bare at the very top, sky glass while the header holds, water once the surface passes it
-  const s = (y < 8 ? "at-top " : "") + (y > top - 72 ? "under" : "over");
+  // home: a short way into the scroll the camera goes under, by itself and all the way; it comes back
+  // up the same way near the top. the two thresholds are apart so it cannot flutter between them
+  const diving = root.classList.contains("dive");
+  if (diving) {
+    const hh = heroEl.offsetHeight;
+    if (!plunged && y > Math.max(64, hh * 0.08)) { plunged = true; water.setPlunge(1); root.classList.add("plunged"); }
+    else if (plunged && y < Math.max(34, hh * 0.04)) { plunged = false; water.setPlunge(0); root.classList.remove("plunged"); }
+  }
+  const under = diving ? plunged : y > top - 72;
+  const s = (y < 8 ? "at-top " : "") + (under ? "under" : "over");
   if (s !== state) {
     state = s;
     root.classList.toggle("at-top", y < 8);
-    root.classList.toggle("under", y > top - 72);
-    root.classList.toggle("over", y <= top - 72);
+    root.classList.toggle("under", under);
+    root.classList.toggle("over", !under);
   }
   // the camera sinks: the hero sea's eye drops toward the water as the surface comes up the screen
-  if (sea && top > 0 && y < top * 1.2) sea.setEye(1 - 0.9 * Math.pow(clamp(y / top, 0, 1), 0.8));
+  if (!diving && sea && top > 0 && y < top * 1.2) sea.setEye(1 - 0.9 * Math.pow(clamp(y / top, 0, 1), 0.8));
   if (reduced || phoneMQ.matches) return;
   // every read first, then every write
   const boxes = drift.map(([el]) => el.getBoundingClientRect());
