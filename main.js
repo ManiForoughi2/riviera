@@ -1,5 +1,6 @@
 import { startSea } from "./sea.js?v=14786981";
 import { startWater } from "./under.js?v=14786981";
+import { startTransit } from "./transit.js";
 
 const root = document.documentElement;
 root.classList.add("js");                         // the head script waits for this before trusting its opening state
@@ -433,3 +434,6 @@ if (!reduced && finePointer) {
     });
   });
 }
+
+// ---------- changing pages (transit.js) ----------
+startTransit({ root, reduced, phone: phoneMQ.matches, seaCanvas, menuIsOpen: () => menuOpen });

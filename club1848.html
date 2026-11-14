@@ -34,6 +34,16 @@
     try { if (!matchMedia("(max-width: 760px), (hover: none) and (pointer: coarse)").matches) t = localStorage.getItem("asufiji-theme"); } catch (e) {}
     if (t !== "light" && t !== "dark") t = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
     d.setAttribute("data-theme", t);
+    // reached from another page of the site a moment ago: the page opens under a sheet of water
+    // (styles.css) and transit.js lifts it. the timer is only a backstop for a script that never arrives
+    try {
+      var n = +sessionStorage.getItem("asufiji-nav");
+      sessionStorage.removeItem("asufiji-nav");
+      if (n && Date.now() - n < 5000 && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        d.classList.add("arriving");
+        window.__arriveT = setTimeout(function () { d.classList.remove("arriving"); }, 2600);
+      }
+    } catch (e) {}
     // the page opens at the surface: bare chrome over the sky. main.js keeps these in step with
     // the scroll; if it never arrives, fall back to the plain filled bar
     d.classList.add("at-top", "over");

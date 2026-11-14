@@ -122,6 +122,27 @@ svg { display: block; }
    no cover; if main.js never arrives the head script drops the class by itself. */
 html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; background: var(--splash); }
 .splash-stage { position: fixed; inset: 0; z-index: 201; pointer-events: none; }
+
+/* ---------- changing pages (transit.js) ----------
+   a page reached from another page of the site opens under a sheet of water (.arriving, set by the
+   head script) and the sheet lifts off. on desktop a canvas takes the cover over and moves it through
+   a cloudy mask; on phones the cover itself lifts, through one sliding mask. the nav stays above it */
+html.arriving::before, .veil { content: ""; position: fixed; inset: 0; z-index: 40; pointer-events: none; }
+html.arriving::before, .veil-ghost { background: linear-gradient(to bottom, var(--w2), var(--w4)); }
+canvas.veil { display: block; width: 100%; height: 100%; }
+html.arriving.clearing::before, .veil-ghost {
+  -webkit-mask-size: 100% 500%; mask-size: 100% 500%;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+}
+html.arriving.clearing::before {
+  -webkit-mask-image: var(--veil-mask); mask-image: var(--veil-mask);
+  animation: veil-slide .6s cubic-bezier(.16, 1, .3, 1) both;
+}
+.veil-ghost { animation: veil-slide .34s cubic-bezier(.45, 0, .55, 1) both; }
+@keyframes veil-slide {
+  from { -webkit-mask-position: 0 0; mask-position: 0 0; }
+  to { -webkit-mask-position: 0 100%; mask-position: 0 100%; }
+}
 .splash-stage canvas { display: block; }
 @media (prefers-reduced-motion: reduce) { html.splash::before { display: none; } }
 
@@ -167,6 +188,16 @@ html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; back
   --r-ink: var(--u); --r-ink2: var(--u2); --r-accent: var(--ua);
   --r-fill: var(--deep-glass); --r-lip: rgba(255, 255, 255, .1); --r-edge: rgba(236, 220, 194, .12);
 }
+/* under the sheet of a page change the nav reads as it does under water */
+.veiled .rail, .veiled .theme-toggle, .arriving .rail, .arriving .theme-toggle {
+  --r-ink: var(--u); --r-ink2: var(--u2); --r-accent: var(--ua);
+  --r-fill: var(--deep-glass); --r-lip: rgba(255, 255, 255, .1); --r-edge: rgba(236, 220, 194, .12);
+}
+/* the mark under the tabs (transit.js, desktop): one poured shape, drawn behind the words */
+.rail-pour { position: absolute; z-index: -1; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.rail-pour path { fill: var(--r-pour, rgba(194, 159, 128, .2)); transition: fill .4s ease; }
+.under .rail, .veiled .rail, .arriving .rail { --r-pour: rgba(236, 220, 194, .15); }
+.liquid .rail-link:hover, .liquid .rail-brand:hover { background: none; }
 .rail-brand { padding: 8px 12px 8px 10px; font: 600 16px/1 var(--serif); letter-spacing: .1em; text-indent: .1em; color: var(--r-accent); border-radius: 8px; transition: color .3s ease; }
 .rail-links { display: flex; align-items: center; gap: 2px; }
 .rail-link { padding: 10px 14px; border-radius: 8px; font: 600 14px/1 var(--body); color: var(--r-ink2); transition: color .2s ease, background-color .2s ease; }
