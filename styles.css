@@ -6,6 +6,10 @@
 @font-face { font-family: "Recia"; src: url("assets/fonts/recia-500.woff2") format("woff2"); font-weight: 500; font-display: swap; }
 @font-face { font-family: "Recia"; src: url("assets/fonts/recia-600.woff2") format("woff2"); font-weight: 600; font-display: swap; }
 @font-face { font-family: "Recia"; src: url("assets/fonts/recia-700.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+/* the three files above hold Latin; everything else the face has (Latin Extended, fractions, small figures) is in these and loads only if a page uses it */
+@font-face { font-family: "Recia"; src: url("assets/fonts/recia-500-ext.woff2") format("woff2"); font-weight: 500; font-display: swap; unicode-range: U+0100-0130,U+0132-0137,U+0139-0148,U+014C-0151,U+0154-017E,U+0192,U+0218-021B,U+0237,U+02C7,U+02D8-02D9,U+02DB,U+02DD,U+0326,U+1E80-1E85,U+1EF2-1EF3,U+2070,U+2074-2079,U+2080-2089,U+20A8,U+2113,U+2126,U+212E,U+2150-2151,U+2153-215E,U+2202,U+2206,U+220F,U+2211,U+221A,U+221E,U+222B,U+2248,U+2260,U+2264-2265,U+25CA,U+E000-F8FF,U+FB00-FB04; }
+@font-face { font-family: "Recia"; src: url("assets/fonts/recia-600-ext.woff2") format("woff2"); font-weight: 600; font-display: swap; unicode-range: U+0100-0130,U+0132-0137,U+0139-0148,U+014C-0151,U+0154-017E,U+0192,U+0218-021B,U+0237,U+02C7,U+02D8-02D9,U+02DB,U+02DD,U+0326,U+1E80-1E85,U+1EF2-1EF3,U+2070,U+2074-2079,U+2080-2089,U+20A8,U+2113,U+2126,U+212E,U+2150-2151,U+2153-215E,U+2202,U+2206,U+220F,U+2211,U+221A,U+221E,U+222B,U+2248,U+2260,U+2264-2265,U+25CA,U+E000-F8FF,U+FB00-FB04; }
+@font-face { font-family: "Recia"; src: url("assets/fonts/recia-700-ext.woff2") format("woff2"); font-weight: 700; font-display: swap; unicode-range: U+0100-0130,U+0132-0137,U+0139-0148,U+014C-0151,U+0154-017E,U+0192,U+0218-021B,U+0237,U+02C7,U+02D8-02D9,U+02DB,U+02DD,U+0326,U+1E80-1E85,U+1EF2-1EF3,U+2070,U+2074-2079,U+2080-2089,U+20A8,U+2113,U+2126,U+212E,U+2150-2151,U+2153-215E,U+2202,U+2206,U+220F,U+2211,U+221A,U+221E,U+222B,U+2248,U+2260,U+2264-2265,U+25CA,U+E000-F8FF,U+FB00-FB04; }
 /* titles only: the J's hook is raised so it sits on the waterline with the other capitals */
 @font-face { font-family: "Recia Display"; src: url("assets/fonts/recia-display.woff2?v=4") format("woff2"); font-weight: 600; font-display: swap; }
 
@@ -92,6 +96,10 @@ html { -webkit-text-size-adjust: 100%; scroll-padding-top: 90px; background: #00
 /* no visible scrollbar; the page still scrolls by wheel, touch and keyboard */
 html { scrollbar-width: none; }
 html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; width: 0; height: 0; }
+/* switching day and night: the old page dissolves into the new one over the sea's own 1.1s */
+:root.theming::view-transition-old(root), :root.theming::view-transition-new(root) {
+  animation-duration: 1.1s; animation-timing-function: cubic-bezier(.45, 0, .55, 1);
+}
 html[data-theme="light"] { background: #6b7f93; }
 body {
   margin: 0; min-height: 100svh; background: var(--w5); color: var(--u);
@@ -298,11 +306,27 @@ html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; back
 :root { --pull: .36; }
 .dive .surface { margin-bottom: calc(var(--hh) * (-1 - var(--pull))); }   /* one margin: adjoining negative margins collapse */
 .dive .deep::before { clip-path: inset(var(--cut, 0px) 0 0 0); }
-.dive .hero { transition: transform .95s cubic-bezier(.5, 0, .2, 1); }
-.dive.plunged .hero { transform: translate3d(0, -26%, 0) scale(1.08); }
-/* touch: no clock. the scene leaves by exactly as much as the finger has pulled the water over it (--dp, 0 to 1) */
-.dive.follow .hero { transition: none; transform: translate3d(0, calc(var(--dp, 0) * -22%), 0) scale(calc(1 + var(--dp, 0) * .06)); }
-@media (prefers-reduced-motion: reduce) { .dive .hero { transition: none; } .dive.plunged .hero { transform: none; } .js .strip, .js .strip::after { animation: none; } }
+/* the scene leaves by exactly as much as the water has come over it (--dp, 0 to 1, from under.js through
+   main.js): the line and the scene are one motion. on touch --dp follows the finger instead of a clock */
+.dive .hero { will-change: transform; transform: translate3d(0, calc(var(--dp, 0) * -26%), 0) scale(calc(1 + var(--dp, 0) * .08)); }
+.dive.follow .hero { transform: translate3d(0, calc(var(--dp, 0) * -22%), 0) scale(calc(1 + var(--dp, 0) * .06)); }
+/* nothing in the page can show above the water: the first block is masked down to the deepest trough
+   of the line (--line, from under.js) and comes in softly below it. with no --line it is not masked */
+.dive .overture {
+  -webkit-mask-image: linear-gradient(to bottom, transparent var(--line, -200px), #000 calc(var(--line, -200px) + 80px));
+  mask-image: linear-gradient(to bottom, transparent var(--line, -200px), #000 calc(var(--line, -200px) + 80px));
+}
+@media (prefers-reduced-motion: reduce) { .dive .hero { transform: none; } .js .strip, .js .strip::after { animation: none; } }
+
+/* the shorter pages, with the lit water running: the line rests a little way up the header's foot
+   (--lap) and no trough dips lower than the foot (under.js), so the header's own sea is behind every
+   part of the line. the column's soft top would tint that strip, and the canvas paints it anyway */
+:root { --lap: 4.5vh; }
+@supports (height: 1lvh) { :root { --lap: 4.5lvh; } }
+.gl-water:not(.dive) .surface { margin-bottom: calc(var(--hh) * -1 - var(--lap)); }
+.gl-water:not(.dive) .deep { padding-top: var(--lap); }
+.gl-water:not(.dive) .deep::before { clip-path: inset(calc(var(--lap) + 8px) 0 0 0); }
+.hero-sub .hero-base { margin-bottom: var(--lap); }
 
 /* ---------- type ---------- */
 .title {
@@ -315,9 +339,12 @@ html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; back
 /* ---------- opening card ---------- */
 .overture {
   padding: calc(var(--feather) + var(--band) + 3svh) var(--g) 9svh;
-  display: grid; align-content: start; justify-items: center; gap: 22px; text-align: center;
+  display: block; text-align: center;
 }
-.overture .title { --max: 132px; }
+/* the first line holds: it arrives as the lens goes under, then stays mid-screen for a stretch of
+   scroll (the ::after is that stretch) while the water moves behind it, so it is never scrolled past */
+.overture .title { --max: 132px; position: sticky; top: 38svh; }
+.overture::after { content: ""; display: block; height: var(--hold, 58svh); }
 
 /* ---------- shots: full-bleed film that rises out of the water and sinks back into it ---------- */
 .shot { height: clamp(620px, 60vw, 124svh); }
@@ -495,9 +522,8 @@ html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; back
 .slip-price b { display: block; font: 500 clamp(54px, 7.4vw, 104px)/1 var(--serif); font-variant-numeric: lining-nums; letter-spacing: -.02em; color: var(--u); }
 .slip-or { align-self: center; font: 500 20px/1 var(--serif); color: var(--u3); }
 .slip-btn { min-width: 220px; min-height: 54px; }
-.slip-note { grid-column: 1 / -1; font-size: 17px; line-height: 1.4; color: var(--u2); }
 /* back from checkout: the prices turn into the welcome */
-.slip.is-joined .slip-opt, .slip.is-joined .slip-or, .slip.is-joined .slip-note { display: none; }
+.slip.is-joined .slip-opt, .slip.is-joined .slip-or { display: none; }
 .slip-done { grid-column: 1 / -1; display: grid; gap: 14px; }
 .slip-done[hidden] { display: none; }
 .slip-done-head { font: 500 clamp(54px, 8vw, 112px)/1 var(--serif); letter-spacing: -.02em; }

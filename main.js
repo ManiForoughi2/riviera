@@ -1,5 +1,5 @@
-import { startSea } from "./sea.js?v=9e2be012";
-import { startWater } from "./under.js?v=9e2be012";
+import { startSea } from "./sea.js?v=2abfc311";
+import { startWater } from "./under.js?v=2abfc311";
 
 const root = document.documentElement;
 root.classList.add("js");                         // the head script waits for this before trusting its opening state
@@ -40,19 +40,23 @@ if (deep && waterCanvas) {
   // the waterline tied to the scroll, because their water is already on screen at rest
   const dive = !root.classList.contains("sub") && !!document.querySelector(".overture");
   root.classList.add("gl-water");
+  if (dive) root.classList.add("dive");
   water = startWater(waterCanvas, {
     deep, reduced, phone: phoneMQ.matches, dive, follow: touchDive,
     // the camera sinks with the wash: the hero sea's eye drops to the surface as the line comes over the lens
     onPlunge: (e) => {
       sea?.setEye(1 - 0.9 * e);
+      // the scene above leaves by exactly as much as the water has come over it: one motion, not two clocks
+      // (it starts a moment after the line does: until the line has cleared its own deepest trough, the
+      // scene's bottom edge stays on the bottom of the screen, so nothing can show under it)
+      if (!reduced) { const k = Math.max(0, (e - 0.1) / 0.9); heroEl.style.setProperty("--dp", (k * k * (3 - 2 * k)).toFixed(4)); }
       if (!touchDive) return;
-      // touch: the scene above leaves with the finger too, and the chrome changes sides halfway
-      heroEl.style.setProperty("--dp", e.toFixed(3));
+      // touch: the chrome changes sides halfway
       if ((e > 0.5) !== plunged) { plunged = e > 0.5; root.classList.toggle("plunged", plunged); queue(); }
     },
   });
-  if (!water) root.classList.remove("gl-water");
-  else if (dive) { root.classList.add("dive"); if (touchDive) root.classList.add("follow"); water.redraw(); }
+  if (!water) root.classList.remove("gl-water", "dive");
+  else if (dive) { if (touchDive) root.classList.add("follow"); water.redraw(); }
   window.__water = water;                         // read by hand when checking frame times
 }
 
@@ -71,7 +75,16 @@ addEventListener("resize", aimLight, { passive: true });
 const themeMeta = document.querySelector('meta[name="theme-color"]');
 const scheme = matchMedia("(prefers-color-scheme: light)");
 const toggle = document.querySelector(".theme-toggle");
+// a theme change dissolves the whole page on the same clock as the sky going from sun to moon
+// (1.1s, the sea's own crossfade), so nothing below the hero flips while the scene is still turning
 function applyTheme(t) {
+  if (reduced || !document.startViewTransition) return setTheme(t);
+  root.classList.add("theming");
+  let vt;
+  try { vt = document.startViewTransition(() => setTheme(t)); } catch { root.classList.remove("theming"); return setTheme(t); }
+  vt.finished.finally(() => root.classList.remove("theming"));
+}
+function setTheme(t) {
   root.setAttribute("data-theme", t);
   if (themeMeta) themeMeta.content = BAR[t];
   toggle?.setAttribute("aria-label", t === "dark" ? "Switch to day" : "Switch to night");
@@ -281,6 +294,17 @@ const setVar = (el, k, v) => {
   if (c[k] !== v) { c[k] = v; el.style.setProperty(k, v); }
 };
 let state = "";
+// home, with a wheel or trackpad: a short way into the scroll the camera goes under, and comes back up
+// near the top. this runs in the scroll event itself, before the frame is drawn, so the water is never
+// drawn for a page that has already moved on without it (a key, an anchor or a dragged scrollbar can
+// move the page a whole screen between two frames)
+let heroH = 0;
+function crossing() {
+  if (touchDive || !water || !root.classList.contains("dive")) return;
+  const y = scrollY, hh = heroH || (heroH = heroEl.offsetHeight);
+  if (!plunged && y > Math.max(64, hh * 0.08)) { plunged = true; water.setPlunge(1); root.classList.add("plunged"); }
+  else if (plunged && y < Math.max(34, hh * 0.04)) { plunged = false; water.setPlunge(0); root.classList.remove("plunged"); }
+}
 function frame() {
   queued = false;
   const vh = innerHeight, y = scrollY;
@@ -290,11 +314,7 @@ function frame() {
   // home: a short way into the scroll the camera goes under, by itself and all the way; it comes back
   // up the same way near the top. the two thresholds are apart so it cannot flutter between them
   const diving = root.classList.contains("dive");
-  if (diving && !touchDive) {
-    const hh = heroEl.offsetHeight;
-    if (!plunged && y > Math.max(64, hh * 0.08)) { plunged = true; water.setPlunge(1); root.classList.add("plunged"); }
-    else if (plunged && y < Math.max(34, hh * 0.04)) { plunged = false; water.setPlunge(0); root.classList.remove("plunged"); }
-  }
+  crossing();
   const under = diving ? plunged : y > top - 72;
   const s = (y < 8 ? "at-top " : "") + (under ? "under" : "over");
   if (s !== state) {
@@ -323,9 +343,55 @@ function frame() {
     setVar(el, "--ty", (clamp((r.top + r.height / 2 - vh / 2) / vh, -1, 1) * 46).toFixed(1) + "px");
   });
 }
-addEventListener("scroll", queue, { passive: true });
-addEventListener("resize", queue, { passive: true });
+addEventListener("scroll", () => { crossing(); queue(); }, { passive: true });
+addEventListener("resize", () => { heroH = 0; queue(); }, { passive: true });
 frame();
+
+// ---------- smooth wheel ----------
+// a mouse wheel notch moves the page a little less far and eases into it, so nothing is jumped past.
+// the page still scrolls natively (this only decides where to), so sticky parts, anchors, the keyboard
+// and every scroll listener work as before. a trackpad already sends a smooth stream of its own: its
+// small deltas are followed almost directly, never eased twice. touch is left alone, and so is
+// reduced motion
+if (!reduced && finePointer && !phoneMQ.matches) {
+  let goal = scrollY, cur = scrollY, rate = 8, moving = false, last = 0;
+  const limit = () => document.documentElement.scrollHeight - innerHeight;
+  // where there is lit water its loop calls step first thing each frame, so the page moves and the
+  // water is drawn where the page now is, in the same frame. elsewhere step keeps its own time
+  const onWater = () => !!(water && water.live);
+  const step = (now) => {
+    const dt = Math.min(0.05, Math.max(0, now - last) / 1000); last = now;
+    cur += (goal - cur) * (1 - Math.exp(-dt * rate));
+    if (Math.abs(goal - cur) < 0.5) { cur = goal; moving = false; }
+    scrollTo(0, cur);
+    frame();                                      // and everything tied to the scroll moves with it, not a frame later
+    if (!moving) { if (water) water.pre = null; return; }
+    if (onWater()) water.pre = step;
+    else { if (water) water.pre = null; requestAnimationFrame(step); }
+  };
+  addEventListener("wheel", (e) => {
+    if (e.ctrlKey || e.metaKey || e.defaultPrevented || menuOpen || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    // anything that scrolls on its own inside the page keeps its wheel
+    for (let n = e.target; n && n !== document.documentElement; n = n.parentElement) {
+      if (n.scrollHeight > n.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(n).overflowY)) return;
+    }
+    e.preventDefault();
+    const px = e.deltaY * (e.deltaMode === 1 ? 34 : e.deltaMode === 2 ? innerHeight : 1);
+    const notch = e.deltaMode !== 0 || Math.abs(px) >= 60;     // a wheel click, not a trackpad stream
+    const now = performance.now();
+    const stalled = moving && now - last > 250;   // the loop that was carrying it stopped (a hidden tab, a lost context)
+    if (!moving || stalled) cur = goal = scrollY;
+    goal = clamp(goal + px * (notch ? 0.72 : 1), 0, limit());
+    rate = notch ? 7.5 : 26;
+    if (!moving || stalled) {
+      moving = true; last = now;
+      if (onWater()) water.pre = step; else { if (water) water.pre = null; requestAnimationFrame(step); }
+    }
+  }, { passive: false });
+  // the keyboard, an anchor or a dragged scrollbar moved the page: take it from there
+  addEventListener("scroll", () => { if (moving && Math.abs(scrollY - cur) > 3) { cur = goal = scrollY; moving = false; if (water) water.pre = null; } }, { passive: true });
+  root.style.scrollBehavior = "auto";
+}
 
 // ---------- club 1848: back from stripe checkout ----------
 const slip = document.querySelector(".slip");

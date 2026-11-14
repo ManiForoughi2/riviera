@@ -13,14 +13,27 @@
     transform: none; animation: none;
   }
   .motion .rail { animation: none; }
+  /* under water the bar is not a band with an edge: it is the water itself getting thicker toward the
+     top of the screen. a light tint of the deep colour over a blur of whatever is passing behind, both
+     fading out below the buttons, so the page dissolves up into it at any depth and over any film.
+     (the solid colour is only for browsers without color-mix) */
   .rail::before {
-    content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
-    background: var(--bg);
-    transition: opacity .3s ease, background-color .3s ease;
+    content: ""; position: absolute; inset: 0 0 -30px 0; z-index: 0; pointer-events: none;
+    background: var(--w3);
+    background: linear-gradient(to bottom,
+      color-mix(in srgb, var(--w5) 62%, transparent) 0%,
+      color-mix(in srgb, var(--w5) 46%, transparent) 45%,
+      color-mix(in srgb, var(--w4) 22%, transparent) 78%,
+      color-mix(in srgb, var(--w4) 0%, transparent) 100%);
+    -webkit-backdrop-filter: blur(16px) saturate(1.25); backdrop-filter: blur(16px) saturate(1.25);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 52%, rgba(0,0,0,.72) 66%, rgba(0,0,0,.36) 80%, rgba(0,0,0,.1) 92%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0, #000 52%, rgba(0,0,0,.72) 66%, rgba(0,0,0,.36) 80%, rgba(0,0,0,.1) 92%, transparent 100%);
+    opacity: 0;
+    transition: opacity .3s ease;
   }
-  /* bare over the sky, a band of water once the page has gone under (classes from main.js) */
-  .over .rail::before { opacity: 0; }
-  .under .rail::before { background: var(--w3); }
+  /* bare over the sky, there once the page has gone under (classes from main.js). only its opacity
+     moves, so it can never fade through another colour */
+  .under .rail::before { opacity: 1; }
   .rail.open { --r-ink: var(--u); --r-ink2: var(--u2); --r-accent: var(--ua); }
   .rail.open::before { opacity: 0; transition-duration: .15s; }
   .rail > :not(.rail-links) { position: relative; z-index: 2; }

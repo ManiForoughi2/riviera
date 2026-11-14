@@ -2,7 +2,8 @@
 
 @media (max-width: 760px) {
   /* ---------- opening card ---------- */
-  .overture { padding: calc(var(--feather) + var(--band) + 2svh) var(--g) 6svh; gap: 14px; }
+  .overture { --hold: 44svh; padding: calc(var(--feather) + var(--band) + 2svh) var(--g) 6svh; }
+  .overture .title { top: 36svh; }
 
   /* ---------- shots: one tall frame each, the word across the measure ---------- */
   .shot { height: clamp(600px, 104svh, 940px); }
