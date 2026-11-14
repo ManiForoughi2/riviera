@@ -27,12 +27,9 @@ if (form) {
   const show = () => {
     for (const g of groups) {
       const on = chips.some((c) => c.checked && c.value === g.dataset.for);
-      if (on && !g.classList.contains("is-on")) {
-        g.classList.add("is-on");
-        // the first field of a group that has just opened is where the next keystroke goes
-        if (document.activeElement?.name === "what") requestAnimationFrame(() => g.querySelector("input, textarea")?.focus({ preventScroll: true }));
-      }
-      if (!on) g.classList.remove("is-on");
+      // the cursor stays where it is: on a phone, jumping into the new field would raise the keyboard
+      // over the other choices before they have been picked
+      g.classList.toggle("is-on", on);
     }
     msg.textContent = "";
   };
