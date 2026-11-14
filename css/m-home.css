@@ -2,7 +2,7 @@
 
 @media (max-width: 760px) {
   /* ---------- opening card ---------- */
-  .overture { min-height: 0; padding: calc(var(--band) + 9svh) var(--g) 13svh; gap: 14px; }
+  .overture { padding: calc(var(--feather) + var(--band) + 2svh) var(--g) 6svh; gap: 14px; }
 
   /* ---------- shots: one tall frame each, the word across the measure ---------- */
   .shot { height: clamp(600px, 104svh, 940px); }
@@ -12,7 +12,7 @@
   .shot-copy .line, .shot.is-right .shot-copy .line { padding: 0; max-width: 21em; text-wrap: balance; }
 
   /* ---------- a season: a row to swipe, one cut in the middle ---------- */
-  .season { padding: 2svh 0 8svh; }
+  .season { padding: 2svh 0 3svh; }
   .season .title { padding: 0 var(--g); }
   .strips {
     --sw: min(64vw, 280px);
@@ -24,12 +24,12 @@
   .strip, .strip:nth-child(n) { flex: 0 0 var(--sw); margin-top: 0; scroll-snap-align: center; }
 
   /* ---------- legacy ---------- */
-  .relic { grid-template-columns: 1fr; gap: 30px; padding: 10svh var(--g) 8svh; }
+  .relic { grid-template-columns: 1fr; gap: 26px; padding: 4svh var(--g) 6svh; }
   .relic-film { width: min(100%, 420px); rotate: -1.6deg; }
   .relic .shot-word { font-size: min(96px, calc(100cqi / 3.25)); }
 
   /* ---------- the call ---------- */
-  .call { padding: 12svh var(--g) 8svh; gap: 22px; }
+  .call { padding: 6svh var(--g) 6svh; gap: 22px; }
   .call-act { justify-self: stretch; justify-items: stretch; gap: 6px; margin-top: 6px; }
   .call-act .btn-brass { min-height: 56px; }
   .call-dm { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; }
@@ -37,7 +37,6 @@
 
 /* landscape phones */
 @media (max-height: 500px) and (orientation: landscape) {
-  .overture { min-height: 0; padding-bottom: 20svh; }
   .shot { height: 150svh; }
-  .season, .relic, .call { padding-block: 16svh; }
+  .season, .relic, .call { padding-block: 10svh; }
 }

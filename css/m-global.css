@@ -9,12 +9,11 @@
 @media (max-width: 760px) {
   :root {
     --g: max(clamp(20px, 5.6vw, 28px), env(safe-area-inset-left), env(safe-area-inset-right));
-    --hh: max(100svh, 520px); --hz: 54%; --hzn: .54;
-    --wh: clamp(20px, 6.4vw, 30px); --wt: 560px;
-    --band: 44svh;
-    --dune: 44px;
+    --hh: max(100svh, 520px); --hz: 54%;
+    --band: 20svh; --wh: 20px;
+    --dune: 84px; --feather: 64px; --m: 44px;
   }
-  :root.sub { --hh: max(58svh, 420px); --hz: 58%; --hzn: .58; --band: 20svh; }
+  :root.sub { --hh: max(58svh, 420px); --hz: 58%; --band: 13svh; }
 
   /* ---------- home hero: crest centered, FIJI standing a touch above center ---------- */
   .hero:not(.hero-sub) { --kw: min(calc((100vw - 2 * var(--g)) * .72 / 1.78), 31svh); }
@@ -37,7 +36,7 @@
   .btn-lg { padding: 17px 20px; font-size: 15px; letter-spacing: .08em; text-indent: .08em; }
 
   /* ---------- the sand ---------- */
-  .foot { padding: calc(var(--dune) + 26px) var(--g) env(safe-area-inset-bottom); }
+  .foot { padding: calc(var(--dune) + 18px) var(--g) env(safe-area-inset-bottom); }
   .foot-line { flex-direction: column; gap: 6px; padding-bottom: clamp(18px, 3svh, 28px); font-size: 13px; line-height: 1.55; text-wrap: balance; }
   .foot-line > span { max-width: 30em; }
   .foot-ig { margin: 0; }
@@ -45,7 +44,7 @@
 
 /* landscape phones: the short screen sets every size */
 @media (max-height: 500px) and (orientation: landscape) {
-  :root, :root.sub { --hh: max(100svh, 340px); --hz: 63%; --hzn: .63; --band: 40svh; }
+  :root, :root.sub { --hh: max(100svh, 340px); --hz: 63%; --band: 30svh; }
   html { scroll-padding-top: 70px; }
   .hero:not(.hero-sub) { --kw: min(46vw, 37svh); }
   .crest-top { bottom: calc(100% - var(--hz) + var(--kw) * .75 + 10px); }

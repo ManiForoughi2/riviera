@@ -1,23 +1,47 @@
-import { startSea } from "./sea.js?v=de93a382";
+import { startSea } from "./sea.js?v=933a0c64";
+import { startWater } from "./under.js?v=933a0c64";
 
 const root = document.documentElement;
 root.classList.add("js");                         // the head script waits for this before trusting its opening state
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const theme = () => (root.getAttribute("data-theme") === "light" ? "light" : "dark");
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const phoneMQ = matchMedia("(max-width: 760px), (hover: none) and (pointer: coarse)");
+const finePointer = matchMedia("(hover: hover) and (pointer: fine)").matches;
 
-// browser chrome colour: the sky while the page is at the surface
-const BAR = { dark: "#0d1322", light: "#e9dcc6" };
+// browser chrome colour: the top of the sky
+const BAR = { dark: "#000822", light: "#6b7f93" };
 
 // ---------- the surface: WebGL sky and sea that reflect the real page title ----------
 const heroEl = document.querySelector(".hero");
+const wordEl = document.querySelector(".word:not(.word-refl)");
 const seaCanvas = document.getElementById("sea");
-const sea = seaCanvas ? startSea(seaCanvas, { getTheme: theme, reduced, hero: heroEl, word: document.querySelector(".word:not(.word-refl)") }) : null;
+const sea = seaCanvas ? startSea(seaCanvas, { getTheme: theme, reduced, hero: heroEl, word: wordEl }) : null;
 // the title face may land after the first paint; repaint the reflection with the real letters
 document.fonts?.ready.then(() => sea?.redraw());
 if (sea) heroEl.classList.add("gl-sea");
 // the reflection ripple is SMIL; freeze it for reduced motion
 if (reduced) document.querySelector("svg")?.pauseAnimations?.();
+
+// ---------- under the surface: the lit water (under.js) ----------
+const deep = document.querySelector(".deep");
+const waterCanvas = document.querySelector(".water");
+let water = null;
+if (deep && waterCanvas) {
+  // the canvas rides with the screen; it is never taller than the water it sits in
+  const sizeStage = () => {
+    const m = parseFloat(getComputedStyle(root).getPropertyValue("--m")) || 72;
+    deep.style.setProperty("--sh", Math.round(Math.min(window.innerHeight + m + 120, deep.offsetHeight + m)) + "px");
+  };
+  root.classList.add("gl-water");
+  sizeStage();
+  water = startWater(waterCanvas, { deep, reduced, phone: phoneMQ.matches });
+  if (!water) root.classList.remove("gl-water");
+  else {
+    new ResizeObserver(sizeStage).observe(deep);
+    addEventListener("resize", sizeStage, { passive: true });
+  }
+}
 
 // ---------- theme follows the device setting ----------
 const themeMeta = document.querySelector('meta[name="theme-color"]');
@@ -28,11 +52,11 @@ function applyTheme(t) {
   if (themeMeta) themeMeta.content = BAR[t];
   toggle?.setAttribute("aria-label", t === "dark" ? "Switch to day" : "Switch to night");
   sea?.redraw();
+  water?.redraw();
 }
 // phones always follow the phone's own setting; the saved pick is desktop-only
-const phoneTheme = matchMedia("(max-width: 760px), (hover: none) and (pointer: coarse)");
 function savedTheme() {
-  if (phoneTheme.matches) return null;
+  if (phoneMQ.matches) return null;
   try { const t = localStorage.getItem("asufiji-theme"); return t === "light" || t === "dark" ? t : null; } catch { return null; }
 }
 // the device setting wins until someone picks a theme with the switch
@@ -45,58 +69,150 @@ toggle?.addEventListener("click", () => {
 toggle?.setAttribute("aria-label", theme() === "dark" ? "Switch to day" : "Switch to night");
 if (themeMeta) themeMeta.content = BAR[theme()];
 
-// ---------- kinetic type ----------
-// .motion marks "scripts ran and motion is welcome". the headings are split into words here;
-// css then ties each word to its own place on screen (see focusPull in styles.css), so there
-// is no observer and no timer that could leave a heading hidden
-if (!reduced) {
-  root.classList.add("motion");
-  document.querySelectorAll(".kinetic").forEach((el) => {
-    const words = el.textContent.trim().split(/\s+/);
-    el.textContent = "";
-    words.forEach((word, i) => {
-      const s = document.createElement("span");
-      s.className = "w";
-      s.style.setProperty("--wi", i);
-      s.textContent = word;
-      el.append(s);
-      if (i < words.length - 1) el.append(" ");
-    });
-  });
+// ---------- splash: FIJI types in, goes wild, lands on the real title and bursts the page open ----------
+// the engines are ports of two design.how vault skills (vendor/design-how). the head script set
+// .splash and its css cover; from here this owns it, and whatever happens the class comes off
+if (root.classList.contains("splash")) {
+  const open = () => root.classList.remove("splash");
+  (async () => {
+    let stage = null;
+    try {
+      stage = document.createElement("div");
+      stage.className = "splash-stage";
+      stage.setAttribute("aria-hidden", "true");
+      document.body.append(stage);
+      const [mod] = await Promise.all([
+        import("./vendor/design-how/splash.js"),
+        Promise.race([document.fonts?.ready, new Promise((r) => setTimeout(r, 700))]),
+      ]);
+      // two frames, so sea.js has fitted the title between the islands before it is measured
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      if (!root.classList.contains("splash")) throw new Error("late");
+      clearTimeout(window.__splashT);
+      const r = wordEl.getBoundingClientRect();
+      const fs = parseFloat(getComputedStyle(wordEl).fontSize);
+      const run = mod.playSplash({
+        host: stage, theme: theme(), phone: phoneMQ.matches,
+        wordRect: { left: r.left, top: r.top, width: r.width, height: r.height, fontSize: fs, baseline: r.top + fs * 0.87 },
+        fontFamily: getComputedStyle(wordEl).fontFamily,
+        onOpen: open,
+      });
+      // any click, tap, key or scroll skips it
+      const skip = () => run.skip();
+      const evs = ["pointerdown", "keydown", "wheel", "touchmove"];
+      evs.forEach((ev) => addEventListener(ev, skip, { passive: true, once: true }));
+      await run.done;
+      evs.forEach((ev) => removeEventListener(ev, skip));
+    } catch (e) { if (e.message !== "late") console.warn("splash:", e); }
+    open();
+    stage?.remove();
+  })();
 }
 
-// ---------- film: a loop plays only while it is on screen ----------
-// every loop sits on its own still (an <img> under the <video>), so nothing flashes dark while
-// it starts and the frame looks right when it never plays. phones run at most two at once,
-// the two nearest the middle of the screen
-const phoneMQ = matchMedia("(max-width: 760px), (hover: none) and (pointer: coarse)");
-const films = [...document.querySelectorAll(".deep video")];
-const seen = new Set();
-let filmQueued = false;
-const syncFilms = () => {
-  filmQueued = false;
-  const live = !reduced && document.visibilityState === "visible";
-  let want = live ? [...seen] : [];
-  if (want.length > 2 && phoneMQ.matches) {
-    const mx = innerWidth / 2, my = innerHeight / 2;
-    const dist = (v) => { const r = v.getBoundingClientRect(); return Math.hypot(r.left + r.width / 2 - mx, r.top + r.height / 2 - my); };
-    want = want.map((v) => [dist(v), v]).sort((a, b) => a[0] - b[0]).slice(0, 2).map((p) => p[1]);
+// ---------- headings arrive once, through the water (desktop) ----------
+// each big heading waits behind a refraction filter: its three colours bent by different amounts,
+// the way glass splits them (the per-channel split is the idea in design.how/vault/glass-type, MIT).
+// the first time it is well inside the screen it settles to rest, the filter is removed, and it
+// never plays again. phones skip this: the type is simply there
+const SVGNS = "http://www.w3.org/2000/svg";
+const fx = document.createElementNS(SVGNS, "svg");
+fx.setAttribute("width", "0"); fx.setAttribute("height", "0"); fx.setAttribute("aria-hidden", "true");
+fx.style.position = "absolute";
+const split = (pre, scales) => scales.map((s, i) => `<feDisplacementMap in="SourceGraphic" in2="${pre}" scale="${s}" xChannelSelector="R" yChannelSelector="G" result="d${i}"/>`).join("")
+  + `<feColorMatrix in="d0" type="matrix" values="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0" result="r"/>`
+  + `<feColorMatrix in="d1" type="matrix" values="0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0" result="g"/>`
+  + `<feColorMatrix in="d2" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0" result="b"/>`
+  + `<feBlend in="r" in2="g" mode="screen" result="rg"/><feBlend in="rg" in2="b" mode="screen"/>`;
+const refract = (id, s) => `<filter id="${id}" x="-6%" y="-45%" width="112%" height="190%" color-interpolation-filters="sRGB">`
+  + `<feTurbulence type="fractalNoise" baseFrequency="0.005 0.017" numOctaves="2" seed="11" result="n"/>${split("n", [s * 1.24, s, s * 0.76])}</filter>`;
+const WAIT = 52;                                  // px of bend while a heading waits
+if (!reduced && finePointer && !phoneMQ.matches && "IntersectionObserver" in window) {
+  const heads = [...document.querySelectorAll(".kinetic")];
+  if (heads.length) {
+    fx.innerHTML = refract("fx-wait", WAIT);
+    document.body.append(fx);
+    let n = 0;
+    const settle = (el) => {
+      const id = "fx-" + (++n);
+      const holder = document.createElementNS(SVGNS, "g");
+      holder.innerHTML = refract(id, WAIT);
+      const f = holder.firstChild;
+      fx.append(f);
+      const maps = [...f.querySelectorAll("feDisplacementMap")];
+      el.style.filter = `url(#${id})`;
+      const t0 = performance.now(), dur = 1500;
+      const step = (now) => {
+        const k = clamp((now - t0) / dur, 0, 1), e = 1 - Math.pow(1 - k, 3), s = WAIT * (1 - e);
+        maps[0].setAttribute("scale", (s * 1.24).toFixed(2)); maps[1].setAttribute("scale", s.toFixed(2)); maps[2].setAttribute("scale", (s * 0.76).toFixed(2));
+        el.style.opacity = (0.62 + 0.38 * e).toFixed(3);
+        if (k < 1) return requestAnimationFrame(step);
+        el.style.filter = ""; el.style.opacity = ""; el.classList.remove("is-waiting"); el.classList.add("is-home");
+        f.remove();
+      };
+      requestAnimationFrame(step);
+    };
+    // "well inside": most of the heading within the middle of the screen, not its first edge at the bottom
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        io.unobserve(e.target);
+        settle(e.target);
+      }
+    }, { rootMargin: "-12% 0px -22% 0px", threshold: 0.6 });
+    heads.forEach((el) => { el.classList.add("is-waiting"); el.style.filter = "url(#fx-wait)"; io.observe(el); });
   }
-  for (const v of films) {
-    const on = want.includes(v);
-    if (on && v.paused) v.play().catch(() => {});
-    else if (!on && !v.paused) v.pause();
-  }
-};
-const queueFilms = () => { if (!filmQueued) { filmQueued = true; requestAnimationFrame(syncFilms); } };
-if (films.length && "IntersectionObserver" in window) {
-  const fio = new IntersectionObserver((entries) => {
-    for (const e of entries) e.isIntersecting ? seen.add(e.target) : seen.delete(e.target);
-    queueFilms();
-  }, { threshold: 0.25 });
-  films.forEach((v) => fio.observe(v));
-  document.addEventListener("visibilitychange", queueFilms);
-  document.querySelector(".strips")?.addEventListener("scroll", queueFilms, { passive: true });
+}
+
+// ---------- film ----------
+// every loop sits on its own first frame (an <img> under the <video>), so starting, pausing and
+// coming back never shows a jump. a shot plays while it is in the middle of the screen, not from
+// the moment its edge appears
+const shots = [...document.querySelectorAll(".shot-film video, .relic-film video")];
+if (shots.length && "IntersectionObserver" in window) {
+  const mid = new Set();
+  const sync = () => {
+    const live = !reduced && document.visibilityState === "visible";
+    for (const v of shots) {
+      const on = live && mid.has(v);
+      if (on && v.paused) v.play().catch(() => {});
+      else if (!on && !v.paused) v.pause();
+    }
+  };
+  const sio = new IntersectionObserver((entries) => {
+    for (const e of entries) e.isIntersecting ? mid.add(e.target) : mid.delete(e.target);
+    sync();
+  }, { rootMargin: "-22% 0px -22% 0px" });
+  shots.forEach((v) => sio.observe(v));
+  document.addEventListener("visibilitychange", sync);
+}
+// the three tall cuts take turns: one rises out of its still, plays through once at its own speed,
+// and settles back into the same still before the next begins. nothing loops on a jump, and only
+// one film is ever decoding here
+const strips = [...document.querySelectorAll(".strip video")];
+if (strips.length && !reduced && "IntersectionObserver" in window) {
+  const near = new Set();
+  let turn = 0, busy = false, wait = 0;
+  const next = () => {
+    if (busy || document.visibilityState !== "visible") return;
+    let v = null;
+    for (let i = 0; i < strips.length && !v; i++) { const c = strips[(turn + i) % strips.length]; if (near.has(c)) { v = c; turn = (turn + i + 1) % strips.length; } }
+    if (!v) return;
+    busy = true;
+    v.loop = false;
+    try { v.currentTime = 0; } catch {}
+    v.play().catch(() => { busy = false; });
+  };
+  strips.forEach((v) => {
+    v.addEventListener("playing", () => v.classList.add("on"));
+    v.addEventListener("timeupdate", () => { if (v.duration && v.currentTime > v.duration - 0.5) v.classList.remove("on"); });
+    v.addEventListener("ended", () => { v.classList.remove("on"); busy = false; clearTimeout(wait); wait = setTimeout(next, 500); });
+  });
+  const stio = new IntersectionObserver((entries) => {
+    for (const e of entries) e.isIntersecting ? near.add(e.target) : near.delete(e.target);
+    next();
+  }, { rootMargin: "-14% 0px -14% 0px", threshold: 0.5 });
+  strips.forEach((v) => stio.observe(v));
+  document.addEventListener("visibilitychange", next);
 }
 
 // ---------- sign-in shell: accounts aren't live yet, so say so on submit ----------
@@ -133,12 +249,9 @@ rail?.addEventListener("click", (e) => { if (e.target.closest("a")) closeMenu();
 phoneNav.addEventListener?.("change", closeMenu);
 addEventListener("pageshow", closeMenu);
 
-// ---------- one rAF scroll loop: where the camera is, and everything that drifts with it ----------
-const deep = document.querySelector(".deep");
-const rays = document.querySelector(".rays");
-const motes = document.querySelector(".rays b");
-let cursorX = 0.5;                                // 0 at the left edge, 1 at the right: the light leans toward it
-const drift = [                                   // [element, how far it travels across the screen in px]
+// ---------- one rAF scroll loop: where the camera is, and the film drifting in its frames ----------
+// everything here follows the scroll position continuously (zero at mid-screen); nothing is triggered
+const drift = [                                   // [element, travel across the screen in px, twin]
   ...[...document.querySelectorAll(".shot-film")].map((el) => [el.querySelector("video"), 56, el.querySelector("img")]),
   ...[...document.querySelectorAll(".strip")].map((el, i) => [el, [-34, 46, -70][i % 3]]),
   ...[...document.querySelectorAll(".relic-film")].map((el) => [el, 40]),
@@ -163,15 +276,7 @@ function frame() {
     root.classList.toggle("under", y > top - 72);
     root.classList.toggle("over", y <= top - 72);
   }
-  if (!deep) return;
-
-  // 0 at the surface, 1 on the sand: the shafts of light thin out on the way down
-  const span = Math.max(1, deep.offsetHeight - vh);
-  setVar(deep, "--depth", clamp((y - top + vh) / (span + vh), 0, 1).toFixed(3));
-
   if (reduced || phoneMQ.matches) return;
-  if (rays) setVar(rays, "--cx", cursorX.toFixed(2));
-  if (motes) setVar(motes, "--my", (-((y * 0.3) % 620)).toFixed(1) + "px");
   // every read first, then every write
   const boxes = drift.map(([el]) => el.getBoundingClientRect());
   const cboxes = copies.map((el) => el.parentElement.getBoundingClientRect());
@@ -192,9 +297,6 @@ function frame() {
 const queue = () => { if (!queued) { queued = true; requestAnimationFrame(frame); } };
 addEventListener("scroll", queue, { passive: true });
 addEventListener("resize", queue, { passive: true });
-if (!reduced && matchMedia("(hover: hover) and (pointer: fine)").matches) {
-  addEventListener("pointermove", (e) => { cursorX = e.clientX / innerWidth; queue(); }, { passive: true });
-}
 frame();
 
 // ---------- club 1848: back from stripe checkout ----------
@@ -207,7 +309,7 @@ if (slip && new URLSearchParams(location.search).has("joined")) {
 }
 
 // ---------- magnetic buttons ----------
-if (!reduced && matchMedia("(hover: hover) and (pointer: fine)").matches) {
+if (!reduced && finePointer) {
   document.querySelectorAll(".magnetic").forEach((btn) => {
     let box = null;
     btn.addEventListener("pointerenter", () => { box = btn.getBoundingClientRect(); });

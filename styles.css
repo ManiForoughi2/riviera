@@ -16,8 +16,6 @@
   --ease: cubic-bezier(.2, .7, .1, 1);
   --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
   --palm: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'><path d='M239.84 60.33a8 8 0 0 1-4.65 5.75L179 90.55a71.42 71.42 0 0 1 43.36 33.21a70.64 70.64 0 0 1 7.2 54.32a8 8 0 0 1-12.56 4.28l-81-61.68V224a8 8 0 0 1-16 0V120.68l-81 61.68a8 8 0 0 1-12.57-4.28a70.64 70.64 0 0 1 7.2-54.32A71.42 71.42 0 0 1 77 90.55L20.81 66.08a8 8 0 0 1-2.6-12.85a66.86 66.86 0 0 1 97.74 0a72.2 72.2 0 0 1 12 17a72.2 72.2 0 0 1 12.05-17a66.86 66.86 0 0 1 97.74 0a8 8 0 0 1 2.1 7.1'/></svg>");
-  --wave: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 60' preserveAspectRatio='none'><path d='M0 30C100 8 300 12 420 30S640 52 760 32 1000 8 1140 28 1340 52 1440 30V60H0Z'/></svg>");
-  --dune-edge: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 120' preserveAspectRatio='none'><path d='M0 74C210 30 470 8 740 44S1210 112 1440 46V120H0Z'/></svg>");
   --motes: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='620' height='620' fill='%23ecdcc2'><circle cx='44' cy='71' r='1.1' opacity='.26'/><circle cx='183' cy='22' r='.8' opacity='.17'/><circle cx='301' cy='139' r='1.3' opacity='.2'/><circle cx='512' cy='64' r='.9' opacity='.26'/><circle cx='590' cy='233' r='1.2' opacity='.14'/><circle cx='95' cy='262' r='.8' opacity='.22'/><circle cx='236' cy='318' r='1' opacity='.14'/><circle cx='408' cy='286' r='.7' opacity='.26'/><circle cx='352' cy='455' r='1.3' opacity='.17'/><circle cx='131' cy='489' r='1' opacity='.2'/><circle cx='541' cy='431' r='.8' opacity='.22'/><circle cx='468' cy='566' r='1.1' opacity='.14'/><circle cx='28' cy='590' r='.9' opacity='.2'/><circle cx='262' cy='574' r='.7' opacity='.26'/></svg>");
 
   /* constants from the chapter graphics */
@@ -50,18 +48,16 @@
   --grain-op: .12;
   /* night: the water column, surface to floor, lit by the moon */
   --w0: #1e3152; --w1: #162742; --w2: #0f1c31; --w3: #0b1526; --w4: #080f1c; --w5: #060b15;
-  --lip: #4a6591;
-  --ray: rgba(170, 194, 236, .1);
   --deep-glass: rgba(8, 14, 26, .58);
   --sand-a: #2a3147; --sand-b: #1b2236;
   --sand-ink: rgba(236, 220, 194, .74); --sand-hot: #ecdcc2;
   --sand-mark: #474e68;
-  --splash: #0d1322; --splash-line: #e0c19a;
+  --splash: #0d1322;
 
   --hh: max(100svh, 620px);
   --hz: 60%;
-  --wh: clamp(26px, 4vw, 58px); --wt: 1440px;
-  --band: 62svh;
+  --wh: 30px;
+  --band: 24svh;
   color-scheme: dark;
 }
 :root[data-theme="light"] {
@@ -79,22 +75,22 @@
   --grain-op: .09;
   /* day: the same column with the sun in it */
   --w0: #86afd6; --w1: #4b80b3; --w2: #244f7e; --w3: #1b3e68; --w4: #142e4e; --w5: #0f223b;
-  --lip: #e3f0f8;
-  --ray: rgba(255, 222, 170, .2);
   --deep-glass: rgba(15, 34, 59, .58);
   --sand-a: #e9d9bb; --sand-b: #d3bf9b;
   --sand-ink: rgba(25, 32, 58, .78); --sand-hot: #19203a;
   --sand-mark: #bca580;
-  --splash: #e9dcc6; --splash-line: #7a5a3c;
+  --splash: #e9dcc6;
   color-scheme: light;
 }
 /* subpages: a shorter header, and the bright band under the surface is shallower */
-:root.sub { --hh: max(60svh, 440px); --hz: 63%; --band: 20svh; }
+:root.sub { --hh: max(60svh, 440px); --hz: 63%; --band: 15svh; }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-padding-top: 90px; background: var(--bg); }
+/* the root is the top of the sky, and the page never rubber-bands: nothing tan can show above the header */
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: 90px; background: #000822; overscroll-behavior-y: none; }
+html[data-theme="light"] { background: #6b7f93; }
 body {
-  margin: 0; background: var(--bg); color: var(--u);
+  margin: 0; min-height: 100svh; background: var(--w5); color: var(--u);
   font: 400 17px/1.5 var(--body);
   -webkit-font-smoothing: antialiased; overflow-x: clip;
 }
@@ -107,42 +103,15 @@ svg { display: block; }
 :focus-visible { outline: 2px solid var(--brass-hi); outline-offset: 3px; border-radius: 4px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* ---------- splash: the first frame. a line of light on the horizon, then the gate opens ----------
-   the class is set by the inline head script (once per session, never under reduced motion),
-   so with scripts off there is nothing to cover the page. the panels leave on their own;
-   the same script also drops the class after a second as a backstop. */
-html.splash::before, html.splash::after {
-  content: ""; position: fixed; left: 0; right: 0; z-index: 200; pointer-events: none;
-  background-color: var(--splash);
-  will-change: transform;
-}
-html.splash::before {
-  top: 0; height: calc(var(--hh) * var(--hzn, .6));
-  background-image:
-    linear-gradient(90deg, transparent, var(--splash-line) 30%, var(--splash-line) 70%, transparent),
-    var(--splash-palm);
-  background-repeat: no-repeat;
-  background-position: 50% 100%, 50% calc(100% - 26px);
-  background-size: 0 2px, 44px 44px;
-  animation: splashLine .36s cubic-bezier(.3, 0, .2, 1) .04s forwards, splashUp .46s cubic-bezier(.76, 0, .2, 1) .46s forwards;
-}
-html.splash::after {
-  top: calc(var(--hh) * var(--hzn, .6)); bottom: 0;
-  animation: splashDown .46s cubic-bezier(.76, 0, .2, 1) .46s forwards;
-}
-:root { --hzn: .6; --splash-palm: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'><path fill='%23e0c19a' d='M239.84 60.33a8 8 0 0 1-4.65 5.75L179 90.55a71.42 71.42 0 0 1 43.36 33.21a70.64 70.64 0 0 1 7.2 54.32a8 8 0 0 1-12.56 4.28l-81-61.68V224a8 8 0 0 1-16 0V120.68l-81 61.68a8 8 0 0 1-12.57-4.28a70.64 70.64 0 0 1 7.2-54.32A71.42 71.42 0 0 1 77 90.55L20.81 66.08a8 8 0 0 1-2.6-12.85a66.86 66.86 0 0 1 97.74 0a72.2 72.2 0 0 1 12 17a72.2 72.2 0 0 1 12.05-17a66.86 66.86 0 0 1 97.74 0a8 8 0 0 1 2.1 7.1'/></svg>"); }
-:root[data-theme="light"] { --splash-palm: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'><path fill='%237a5a3c' d='M239.84 60.33a8 8 0 0 1-4.65 5.75L179 90.55a71.42 71.42 0 0 1 43.36 33.21a70.64 70.64 0 0 1 7.2 54.32a8 8 0 0 1-12.56 4.28l-81-61.68V224a8 8 0 0 1-16 0V120.68l-81 61.68a8 8 0 0 1-12.57-4.28a70.64 70.64 0 0 1 7.2-54.32A71.42 71.42 0 0 1 77 90.55L20.81 66.08a8 8 0 0 1-2.6-12.85a66.86 66.86 0 0 1 97.74 0a72.2 72.2 0 0 1 12 17a72.2 72.2 0 0 1 12.05-17a66.86 66.86 0 0 1 97.74 0a8 8 0 0 1 2.1 7.1'/></svg>"); }
-:root.sub { --hzn: .63; }
-@keyframes splashLine { to { background-size: min(72vw, 720px) 2px, 44px 44px; } }
-@keyframes splashUp { to { transform: translate3d(0, -101%, 0); visibility: hidden; } }
-@keyframes splashDown { to { transform: translate3d(0, 101%, 0); visibility: hidden; } }
-/* as the gate opens the title comes through haze and settles into focus. filter and opacity only,
-   so the letters never move and sea.js measures them where they stand. pointer devices only */
-@media (hover: hover) and (pointer: fine) {
-  html.splash .word:not(.word-refl) { animation: throughHaze .6s cubic-bezier(.2, .7, .1, 1) .44s both; }
-}
-@keyframes throughHaze { from { filter: blur(24px); opacity: .12; } to { filter: blur(0); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { html.splash::before, html.splash::after { display: none; } html.splash .word { animation: none; } }
+/* ---------- splash ----------
+   the head script sets .splash once per session (never under reduced motion) and this cover holds the
+   first frame. main.js then plays FIJI on a canvas above it (vendor/design-how: wild type, then loud
+   burst) and drops the class at the burst, which opens the page. with scripts off there is no class and
+   no cover; if main.js never arrives the head script drops the class by itself. */
+html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; background: var(--splash); }
+.splash-stage { position: fixed; inset: 0; z-index: 201; pointer-events: none; }
+.splash-stage canvas { display: block; }
+@media (prefers-reduced-motion: reduce) { html.splash::before { display: none; } }
 
 /* ---------- brushed-brass button ---------- */
 .btn-brass {
@@ -295,57 +264,29 @@ html.splash::after {
 .hero-sub .hero-base { bottom: calc(env(safe-area-inset-bottom) + var(--wh) + 2.6svh); }
 
 /* ---------- the deep: one water column from the surface to the sand ---------- */
-.deep {
-  --depth: 0;
-  position: relative; z-index: 1; min-height: 84svh;
-  padding-bottom: calc(var(--dune) + 9svh);
-  color: var(--u);
+.deep { position: relative; z-index: 1; padding-bottom: calc(var(--dune) + 5svh); color: var(--u); }
+/* the column itself. it fades in over --feather at the top, so even with no script there is no edge:
+   the water thickens out of the scene above it. under.js draws the real waterline over this */
+.deep::before {
+  content: ""; position: absolute; z-index: 0; inset: 0; pointer-events: none;
   background:
     var(--motes) 0 0 / 620px 620px,
     var(--grain) 0 0 / 180px 180px,
-    linear-gradient(to bottom, var(--w0) 0, var(--w1) calc(var(--band) * .34), var(--w2) var(--band), var(--w3) max(calc(var(--band) + 30svh), 42%), var(--w4) 74%, var(--w5) 100%);
+    linear-gradient(to bottom, var(--w0) 0, var(--w0) var(--feather), var(--w1) calc(var(--feather) + var(--band) * .34), var(--w2) calc(var(--feather) + var(--band)), var(--w3) max(calc(var(--feather) + var(--band) + 30svh), 42%), var(--w4) 74%, var(--w5) 100%);
   background-blend-mode: normal, soft-light, normal;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.05) calc(var(--feather) * .15), rgba(0,0,0,.2) calc(var(--feather) * .32), rgba(0,0,0,.5) calc(var(--feather) * .52), rgba(0,0,0,.8) calc(var(--feather) * .72), rgba(0,0,0,.95) calc(var(--feather) * .88), #000 var(--feather));
+  mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.05) calc(var(--feather) * .15), rgba(0,0,0,.2) calc(var(--feather) * .32), rgba(0,0,0,.5) calc(var(--feather) * .52), rgba(0,0,0,.8) calc(var(--feather) * .72), rgba(0,0,0,.95) calc(var(--feather) * .88), #000 var(--feather));
 }
-:root { --dune: clamp(48px, 8vw, 120px); }
+:root { --dune: clamp(90px, 12vw, 170px); --feather: 96px; --m: 72px; }
 .deep > section, .deep > .page { position: relative; z-index: 1; }
-
-/* the waterline: a far swell, the near one, and a thin lip of light riding its edge */
-.waterline { position: absolute; z-index: 2; left: 0; right: 0; bottom: calc(100% - 1px); height: var(--wh); overflow: hidden; pointer-events: none; }
-.waterline i, .waterline::before {
-  content: ""; position: absolute; left: 0; bottom: 0; width: calc(100% + var(--wt)); height: 100%;
-  background: var(--w0);
-  -webkit-mask: var(--wave) 0 100% / var(--wt) 100% repeat-x; mask: var(--wave) 0 100% / var(--wt) 100% repeat-x;
+/* the lit water (under.js): a canvas that rides with the screen, from just above the waterline down.
+   it only exists once the script has a WebGL context; main.js sets its height (--sh) */
+.water { display: none; }
+.gl-water .water {
+  display: block; position: sticky; z-index: 0; top: 0; width: 100%;
+  height: var(--sh, 100vh); margin-top: calc(var(--m) * -1); margin-bottom: calc(var(--m) - var(--sh, 100vh));
+  pointer-events: none;
 }
-.waterline::before { background: var(--w1); opacity: .55; bottom: 5px; -webkit-mask-size: var(--wt) 84%; mask-size: var(--wt) 84%; -webkit-mask-position: calc(var(--wt) * .42) 100%; mask-position: calc(var(--wt) * .42) 100%; }
-.waterline i:first-child { background: var(--lip); bottom: 2px; }
-.motion .waterline i { animation: swell 19s linear infinite; }
-.motion .waterline::before { animation: swell 31s linear infinite; }
-@keyframes swell { to { transform: translate3d(calc(var(--wt) * -1), 0, 0); } }
-
-/* light from the surface: a few slanted shafts that thin out with depth (--depth is set on scroll) */
-.rays {
-  position: sticky; z-index: 0; top: 0; height: 84svh; margin-bottom: -84svh;
-  overflow: hidden; pointer-events: none;
-  opacity: calc(1 - var(--depth) * .86);
-  /* the shafts lean a little toward the cursor (--cx, 0 to 1 across the screen, from main.js) */
-  transform: skewX(calc((var(--cx, .5) - .5) * -9deg)); transform-origin: 50% 0;
-  transition: transform 1.4s cubic-bezier(.2, .7, .1, 1);
-}
-.rays i {
-  position: absolute; top: -6%; height: 118%; width: 22vw; left: 12%;
-  background: radial-gradient(50% 100% at 50% 0, var(--ray) 0, transparent 100%);
-  transform: skewX(-17deg); transform-origin: 50% 0;
-}
-.rays i:nth-child(2) { left: 34%; width: 11vw; height: 96%; opacity: .8; }
-.rays i:nth-child(3) { left: 52%; width: 30vw; opacity: .65; }
-.rays i:nth-child(4) { left: 80%; width: 14vw; height: 104%; opacity: .9; }
-.motion .rays i { animation: shaft 13s ease-in-out infinite alternate; }
-.motion .rays i:nth-child(2) { animation-duration: 9s; animation-delay: -4s; }
-.motion .rays i:nth-child(3) { animation-duration: 17s; animation-delay: -9s; }
-.motion .rays i:nth-child(4) { animation-duration: 11s; animation-delay: -2s; }
-@keyframes shaft { from { transform: skewX(-17deg) translate3d(-2.2vw, 0, 0); } to { transform: skewX(-13deg) translate3d(2.2vw, 0, 0); } }
-/* a second field of motes on its own plane, drifting slower than the page */
-.rays b { position: absolute; left: 0; right: 0; top: -620px; height: calc(100% + 1240px); background: var(--motes) 310px 140px / 620px 620px; opacity: .7; transform: translate3d(0, var(--my, 0px), 0); }
 
 /* ---------- type ---------- */
 .title {
@@ -356,7 +297,7 @@ html.splash::after {
 
 /* ---------- opening card ---------- */
 .overture {
-  min-height: 128svh; padding: calc(var(--band) + 12svh) var(--g) 18svh;
+  padding: calc(var(--feather) + var(--band) + 3svh) var(--g) 9svh;
   display: grid; align-content: start; justify-items: center; gap: 22px; text-align: center;
 }
 .overture .title { --max: 132px; }
@@ -394,21 +335,24 @@ html.splash::after {
 .shot.is-right .shot-copy { justify-items: end; text-align: right; }
 .shot.is-right .shot-copy .line { padding: 0 .5vw 0 0; }
 .shot + .shot { margin-top: -7vw; }
+.overture + .shot { margin-top: -6vw; }
 
 /* ---------- a season: three tall cuts hanging at different depths ---------- */
-.season { padding: 4svh var(--g) 10svh; }
+.season { padding: 2svh var(--g) 4svh; }
 .season .title { --max: 112px; max-width: 1240px; margin: 0 auto; }
-.strips { max-width: 1240px; margin: 7svh auto 0; display: grid; grid-template-columns: repeat(12, 1fr); column-gap: clamp(16px, 2.4vw, 36px); align-items: start; }
+.strips { max-width: 1240px; margin: 5svh auto 0; display: grid; grid-template-columns: repeat(12, 1fr); column-gap: clamp(16px, 2.4vw, 36px); align-items: start; }
 .strip { position: relative; aspect-ratio: 9 / 16; border-radius: 6px; transform: translate3d(0, var(--py, 0px), 0) rotate(var(--t, 0deg)); }
 .strip img, .strip video, .relic-film img, .relic-film video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.js .strip video { opacity: 0; transition: opacity .45s ease; }
+.js .strip video.on { opacity: 1; }
 .strip::after, .relic-film::after { content: ""; position: absolute; inset: 0; background: var(--grain) 0 0 / 180px 180px; opacity: .18; mix-blend-mode: overlay; pointer-events: none; }
-.strip:nth-child(1) { grid-column: 1 / span 4; margin-top: 16svh; --t: -1.4deg; }
+.strip:nth-child(1) { grid-column: 1 / span 4; margin-top: 12svh; --t: -1.4deg; }
 .strip:nth-child(2) { grid-column: 5 / span 4; --t: .8deg; }
-.strip:nth-child(3) { grid-column: 9 / span 4; margin-top: 30svh; --t: -.6deg; }
+.strip:nth-child(3) { grid-column: 9 / span 4; margin-top: 22svh; --t: -.6deg; }
 
 /* ---------- legacy: the oldest picture lies deepest ---------- */
 .relic {
-  max-width: 1240px; margin: 0 auto; padding: 16svh var(--g) 12svh;
+  max-width: 1240px; margin: 0 auto; padding: 6svh var(--g) 8svh;
   display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: center; gap: clamp(28px, 6vw, 96px);
 }
 .relic-film { position: relative; aspect-ratio: 1; border-radius: 4px; transform: translate3d(0, var(--py, 0px), 0) rotate(-2.4deg); }
@@ -416,7 +360,7 @@ html.splash::after {
 .relic .shot-word { font-size: min(170px, calc(100cqi / 3.25)); }
 
 /* ---------- the call, just above the sand ---------- */
-.call { padding: 20svh var(--g) 12svh; display: grid; justify-items: center; gap: 30px; text-align: center; }
+.call { padding: 8svh var(--g) 9svh; display: grid; justify-items: center; gap: 30px; text-align: center; }
 .call .title { --max: 120px; }
 .call-act { display: grid; justify-items: center; gap: 14px; margin-top: 12px; }
 .call-dm { padding: 8px 6px; font: 600 16px/1 var(--body); }
@@ -424,12 +368,12 @@ html.splash::after {
 /* ---------- the sand: the floor of the page ---------- */
 .foot {
   position: relative; z-index: 2; overflow: hidden;
-  margin-top: calc(var(--dune) * -1); padding: calc(var(--dune) + 34px) var(--g) 0;
+  margin-top: calc(var(--dune) * -1); padding: calc(var(--dune) + 26px) var(--g) 0;
   color: var(--sand-ink);
   background: var(--grain) 0 0 / 180px 180px, linear-gradient(to bottom, var(--sand-a), var(--sand-b));
   background-blend-mode: soft-light, normal;
-  -webkit-mask: var(--dune-edge) 50% 0 / 100% var(--dune) no-repeat, linear-gradient(#000, #000) 0 100% / 100% calc(100% - var(--dune) + 1px) no-repeat;
-  mask: var(--dune-edge) 50% 0 / 100% var(--dune) no-repeat, linear-gradient(#000, #000) 0 100% / 100% calc(100% - var(--dune) + 1px) no-repeat;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.03) calc(var(--dune) * .12), rgba(0,0,0,.1) calc(var(--dune) * .24), rgba(0,0,0,.24) calc(var(--dune) * .36), rgba(0,0,0,.44) calc(var(--dune) * .48), rgba(0,0,0,.66) calc(var(--dune) * .6), rgba(0,0,0,.84) calc(var(--dune) * .74), rgba(0,0,0,.95) calc(var(--dune) * .88), #000 var(--dune));
+  mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.03) calc(var(--dune) * .12), rgba(0,0,0,.1) calc(var(--dune) * .24), rgba(0,0,0,.24) calc(var(--dune) * .36), rgba(0,0,0,.44) calc(var(--dune) * .48), rgba(0,0,0,.66) calc(var(--dune) * .6), rgba(0,0,0,.84) calc(var(--dune) * .74), rgba(0,0,0,.95) calc(var(--dune) * .88), #000 var(--dune));
 }
 .foot-line { display: flex; justify-content: center; align-items: center; gap: 14px; padding: 0 0 3vh; font: 500 14px/1.3 var(--body); text-align: center; }
 .foot-ig { display: grid; place-items: center; width: 44px; height: 44px; margin: -6px 0; border-radius: 8px; color: var(--sand-hot); transition: opacity .2s ease; }
@@ -444,8 +388,8 @@ html.splash::after {
 }
 
 /* ---------- pages under the shorter headers ---------- */
-.page { max-width: 1100px; margin: 0 auto; padding: calc(var(--band) + 5svh) var(--g) 8svh; }
-.page > .title { margin-bottom: 6svh; }
+.page { max-width: 1100px; margin: 0 auto; padding: calc(var(--feather) + var(--band) + 2svh) var(--g) 7svh; }
+.page > .title { margin-bottom: 5svh; }
 .page-note { margin-top: 7svh; font-size: 18px; color: var(--u2); text-align: center; }
 .page-note a { color: var(--ua); font-weight: 600; border-radius: 4px; transition: color .2s ease; }
 .page-note a:hover { color: var(--u); }
@@ -534,29 +478,16 @@ html.splash::after {
 .lost-ways { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 30px; }
 .lost-ways .text-link { padding: 12px 4px; font-size: 17px; }
 
-/* ---------- kinetic headings: a focus pull tied to the scroll position, not to a timer ----------
-   main.js splits the words and adds .motion. the state of each word depends only on where it
-   sits in the viewport, so nothing can be left hidden by a stalled timer or a missed observer:
-   a word is soft only while it crosses the bottom of the screen, and whole above that.
-   no .motion (scripts off), no scroll timelines (older browsers), or a phone: the type is just there. */
-.kinetic .w { display: inline-block; }
-@supports (animation-timeline: view()) {
-  .motion .kinetic .w {
-    animation: focusPull linear both;
-    animation-timeline: view();
-    animation-range: cover calc(3% + var(--wi) * 2%) cover calc(16% + var(--wi) * 4%);
-  }
-}
-@keyframes focusPull {
-  from { opacity: 0; transform: translate3d(0, .42em, 0); filter: blur(14px); }
-  to { opacity: 1; transform: none; filter: blur(0); }
-}
-.motion .rail { animation: railIn 1s var(--ease) .1s both; }
-@keyframes railIn { from { transform: translate(-50%, -14px); } to { transform: translate(-50%, 0); } }
+/* ---------- headings arrive once, through the water ----------
+   desktop: main.js holds each big heading behind a refraction filter (its three colours bent by
+   different amounts, as glass or water splits them) and, the first time the heading is well inside the
+   screen, lets it settle to rest and removes the filter for good. it never replays.
+   phones: no entrance at all, the type is simply there. the waiting state is set by the script on
+   the element itself, so with scripts off it never exists. */
+.kinetic.is-waiting { opacity: .62; }
 
 @media (prefers-reduced-motion: reduce) {
   .word-refl { filter: none; }
-  .waterline i, .waterline::before, .rays i, .kinetic .w { animation: none !important; }
 }
 
 /* landscape tablets and small laptops */

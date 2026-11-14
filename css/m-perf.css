@@ -3,7 +3,6 @@
 
 @media (max-width: 760px), (hover: none) and (pointer: coarse) {
   /* everything shows the moment the page loads: no fade-ins, no rising words */
-  .motion .kinetic .w { animation: none; }
 
   /* no backdrop blur on a fixed bar: it re-samples the sea and the film under it every frame */
   html .rail::before,
@@ -17,11 +16,6 @@
   .hero.gl-sea .sky::after { display: none; }
   /* no-webgl fallback: the animated displacement ripple is the costliest filter on the page */
   .word-refl { filter: none; }
-
-  /* the light holds still: four big layers swaying under a scrolling page is wasted work here,
-     and the second plane of motes needs the scroll loop */
-  .motion .rays i { animation: none; }
-  .rays b { display: none; }
 
   /* grain over playing film: plain alpha instead of a blend, so each video frame composites once */
   .shot-film::before, .strip::after, .relic-film::after { mix-blend-mode: normal; opacity: .07; }

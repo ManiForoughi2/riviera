@@ -36,23 +36,24 @@
     // the scroll; if it never arrives, fall back to the plain filled bar
     d.classList.add("at-top", "over");
     setTimeout(function () { if (!d.classList.contains("js")) d.classList.remove("at-top", "over"); }, 4000);
-    // splash: the first page of a visit only, and never under reduced motion. css runs it and
-    // clears it; the timer is only a backstop so the cover can never outstay a second
+    // splash: the first page of a visit only, and never under reduced motion. css holds the cover,
+    // main.js plays the word over it and drops the class when the word bursts. the timer is only a
+    // backstop for a script that never arrives, so the cover can never be stranded
     try {
       if (!sessionStorage.getItem("asufiji-in") && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
         sessionStorage.setItem("asufiji-in", "1");
         d.classList.add("splash");
-        setTimeout(function () { d.classList.remove("splash"); }, 1100);
+        window.__splashT = setTimeout(function () { d.classList.remove("splash"); }, 3200);
       }
     } catch (e) {}
   })();
 </script>
-<link rel="stylesheet" href="styles.css?v=de93a382">
-<link rel="stylesheet" href="css/m-global.css?v=de93a382">
-<link rel="stylesheet" href="css/m-perf.css?v=de93a382">
-<link rel="stylesheet" href="css/m-nav.css?v=de93a382">
-<link rel="stylesheet" href="css/m-home.css?v=de93a382">
-<link rel="stylesheet" href="css/m-pages.css?v=de93a382">
+<link rel="stylesheet" href="styles.css?v=933a0c64">
+<link rel="stylesheet" href="css/m-global.css?v=933a0c64">
+<link rel="stylesheet" href="css/m-perf.css?v=933a0c64">
+<link rel="stylesheet" href="css/m-nav.css?v=933a0c64">
+<link rel="stylesheet" href="css/m-home.css?v=933a0c64">
+<link rel="stylesheet" href="css/m-pages.css?v=933a0c64">
 </head>
 <body>
 
@@ -107,35 +108,34 @@
 </div>
 
 <main class="deep">
-  <div class="waterline" aria-hidden="true"><i></i><i></i></div>
-  <div class="rays" aria-hidden="true"><b></b><i></i><i></i><i></i><i></i></div>
+  <canvas class="water" aria-hidden="true"></canvas>
 
   <section class="page">
     <ul class="logo-wall" aria-label="Companies where brothers interned">
-        <li class="logo"><span class="logo-mark" role="img" aria-label="J.P. Morgan" title="J.P. Morgan" style="--src:url(assets/logos/jpmorgan.svg);width:13.77em;height:2.83em"></span></li>
-        <li class="logo"><span class="logo-mark" role="img" aria-label="Wells Fargo" title="Wells Fargo" style="--src:url(assets/logos/wells-fargo.svg);width:6.18em;height:6.31em"></span></li>
-        <li class="logo"><span class="logo-mark" role="img" aria-label="Deloitte" title="Deloitte" style="--src:url(assets/logos/deloitte.svg);width:14.36em;height:2.71em"></span></li>
-        <li class="logo"><span class="logo-mark" role="img" aria-label="Credit Sesame" title="Credit Sesame" style="--src:url(assets/logos/credit-sesame.svg);width:8.09em;height:4.82em"></span></li>
-        <li class="logo"><span class="logo-mark" role="img" aria-label="Renaissance Financial" title="Renaissance Financial" style="--src:url(assets/logos/renaissance-financial.png);width:10.51em;height:3.71em"></span></li>
-        <li class="logo"><span class="logo-mark" role="img" aria-label="Matthews" title="Matthews" style="--src:url(assets/logos/matthews.svg);width:19.26em;height:2.03em"></span></li>
-        <li class="logo"><span class="logo-mark" role="img" aria-label="Microsoft" title="Microsoft" style="--src:url(assets/logos/microsoft.svg);width:13.51em;height:2.89em"></span></li>
-        <li class="logo"><span class="logo-mark" role="img" aria-label="Amazon" title="Amazon" style="--src:url(assets/logos/amazon.svg);width:11.36em;height:3.43em"></span></li>
-        <li class="logo"><span class="logo-mark" role="img" aria-label="Texas Instruments" title="Texas Instruments" style="--src:url(assets/logos/texas-instruments.svg);width:12.90em;height:3.03em"></span></li>
-        <li class="logo"><span class="logo-mark" role="img" aria-label="Curtiss-Wright" title="Curtiss-Wright" style="--src:url(assets/logos/curtiss-wright.svg);width:11.84em;height:3.29em"></span></li>
-        <li class="logo"><span class="logo-mark" role="img" aria-label="Vivint" title="Vivint" style="--src:url(assets/logos/vivint.svg);width:12.79em;height:3.05em"></span></li>
-        <li class="logo"><span class="logo-mark" role="img" aria-label="NRG" title="NRG" style="--src:url(assets/logos/nrg.svg);width:7.61em;height:5.13em"></span></li>
-        <li class="logo"><span class="logo-mark" role="img" aria-label="CallPoint" title="CallPoint" style="--src:url(assets/logos/callpoint.png);width:12.18em;height:3.20em"></span></li>
-        <li class="logo"><span class="logo-mark" role="img" aria-label="HemaSense" title="HemaSense" style="--src:url(assets/logos/hemasense.png);width:14.69em;height:2.66em"></span></li>
-        <li class="logo"><span class="logo-mark" role="img" aria-label="Rytan Construction" title="Rytan Construction" style="--src:url(assets/logos/rytan-construction.png);width:10.55em;height:3.70em"></span></li>
-        <li class="logo"><span class="logo-mark" role="img" aria-label="Coakley Williams Construction" title="Coakley Williams Construction" style="--src:url(assets/logos/coakley-williams-construction.png);width:9.80em;height:3.98em"></span></li>
-        <li class="logo"><span class="logo-mark" role="img" aria-label="JT Magen" title="JT Magen" style="--src:url(assets/logos/jt-magen.png);width:5.95em;height:6.55em"></span></li>
-        <li class="logo logo-text"><span>Solano Builders</span></li>
-        <li class="logo"><span class="logo-mark" role="img" aria-label="Aqualis Partners" title="Aqualis Partners" style="--src:url(assets/logos/aqualis-partners.png);width:13.68em;height:2.85em"></span></li>
-        <li class="logo"><span class="logo-mark" role="img" aria-label="Arizona Diamondbacks" title="Arizona Diamondbacks" style="--src:url(assets/logos/arizona-diamondbacks.svg);width:6.73em;height:5.80em"></span></li>
-        <li class="logo"><span class="logo-mark" role="img" aria-label="Phoenix Rising FC" title="Phoenix Rising FC" style="--src:url(assets/logos/phoenix-rising-fc.png);width:3.98em;height:7.40em"></span></li>
-        <li class="logo"><span class="logo-mark" role="img" aria-label="Cartoon Network" title="Cartoon Network" style="--src:url(assets/logos/cartoon-network.svg);width:11.96em;height:3.26em"></span></li>
-        <li class="logo"><span class="logo-mark" role="img" aria-label="Elysium Private Jet" title="Elysium Private Jet" style="--src:url(assets/logos/elysium-private-jet.svg);width:6.31em;height:6.18em"></span></li>
-      </ul>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="J.P. Morgan" title="J.P. Morgan" style="--src:url(assets/logos/jpmorgan.svg);width:13.77em;height:2.83em"></span></li>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="Wells Fargo" title="Wells Fargo" style="--src:url(assets/logos/wells-fargo.svg);width:6.18em;height:6.31em"></span></li>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="Deloitte" title="Deloitte" style="--src:url(assets/logos/deloitte.svg);width:14.36em;height:2.71em"></span></li>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="Credit Sesame" title="Credit Sesame" style="--src:url(assets/logos/credit-sesame.svg);width:8.09em;height:4.82em"></span></li>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="Renaissance Financial" title="Renaissance Financial" style="--src:url(assets/logos/renaissance-financial.png);width:10.51em;height:3.71em"></span></li>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="Matthews" title="Matthews" style="--src:url(assets/logos/matthews.svg);width:19.26em;height:2.03em"></span></li>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="Microsoft" title="Microsoft" style="--src:url(assets/logos/microsoft.svg);width:13.51em;height:2.89em"></span></li>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="Amazon" title="Amazon" style="--src:url(assets/logos/amazon.svg);width:11.36em;height:3.43em"></span></li>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="Texas Instruments" title="Texas Instruments" style="--src:url(assets/logos/texas-instruments.svg);width:12.90em;height:3.03em"></span></li>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="Curtiss-Wright" title="Curtiss-Wright" style="--src:url(assets/logos/curtiss-wright.svg);width:11.84em;height:3.29em"></span></li>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="Vivint" title="Vivint" style="--src:url(assets/logos/vivint.svg);width:12.79em;height:3.05em"></span></li>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="NRG" title="NRG" style="--src:url(assets/logos/nrg.svg);width:7.61em;height:5.13em"></span></li>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="CallPoint" title="CallPoint" style="--src:url(assets/logos/callpoint.png);width:12.18em;height:3.20em"></span></li>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="HemaSense" title="HemaSense" style="--src:url(assets/logos/hemasense.png);width:14.69em;height:2.66em"></span></li>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="Rytan Construction" title="Rytan Construction" style="--src:url(assets/logos/rytan-construction.png);width:10.55em;height:3.70em"></span></li>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="Coakley Williams Construction" title="Coakley Williams Construction" style="--src:url(assets/logos/coakley-williams-construction.png);width:9.80em;height:3.98em"></span></li>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="JT Magen" title="JT Magen" style="--src:url(assets/logos/jt-magen.png);width:5.95em;height:6.55em"></span></li>
+            <li class="logo logo-text"><span>Solano Builders</span></li>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="Aqualis Partners" title="Aqualis Partners" style="--src:url(assets/logos/aqualis-partners.png);width:13.68em;height:2.85em"></span></li>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="Arizona Diamondbacks" title="Arizona Diamondbacks" style="--src:url(assets/logos/arizona-diamondbacks.svg);width:6.73em;height:5.80em"></span></li>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="Phoenix Rising FC" title="Phoenix Rising FC" style="--src:url(assets/logos/phoenix-rising-fc.png);width:3.98em;height:7.40em"></span></li>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="Cartoon Network" title="Cartoon Network" style="--src:url(assets/logos/cartoon-network.svg);width:11.96em;height:3.26em"></span></li>
+            <li class="logo"><span class="logo-mark" role="img" aria-label="Elysium Private Jet" title="Elysium Private Jet" style="--src:url(assets/logos/elysium-private-jet.svg);width:6.31em;height:6.18em"></span></li>
+          </ul>
   </section>
 </main>
 
@@ -147,6 +147,6 @@
   <div class="wordmark" aria-hidden="true">PHI GAMMA DELTA</div>
 </footer>
 
-<script type="module" src="main.js?v=de93a382"></script>
+<script type="module" src="main.js?v=933a0c64"></script>
 </body>
 </html>

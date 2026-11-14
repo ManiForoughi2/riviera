@@ -36,23 +36,24 @@
     // the scroll; if it never arrives, fall back to the plain filled bar
     d.classList.add("at-top", "over");
     setTimeout(function () { if (!d.classList.contains("js")) d.classList.remove("at-top", "over"); }, 4000);
-    // splash: the first page of a visit only, and never under reduced motion. css runs it and
-    // clears it; the timer is only a backstop so the cover can never outstay a second
+    // splash: the first page of a visit only, and never under reduced motion. css holds the cover,
+    // main.js plays the word over it and drops the class when the word bursts. the timer is only a
+    // backstop for a script that never arrives, so the cover can never be stranded
     try {
       if (!sessionStorage.getItem("asufiji-in") && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
         sessionStorage.setItem("asufiji-in", "1");
         d.classList.add("splash");
-        setTimeout(function () { d.classList.remove("splash"); }, 1100);
+        window.__splashT = setTimeout(function () { d.classList.remove("splash"); }, 3200);
       }
     } catch (e) {}
   })();
 </script>
-<link rel="stylesheet" href="styles.css?v=de93a382">
-<link rel="stylesheet" href="css/m-global.css?v=de93a382">
-<link rel="stylesheet" href="css/m-perf.css?v=de93a382">
-<link rel="stylesheet" href="css/m-nav.css?v=de93a382">
-<link rel="stylesheet" href="css/m-home.css?v=de93a382">
-<link rel="stylesheet" href="css/m-pages.css?v=de93a382">
+<link rel="stylesheet" href="styles.css?v=933a0c64">
+<link rel="stylesheet" href="css/m-global.css?v=933a0c64">
+<link rel="stylesheet" href="css/m-perf.css?v=933a0c64">
+<link rel="stylesheet" href="css/m-nav.css?v=933a0c64">
+<link rel="stylesheet" href="css/m-home.css?v=933a0c64">
+<link rel="stylesheet" href="css/m-pages.css?v=933a0c64">
 </head>
 <body>
 
@@ -108,8 +109,7 @@
 </div>
 
 <main class="deep">
-  <div class="waterline" aria-hidden="true"><i></i><i></i></div>
-  <div class="rays" aria-hidden="true"><b></b><i></i><i></i><i></i><i></i></div>
+  <canvas class="water" aria-hidden="true"></canvas>
 
   <section class="overture">
     <h2 class="title kinetic" style="--r:9.9">Persisting since 1965.</h2>
@@ -125,7 +125,7 @@
   </section>
 
   <section class="shot is-right">
-    <div class="shot-film" style="--pos:42% 50%"><img src="assets/film/dusk.jpg" alt="" loading="lazy" decoding="async"><video src="assets/film/dusk.mp4" muted loop playsinline preload="none" aria-hidden="true"></video></div>
+    <div class="shot-film" style="--pos:50% 50%"><img src="assets/film/city.jpg" alt="" loading="lazy" decoding="async"><video src="assets/film/city.mp4" muted loop playsinline preload="none" aria-hidden="true"></video></div>
     <div class="shot-copy">
       <h2 class="shot-word kinetic" style="--r:5.05">Excellence</h2>
       <p class="line">This summer, brothers interned at Microsoft.</p>
@@ -135,7 +135,7 @@
   <section class="season" aria-label="FIJI in motion">
     <h2 class="title kinetic" style="--r:7.65">A season at FIJI.</h2>
     <div class="strips">
-      <div class="strip"><img src="assets/film/dive.jpg" alt="" loading="lazy" decoding="async"><video src="assets/film/dive.mp4" muted loop playsinline preload="none" aria-hidden="true"></video></div>
+      <div class="strip"><img src="assets/film/water.jpg" alt="" loading="lazy" decoding="async"><video src="assets/film/water.mp4" muted loop playsinline preload="none" aria-hidden="true"></video></div>
       <div class="strip"><img src="assets/film/summer.jpg" alt="" loading="lazy" decoding="async"><video src="assets/film/summer.mp4" muted loop playsinline preload="none" aria-hidden="true"></video></div>
       <div class="strip"><img src="assets/film/field.jpg" alt="" loading="lazy" decoding="async"><video src="assets/film/field.mp4" muted loop playsinline preload="none" aria-hidden="true"></video></div>
     </div>
@@ -174,6 +174,6 @@
   <div class="wordmark" aria-hidden="true">PHI GAMMA DELTA</div>
 </footer>
 
-<script type="module" src="main.js?v=de93a382"></script>
+<script type="module" src="main.js?v=933a0c64"></script>
 </body>
 </html>
