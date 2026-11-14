@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en" data-theme="dark" class="sub">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Recruitment | FIJI at Arizona State</title>
+<meta name="description" content="Recruitment at FIJI, the Alpha Sigma Chapter at Arizona State: rush week, the rush form and common questions.">
+<meta name="theme-color" content="#0d1322">
+<meta property="og:title" content="Recruitment | FIJI at Arizona State">
+<meta property="og:description" content="Recruitment at FIJI, the Alpha Sigma Chapter at Arizona State: rush week, the rush form and common questions.">
+<link rel="canonical" href="https://asufiji.com/recruitment.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="FIJI at Arizona State">
+<meta property="og:url" content="https://asufiji.com/recruitment.html">
+<meta property="og:image" content="https://asufiji.com/assets/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="FIJI, standing on the water at night">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://asufiji.com/assets/og.jpg">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preload" href="assets/fonts/recia-600.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/recia-display.woff2?v=4" as="font" type="font/woff2" crossorigin>
+<!-- sky render for this screen: these queries mirror phoneFrame() in sea.js (phone-width and upright = tall) -->
+<link rel="preload" as="image" href="assets/sky/wide-day.webp" media="(min-width: 761px) and (prefers-color-scheme: light), (min-width: 504px) and (min-aspect-ratio: 697/1000) and (prefers-color-scheme: light), (orientation: landscape) and (prefers-color-scheme: light)">
+<link rel="preload" as="image" href="assets/sky/wide-night.webp" media="(min-width: 761px) and (prefers-color-scheme: dark), (min-width: 504px) and (min-aspect-ratio: 697/1000) and (prefers-color-scheme: dark), (orientation: landscape) and (prefers-color-scheme: dark)">
+<link rel="preload" as="image" href="assets/sky/tall-day.webp" media="(max-width: 503px) and (orientation: portrait) and (prefers-color-scheme: light), (max-width: 760px) and (max-aspect-ratio: 87/125) and (prefers-color-scheme: light)">
+<link rel="preload" as="image" href="assets/sky/tall-night.webp" media="(max-width: 503px) and (orientation: portrait) and (prefers-color-scheme: dark), (max-width: 760px) and (max-aspect-ratio: 87/125) and (prefers-color-scheme: dark)">
+<script>
+  (function () {
+    var d = document.documentElement, t = null;
+    try { if (!matchMedia("(max-width: 760px), (hover: none) and (pointer: coarse)").matches) t = localStorage.getItem("asufiji-theme"); } catch (e) {}
+    if (t !== "light" && t !== "dark") t = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    d.setAttribute("data-theme", t);
+    // reached from another page of the site a moment ago: the page opens under a sheet of water
+    // (styles.css) and transit.js lifts it. the timer is only a backstop for a script that never arrives
+    try {
+      var n = +sessionStorage.getItem("asufiji-nav");
+      sessionStorage.removeItem("asufiji-nav");
+      if (n && Date.now() - n < 5000 && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        d.classList.add("arriving");
+        window.__arriveT = setTimeout(function () { d.classList.remove("arriving"); }, 2600);
+      }
+    } catch (e) {}
+    // the page opens at the surface: bare chrome over the sky. main.js keeps these in step with
+    // the scroll; if it never arrives, fall back to the plain filled bar
+    d.classList.add("at-top", "over");
+    setTimeout(function () { if (!d.classList.contains("js")) d.classList.remove("at-top", "over"); }, 4000);
+    // splash: the first page of a visit only, and never under reduced motion. css holds the cover,
+    // main.js plays the word over it and drops the class when the word bursts. the timer is only a
+    // backstop for a script that never arrives, so the cover can never be stranded
+    try {
+      if (!sessionStorage.getItem("asufiji-in") && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        sessionStorage.setItem("asufiji-in", "1");
+        d.classList.add("splash");
+        window.__splashT = setTimeout(function () { d.classList.remove("splash"); }, 3200);
+      }
+    } catch (e) {}
+    // second wave. the first frame cannot start until the css below has loaded, and this runs at the
+    // start of that frame, before its layout asks for any picture in the page. so these requests go
+    // out after the css (which the first paint needs whole, undiluted) and ahead of the film stills
+    // (on this host what is asked for first is delivered first, and a late script waits behind them):
+    //   the modules main.js imports and, when the splash is on, the splash's own three, which were
+    //   otherwise found only once main.js had run;
+    //   the sky render for this screen and this theme. the tags above have nearly always asked for
+    //   it already; they go by the device's colour scheme, and a theme picked with the switch on a
+    //   desktop can differ from it.
+    // (the text face the css asks for in this same frame's layout follows these by itself)
+    requestAnimationFrame(function () {
+      var add = function (rel, href, as) {
+        var l = document.createElement("link"); l.rel = rel; l.href = href;
+        if (as) l.as = as;
+        document.head.appendChild(l);
+      };
+      add("modulepreload", "sea.js?v=dc20a558"); add("modulepreload", "under.js?v=dc20a558");
+      if (d.classList.contains("splash")) ["splash", "wild-type", "loud-burst"].forEach(function (m) { add("modulepreload", "vendor/design-how/" + m + ".js"); });
+      try {
+        [].forEach.call(document.querySelectorAll('link[rel="preload"][as="image"][media]'), function (l) {
+          var m = /^(.*\/sky\/(?:tall|wide)-)(?:day|night)(\.webp.*)$/.exec(l.getAttribute("href"));
+          if (m && matchMedia(l.media).matches) add("preload", m[1] + (t === "light" ? "day" : "night") + m[2], "image");
+        });
+      } catch (e) {}
+    });
+  })();
+</script>
+<link rel="stylesheet" href="styles.css?v=dc20a558">
+<link rel="stylesheet" href="css/m-global.css?v=dc20a558">
+<link rel="stylesheet" href="css/m-perf.css?v=dc20a558">
+<link rel="stylesheet" href="css/m-nav.css?v=dc20a558">
+<link rel="stylesheet" href="css/m-home.css?v=dc20a558">
+<link rel="stylesheet" href="css/m-pages.css?v=dc20a558">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <!-- phosphor icons (MIT, fill) + simple-icons instagram -->
+    <symbol id="i-palm" viewBox="0 0 256 256"><path fill="currentColor" d="M239.84 60.33a8 8 0 0 1-4.65 5.75L179 90.55a71.42 71.42 0 0 1 43.36 33.21a70.64 70.64 0 0 1 7.2 54.32a8 8 0 0 1-12.56 4.28l-81-61.68V224a8 8 0 0 1-16 0V120.68l-81 61.68a8 8 0 0 1-12.57-4.28a70.64 70.64 0 0 1 7.2-54.32A71.42 71.42 0 0 1 77 90.55L20.81 66.08a8 8 0 0 1-2.6-12.85a66.86 66.86 0 0 1 97.74 0a72.2 72.2 0 0 1 12 17a72.2 72.2 0 0 1 12.05-17a66.86 66.86 0 0 1 97.74 0a8 8 0 0 1 2.1 7.1"/></symbol>
+    <symbol id="i-down" viewBox="0 0 256 256"><path fill="currentColor" d="m208.49 152.49l-72 72a12 12 0 0 1-17 0l-72-72a12 12 0 0 1 17-17L116 187V40a12 12 0 0 1 24 0v147l51.51-51.52a12 12 0 0 1 17 17Z"/></symbol>
+    <symbol id="i-ig" viewBox="0 0 24 24"><path fill="currentColor" d="M7.03.084c-1.277.06-2.149.264-2.91.563a5.9 5.9 0 0 0-2.124 1.388a5.9 5.9 0 0 0-1.38 2.127C.321 4.926.12 5.8.064 7.076s-.069 1.688-.063 4.947s.021 3.667.083 4.947c.061 1.277.264 2.149.563 2.911c.308.789.72 1.457 1.388 2.123a5.9 5.9 0 0 0 2.129 1.38c.763.295 1.636.496 2.913.552c1.278.056 1.689.069 4.947.063s3.668-.021 4.947-.082c1.28-.06 2.147-.265 2.91-.563a5.9 5.9 0 0 0 2.123-1.388a5.9 5.9 0 0 0 1.38-2.129c.295-.763.496-1.636.551-2.912c.056-1.28.07-1.69.063-4.948c-.006-3.258-.02-3.667-.081-4.947c-.06-1.28-.264-2.148-.564-2.911a5.9 5.9 0 0 0-1.387-2.123a5.9 5.9 0 0 0-2.128-1.38c-.764-.294-1.636-.496-2.914-.55C15.647.009 15.236-.006 11.977 0S8.31.021 7.03.084m.14 21.693c-1.17-.05-1.805-.245-2.228-.408a3.7 3.7 0 0 1-1.382-.895a3.7 3.7 0 0 1-.9-1.378c-.165-.423-.363-1.058-.417-2.228c-.06-1.264-.072-1.644-.08-4.848c-.006-3.204.006-3.583.061-4.848c.05-1.169.246-1.805.408-2.228c.216-.561.477-.96.895-1.382a3.7 3.7 0 0 1 1.379-.9c.423-.165 1.057-.361 2.227-.417c1.265-.06 1.644-.072 4.848-.08c3.203-.006 3.583.006 4.85.062c1.168.05 1.804.244 2.227.408c.56.216.96.475 1.382.895s.681.817.9 1.378c.165.422.362 1.056.417 2.227c.06 1.265.074 1.645.08 4.848c.005 3.203-.006 3.583-.061 4.848c-.051 1.17-.245 1.805-.408 2.23c-.216.56-.477.96-.896 1.38a3.7 3.7 0 0 1-1.378.9c-.422.165-1.058.362-2.226.418c-1.266.06-1.645.072-4.85.079s-3.582-.006-4.848-.06m9.783-16.192a1.44 1.44 0 1 0 1.437-1.442a1.44 1.44 0 0 0-1.437 1.442M5.839 12.012a6.161 6.161 0 1 0 12.323-.024a6.162 6.162 0 0 0-12.323.024M8 12.008A4 4 0 1 1 12.008 16A4 4 0 0 1 8 12.008"/></symbol>
+    <!-- the strip above the waterline: what is behind it swims as it nears the water (styles.css, .lens) -->
+    <filter id="fx-surface" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.0035 0.028" numOctaves="2" seed="5" result="n">
+        <animate attributeName="baseFrequency" dur="11s" values="0.0035 0.028;0.0055 0.04;0.0035 0.028" repeatCount="indefinite"/>
+      </feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="54" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <!-- reflection ripple: only the no-webgl fallback uses it -->
+    <filter id="ripple" x="-6%" y="-4%" width="112%" height="108%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.002 0.14" numOctaves="2" seed="7" result="n">
+        <animate attributeName="baseFrequency" dur="7s" values="0.002 0.14;0.003 0.17;0.002 0.14" repeatCount="indefinite"/>
+      </feTurbulence>
+      <feColorMatrix in="n" type="matrix" values="1 0 0 0 0  0 0 0 0 .5  0 0 0 0 .5  0 0 0 0 1" result="m"/>
+      <feDisplacementMap in="SourceGraphic" in2="m" scale="24" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="1 3.6"/>
+    </filter>
+  </defs>
+</svg>
+
+<nav class="rail" aria-label="Main">
+  <a class="rail-brand" href="./" aria-label="FIJI home">FIJI</a>
+  <div class="rail-links" id="rail-links">
+    <a class="rail-link" href="history.html">History</a>
+    <a class="rail-link" href="internships.html">Internships</a>
+    <a class="rail-link" href="alumni.html">Alumni</a>
+    <div class="rail-extra">
+      <a class="btn-brass btn-lg rail-join" href="recruitment.html" aria-current="page">Recruitment</a>
+    </div>
+  </div>
+  <a class="btn-brass btn-sm magnetic" href="recruitment.html" aria-current="page">Recruitment</a>
+  <button class="rail-menu" type="button" aria-expanded="false" aria-controls="rail-links">Menu</button>
+</nav>
+<button class="theme-toggle" type="button" aria-label="Switch to day" title="Day / night">
+  <svg aria-hidden="true"><use href="#i-palm"/></svg>
+</button>
+
+<div class="surface">
+<header class="hero hero-sub" style="--ratio:7.89">
+  <h1 class="sr-only">Recruitment at FIJI, Arizona State</h1>
+  <div class="sky" aria-hidden="true"></div>
+  <canvas class="sea" id="sea" aria-hidden="true"></canvas>
+  <div class="crest" aria-hidden="true">
+    <span class="word">RECRUITMENT</span>
+    <span class="word word-refl">RECRUITMENT</span>
+  </div>
+  <div class="hero-base">
+    <p class="tagline">The spring &#39;27 rush form is open.</p>
+  </div>
+</header>
+</div>
+
+<main class="deep">
+  <canvas class="water" aria-hidden="true"></canvas>
+
+  <section class="page week" id="week">
+    <h2 class="title" style="--r:9.5">Spring &#39;27 rush week</h2>
+    <ol class="nights">
+      <li class="night is-closed"><span class="night-day">Monday</span><span class="night-what">TBD</span><span class="night-where"></span></li>
+      <li class="night is-closed"><span class="night-day">Tuesday</span><span class="night-what">TBD</span><span class="night-where"></span></li>
+      <li class="night is-closed"><span class="night-day">Wednesday</span><span class="night-what">TBD</span><span class="night-where"></span></li>
+      <li class="night is-closed"><span class="night-day">Thursday</span><span class="night-what">TBD</span><span class="night-where"></span></li>
+      <li class="night is-closed"><span class="night-day">Friday</span><span class="night-what">TBD</span><span class="night-where"></span></li>
+    </ol>
+    <div class="week-foot">
+      <div class="who">
+        <p class="chairs"><span>Rush chairs</span> Matthew Trapp &amp; Nolan Walters</p>
+        <p class="chairs"><span>President</span> Alex Perch</p>
+      </div>
+      <a class="btn-brass btn-lg magnetic" href="https://docs.google.com/forms/d/e/1FAIpQLScStPXcTklpcfTk_5fiJjjF8VhGKEzVqNjYATTwWvomMb2AiQ/viewform" target="_blank" rel="noopener">Interest form</a>
+    </div>
+  </section>
+
+  <section class="page page-next" id="faq">
+    <h2 class="title" style="--r:4.8">Questions</h2>
+    <div class="faq">
+      <details class="qa"><summary><span>What is FIJI?</span><svg class="qa-mark" aria-hidden="true"><use href="#i-down"/></svg></summary><p>FIJI is the nickname of Phi Gamma Delta, founded in 1848. Our chapter at ASU is Alpha Sigma.</p></details>
+      <details class="qa"><summary><span>Do I need to know anyone?</span><svg class="qa-mark" aria-hidden="true"><use href="#i-down"/></svg></summary><p>No. Plenty of guys walk in knowing nobody. Come to an open night and talk to whoever's there.</p></details>
+      <details class="qa"><summary><span>When is rush?</span><svg class="qa-mark" aria-hidden="true"><use href="#i-down"/></svg></summary><p>Every fall and spring. Spring &#39;27 dates are still being set. Fill out the rush form and we&#39;ll send them to you.</p></details>
+      <details class="qa"><summary><span>Where is GLV?</span><svg class="qa-mark" aria-hidden="true"><use href="#i-down"/></svg></summary><p>The Greek Leadership Village on ASU's Tempe campus, near Rural Road and Terrace Road.</p></details>
+      <details class="qa"><summary><span>What should I wear?</span><svg class="qa-mark" aria-hidden="true"><use href="#i-down"/></svg></summary><p>For open nights, whatever you'd wear to class. We'll tell you ahead of time if a night needs more than that.</p></details>
+      <details class="qa"><summary><span>How much does it cost?</span><svg class="qa-mark" aria-hidden="true"><use href="#i-down"/></svg></summary><p>Dues change from year to year, so ask the rush chairs for this semester's number. They'll give you a straight answer.</p></details>
+      <details class="qa"><summary><span>Who do I talk to?</span><svg class="qa-mark" aria-hidden="true"><use href="#i-down"/></svg></summary><p>Matthew Trapp and Nolan Walters are the rush chairs. DM @asufiji and it gets to them.</p></details>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <p class="foot-line">
+    <span>FIJI &middot; Phi Gamma Delta &middot; Alpha Sigma Chapter &middot; Arizona State University</span>
+    <a class="foot-ig" href="https://www.instagram.com/asufiji/" target="_blank" rel="noopener" aria-label="@asufiji on Instagram"><svg aria-hidden="true"><use href="#i-ig"/></svg></a>
+  </p>
+  <div class="wordmark" aria-hidden="true">PHI GAMMA DELTA</div>
+</footer>
+
+<script type="module" src="main.js?v=dc20a558"></script>
+</body>
+</html>
