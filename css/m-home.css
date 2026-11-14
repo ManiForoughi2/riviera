@@ -11,17 +11,24 @@
   .shot-word { font-size: min(104px, calc((100vw - 2 * var(--g)) / var(--r, 6.2))); letter-spacing: -.015em; }
   .shot-copy .line, .shot.is-right .shot-copy .line { padding: 0; max-width: 21em; text-wrap: balance; }
 
-  /* ---------- a season: a row to swipe, one cut in the middle ---------- */
-  .season { padding: 2svh 0 3svh; }
-  .season .title { padding: 0 var(--g); }
-  .strips {
-    --sw: min(64vw, 280px);
-    display: flex; gap: 14px; margin: 0; max-width: none; padding-top: 74px;
-    padding-inline: calc((100vw - var(--sw)) / 2); padding-bottom: 44px;
-    overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none;
+  /* ---------- a season: the three panes hang one below the other, each on cords from the one
+     above, and each plays as it comes up the screen. nothing here scrolls sideways ---------- */
+  .season { padding: 2svh var(--g) 3svh; }
+  .strips { display: grid; grid-template-columns: 1fr; gap: 0; margin: 0; max-width: none; padding-top: 96px; }
+  .strip, .strip:nth-child(n) { grid-column: 1; width: min(76vw, 330px); margin-top: 0; }
+  .strip:nth-child(odd) { justify-self: start; }
+  .strip:nth-child(even) { justify-self: end; }
+  .strip + .strip { margin-top: 84px; }
+  /* the first pane's cords run up out of sight; the others are tied to the pane above */
+  .strip::before { height: 96px; }
+  .strip + .strip::before {
+    height: 86px;
+    background:
+      linear-gradient(rgba(236, 220, 194, .55), rgba(236, 220, 194, .55)) 0 0 / 2px 100% no-repeat,
+      linear-gradient(rgba(236, 220, 194, .55), rgba(236, 220, 194, .55)) 100% 0 / 2px 100% no-repeat;
   }
-  .strips::-webkit-scrollbar { display: none; }
-  .strip, .strip:nth-child(n) { flex: 0 0 var(--sw); margin-top: 0; scroll-snap-align: center; }
+  .strip:nth-child(2)::before { left: 10%; right: 46%; }
+  .strip:nth-child(3)::before { left: 46%; right: 10%; }
 
   /* ---------- legacy ---------- */
   .relic { grid-template-columns: 1fr; gap: 26px; padding: 4svh var(--g) 6svh; }

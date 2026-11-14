@@ -51,16 +51,38 @@ float caustic(vec2 uv, float t){
   return clamp(web * (0.4 + 0.3 * ra * rb), 0.0, 1.0);
 }
 
-// bubbles: one per cell at most, a soft disc with a brighter rim, wobbling as it climbs
-float bubbles(vec2 uv, float amount, float t){
+// fine matter in the water: soft specks with no outline, some brighter than others
+float specks(vec2 uv, float amount){
   vec2 id = floor(uv), f = fract(uv) - 0.5;
   float h = hash(id);
   if (h > amount) return 0.0;
-  vec2 o = vec2(hash(id + 3.7) - 0.5, hash(id + 9.1) - 0.5) * 0.5;
-  o.x += sin(t * (1.5 + h * 3.0) + h * 40.0) * 0.07;
-  float r = 0.05 + 0.13 * hash(id + 5.3);
+  vec2 o = (vec2(hash(id + 3.7), hash(id + 9.1)) - 0.5) * 0.7;
+  float r = 0.02 + 0.05 * hash(id + 5.3);
   float dd = length(f - o);
-  return smoothstep(r, r * 0.82, dd) * (0.28 + 0.72 * smoothstep(r * 0.4, r * 0.95, dd));
+  return exp(-dd * dd / (r * r)) * (0.3 + 0.7 * hash(id + 1.9));
+}
+// air, only as the lens goes through: many tiny bubbles and a few large ones. each flattens and
+// breathes as it climbs, shows the bright rim refraction gives it and one small highlight, and
+// the large near ones are soft, out of focus
+float bubble(vec2 uv, float amount, float t, out float spec){
+  spec = 0.0;
+  vec2 id = floor(uv), f = fract(uv) - 0.5;
+  float h = hash(id);
+  if (h > amount) return 0.0;
+  float k = hash(id + 5.3);
+  float r = 0.03 + 0.30 * k * k * k * k;
+  vec2 o = vec2(hash(id + 3.7) - 0.5, hash(id + 9.1) - 0.5) * max(0.0, 0.9 - 2.0 * r);
+  o.x += sin(t * (2.0 + h * 5.0) + h * 40.0) * 0.06;
+  vec2 q = (f - o) / r;
+  q.y *= 1.12 + 0.3 * (0.5 + 0.5 * sin(t * (5.0 + k * 6.0) + h * 20.0)) * smoothstep(0.08, 0.3, r);
+  float dd = length(q);
+  if (dd > 1.3) return 0.0;
+  float soft = 0.07 + 0.24 * smoothstep(0.12, 0.33, r);
+  float body = 1.0 - smoothstep(1.0 - soft, 1.0 + soft * 0.4, dd);
+  float rim = smoothstep(0.5, 0.97, dd) * body;
+  vec2 hq = q - vec2(-0.36, -0.44);
+  spec = exp(-dot(hq, hq) / 0.035) * body;
+  return rim * 0.9 + body * 0.06;
 }
 
 void main(){
@@ -121,16 +143,20 @@ void main(){
   // loose things in the water go up past the lens: faster than the page, and a rush of them at the crossing
   float under = smoothstep(0.0, 0.03, s);
   float yr = ys + uRise;
-  float bub = bubbles(vec2(xa * 7.0 + 0.3, (yr * 1.5 + t * 0.10) * 7.0), 0.05, t) * 0.8
-            + bubbles(vec2(xa * 15.0, (yr * 1.9 + t * 0.16) * 15.0), 0.05, t) * 0.65
-            + bubbles(vec2(xa * 31.0, (yr * 1.2 + t * 0.07) * 31.0), 0.09, t) * 0.45;
+  float dust = specks(vec2(xa * 26.0, (yr * 1.25 + t * 0.05) * 26.0), 0.16)
+             + specks(vec2(xa * 54.0 + 3.0, (yr * 1.6 + t * 0.08) * 54.0), 0.14) * 0.7;
+  vec3 bubc = bright * dust * 0.34;
   if (uBurst > 0.01) {
-    float rush = uBurst * exp(-s * 2.2);
-    bub += (bubbles(vec2(xa * 5.0, (yr + t * 0.9) * 5.0), 0.55 * rush, t)
-          + bubbles(vec2(xa * 11.0 + 4.0, (yr + t * 1.25) * 11.0), 0.6 * rush, t)
-          + bubbles(vec2(xa * 23.0, (yr + t * 0.7) * 23.0), 0.6 * rush, t)) * 1.3;
+    // they come up in columns and clumps from the break in the surface, not evenly
+    float clump = smoothstep(0.3, 0.75, vnoise(vec2(xa * 2.4 + 1.7, yr * 1.3 + t * 0.5)));
+    float rush = uBurst * exp(-s * 2.4) * (0.25 + 0.75 * clump);
+    float s1, s2, s3;
+    float b = bubble(vec2(xa * 4.5, (yr + t * 0.85) * 4.5), 0.75 * rush, t, s1)
+            + bubble(vec2(xa * 10.0 + 4.0, (yr * 1.2 + t * 1.2) * 10.0), 0.8 * rush, t, s2)
+            + bubble(vec2(xa * 22.0, (yr * 1.1 + t * 0.7) * 22.0), 0.8 * rush, t, s3);
+    bubc += mix(bright, uSky, 0.7) * b * 0.8 + uSky * (s1 + s2 + s3) * 0.9;
   }
-  vec3 bubc = mix(bright, uSky, 0.6) * bub * under * (0.34 + 0.5 * uLight);
+  bubc *= under;
 
   // the lip: light caught along the waterline, with a soft bloom so the line is never a cut,
   // and froth torn off it while the lens is going through
@@ -152,7 +178,7 @@ void main(){
 const hex = (h) => { const n = parseInt(h.replace("#", ""), 16); return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; };
 const NAMES = ["uRes", "uTime", "uSurf", "uCol", "uVH", "uPx", "uFeather", "uBand", "uW3At", "uW0", "uW1", "uW2", "uW3", "uSky", "uRay", "uLight", "uFloor", "uMouse", "uLean", "uAmp", "uSunX", "uBurst", "uDepth", "uRise"];
 
-export function startWater(canvas, { deep, reduced, phone, dive, onPlunge }) {
+export function startWater(canvas, { deep, reduced, phone, dive, follow, onPlunge }) {
   const gl = canvas.getContext("webgl", { alpha: true, premultipliedAlpha: true, antialias: false, depth: false, stencil: false });
   if (!gl) return null;
   let U = {};
@@ -225,9 +251,15 @@ export function startWater(canvas, { deep, reduced, phone, dive, onPlunge }) {
     const colTop = deep.getBoundingClientRect().top, y = scrollY;
     let surf = colTop, depth = Math.max(0, -colTop / vhCss);
     if (dive) {
-      if (reduced) p = target;
+      if (follow) {
+        // touch: the crossing is in the finger's hands. the line is a plain function of the scroll, so it
+        // tracks a slow drag, a flick and the way back the same way, and nothing here runs on its own clock
+        const a = vhCss * 0.025, b = vhCss * 0.42;
+        p = Math.min(1, Math.max(0, (y - a) / (b - a)));
+        burst = 0; y0 = b;
+      } else if (reduced) p = target;
       else if (p !== target) p = target > p ? Math.min(1, p + dt / 0.85) : Math.max(0, p - dt / 0.7);
-      burst = Math.max(0, burst - dt / 1.5);
+      if (!follow) burst = Math.max(0, burst - dt / 1.5);
       const e = ease(p);
       const rest = vhCss + 14 - Math.min(y, 140) * 0.3;          // at rest the water only laps at the bottom edge
       surf = rest + (-(vhCss * 0.1 + 150) - rest) * e;

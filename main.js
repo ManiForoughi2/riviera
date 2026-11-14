@@ -1,5 +1,5 @@
-import { startSea } from "./sea.js?v=24f2101b";
-import { startWater } from "./under.js?v=24f2101b";
+import { startSea } from "./sea.js?v=4c99a35e";
+import { startWater } from "./under.js?v=4c99a35e";
 
 const root = document.documentElement;
 root.classList.add("js");                         // the head script waits for this before trusting its opening state
@@ -27,18 +27,28 @@ if (reduced) document.querySelector("svg")?.pauseAnimations?.();
 const deep = document.querySelector(".deep");
 const waterCanvas = document.querySelector(".water");
 let water = null;
+// on touch the crossing follows the finger; with a wheel or trackpad it is a short event of its own
+const touchDive = phoneMQ.matches;
+let plunged = false, queued = false;
+const queue = () => { if (!queued) { queued = true; requestAnimationFrame(frame); } };
 if (deep && waterCanvas) {
   // home: going under is an event the page triggers (see the scroll loop). the shorter pages keep
   // the waterline tied to the scroll, because their water is already on screen at rest
   const dive = !root.classList.contains("sub") && !!document.querySelector(".overture");
   root.classList.add("gl-water");
   water = startWater(waterCanvas, {
-    deep, reduced, phone: phoneMQ.matches, dive,
+    deep, reduced, phone: phoneMQ.matches, dive, follow: touchDive,
     // the camera sinks with the wash: the hero sea's eye drops to the surface as the line comes over the lens
-    onPlunge: (e) => sea?.setEye(1 - 0.9 * e),
+    onPlunge: (e) => {
+      sea?.setEye(1 - 0.9 * e);
+      if (!touchDive) return;
+      // touch: the scene above leaves with the finger too, and the chrome changes sides halfway
+      heroEl.style.setProperty("--dp", e.toFixed(3));
+      if ((e > 0.5) !== plunged) { plunged = e > 0.5; root.classList.toggle("plunged", plunged); queue(); }
+    },
   });
   if (!water) root.classList.remove("gl-water");
-  else if (dive) { root.classList.add("dive"); water.redraw(); }
+  else if (dive) { root.classList.add("dive"); if (touchDive) root.classList.add("follow"); water.redraw(); }
   window.__water = water;                         // read by hand when checking frame times
 }
 
@@ -266,7 +276,7 @@ const setVar = (el, k, v) => {
   const c = el._sv || (el._sv = {});
   if (c[k] !== v) { c[k] = v; el.style.setProperty(k, v); }
 };
-let queued = false, state = "", plunged = false;
+let state = "";
 function frame() {
   queued = false;
   const vh = innerHeight, y = scrollY;
@@ -276,7 +286,7 @@ function frame() {
   // home: a short way into the scroll the camera goes under, by itself and all the way; it comes back
   // up the same way near the top. the two thresholds are apart so it cannot flutter between them
   const diving = root.classList.contains("dive");
-  if (diving) {
+  if (diving && !touchDive) {
     const hh = heroEl.offsetHeight;
     if (!plunged && y > Math.max(64, hh * 0.08)) { plunged = true; water.setPlunge(1); root.classList.add("plunged"); }
     else if (plunged && y < Math.max(34, hh * 0.04)) { plunged = false; water.setPlunge(0); root.classList.remove("plunged"); }
@@ -309,7 +319,6 @@ function frame() {
     setVar(el, "--ty", (clamp((r.top + r.height / 2 - vh / 2) / vh, -1, 1) * 46).toFixed(1) + "px");
   });
 }
-const queue = () => { if (!queued) { queued = true; requestAnimationFrame(frame); } };
 addEventListener("scroll", queue, { passive: true });
 addEventListener("resize", queue, { passive: true });
 frame();
