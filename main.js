@@ -3,6 +3,10 @@ import { startWater } from "./under.js?v=9e2be012";
 
 const root = document.documentElement;
 root.classList.add("js");                         // the head script waits for this before trusting its opening state
+// the splash's modules are asked for before the scenes are built, so they load while that work is done
+// (the head script has already preloaded them where the browser can)
+const splashMod = root.classList.contains("splash") ? import("./vendor/design-how/splash.js") : null;
+splashMod?.catch(() => {});                       // a failure is reported where it is awaited, below
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const theme = () => (root.getAttribute("data-theme") === "light" ? "light" : "dark");
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -103,7 +107,7 @@ if (root.classList.contains("splash")) {
       stage.setAttribute("aria-hidden", "true");
       document.body.append(stage);
       const [mod] = await Promise.all([
-        import("./vendor/design-how/splash.js"),
+        splashMod,
         Promise.race([document.fonts?.ready, new Promise((r) => setTimeout(r, 700))]),
       ]);
       // two frames, so sea.js has fitted the title between the islands before it is measured
@@ -348,4 +352,12 @@ if (!reduced && finePointer) {
       btn.style.setProperty("--my", "0px");
     });
   });
+}
+
+// ---------- once the page is up and still: the next page and the next visit (idle.js) ----------
+{
+  const later = () => import("./idle.js?v=9e2be012").catch(() => {});
+  const whenIdle = () => (window.requestIdleCallback ? requestIdleCallback(later, { timeout: 4000 }) : setTimeout(later, 1200));
+  if (document.readyState === "complete") whenIdle();
+  else addEventListener("load", whenIdle, { once: true });
 }

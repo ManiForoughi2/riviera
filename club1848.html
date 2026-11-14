@@ -48,6 +48,31 @@
         window.__splashT = setTimeout(function () { d.classList.remove("splash"); }, 3200);
       }
     } catch (e) {}
+    // second wave. the first frame cannot start until the css below has loaded, and this runs at the
+    // start of that frame, before its layout asks for any picture in the page. so these requests go
+    // out after the css (which the first paint needs whole, undiluted) and ahead of the film stills
+    // (on this host what is asked for first is delivered first, and a late script waits behind them):
+    //   the modules main.js imports and, when the splash is on, the splash's own three, which were
+    //   otherwise found only once main.js had run;
+    //   both sky renders for this screen, the one for this theme first (the tags above have usually
+    //   asked for it already). sea.js takes both in as they arrive, and that work must be over
+    //   before the splash moves, not land in the middle of it.
+    // (the text face the css asks for in this same frame's layout follows these by itself)
+    requestAnimationFrame(function () {
+      var add = function (rel, href, as) {
+        var l = document.createElement("link"); l.rel = rel; l.href = href;
+        if (as) l.as = as;
+        document.head.appendChild(l);
+      };
+      add("modulepreload", "sea.js?v=9e2be012"); add("modulepreload", "under.js?v=9e2be012");
+      if (d.classList.contains("splash")) ["splash", "wild-type", "loud-burst"].forEach(function (m) { add("modulepreload", "vendor/design-how/" + m + ".js"); });
+      try {
+        [].forEach.call(document.querySelectorAll('link[rel="preload"][as="image"][media]'), function (l) {
+          var m = /^(.*\/sky\/(?:tall|wide)-)(?:day|night)(\.webp.*)$/.exec(l.getAttribute("href"));
+          if (m && matchMedia(l.media).matches) (t === "light" ? ["day", "night"] : ["night", "day"]).forEach(function (w) { add("preload", m[1] + w + m[2], "image"); });
+        });
+      } catch (e) {}
+    });
   })();
 </script>
 <link rel="stylesheet" href="styles.css?v=9e2be012">

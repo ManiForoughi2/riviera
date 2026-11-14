@@ -552,7 +552,11 @@ export function startSea(canvas, opts) {
   let shapeNow = "", horizon = { day: [0.6, 0.6, 0.62], night: [0.1, 0.12, 0.2] };
   let nightNow = getTheme() === "light" ? 0 : 1, fadeRaf = 0;
 
-  const shapeFor = () => (phoneFrame(canvas.clientWidth, canvas.clientHeight) ? "tall" : "wide");
+  // the frame is the whole header, which the canvas fills once main.js sets .gl-sea. measured on the
+  // canvas itself, the first look (before that class) saw only the strip under the horizon, called
+  // every phone's sub-page "wide" and downloaded both wide renders for nothing
+  const frameEl = canvas.closest(".hero") || canvas;
+  const shapeFor = () => (phoneFrame(frameEl.clientWidth, frameEl.clientHeight) ? "tall" : "wide");
   function horizonOf(img) {
     const c = document.createElement("canvas"); c.width = 256; c.height = 8;
     const x = c.getContext("2d", { willReadFrequently: true });
