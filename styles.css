@@ -315,9 +315,12 @@ html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; back
 /* ---------- opening card ---------- */
 .overture {
   padding: calc(var(--feather) + var(--band) + 3svh) var(--g) 9svh;
-  display: grid; align-content: start; justify-items: center; gap: 22px; text-align: center;
+  display: block; text-align: center;
 }
-.overture .title { --max: 132px; }
+/* the first line holds: it arrives as the lens goes under, then stays mid-screen for a stretch of
+   scroll (the ::after is that stretch) while the water moves behind it, so it is never scrolled past */
+.overture .title { --max: 132px; position: sticky; top: 38svh; }
+.overture::after { content: ""; display: block; height: var(--hold, 58svh); }
 
 /* ---------- shots: full-bleed film that rises out of the water and sinks back into it ---------- */
 .shot { height: clamp(620px, 60vw, 124svh); }
