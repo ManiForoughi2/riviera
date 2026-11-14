@@ -3,20 +3,25 @@
 // Stripe payment links cannot do this: they cannot take an amount from the page, and they have
 // no giver-chosen amount for a monthly gift.
 //
-// set up (Cloudflare dashboard → Workers → Create → paste this file):
-//   1. Settings → Variables → add a secret STRIPE_SECRET_KEY (sk_test_… while testing, sk_live_… after)
-//   2. deploy, copy the worker's address into CHECKOUT at the top of give.js, and stamp + push the site
+// deploy: npx wrangler deploy --config tools/wrangler.toml   (the worker is named asufiji-checkout)
+// key:    npx wrangler secret put STRIPE_SECRET_KEY --config tools/wrangler.toml
+//         (sk_test_… while testing, sk_live_… after). until it is set the worker answers 503.
+// then put the worker's address into CHECKOUT at the top of give.js, and stamp + push the site
 // the secret key lives only here, never in the site's files.
 
 const SITE = "https://asufiji.com";
+// pages allowed to ask for a checkout: the site, and the local preview while it is being tried
+const ORIGINS = [SITE, "http://localhost:8100", "http://127.0.0.1:8100"];
 const CLUB = { monthly: 1848, once: 184800 };       // cents: what makes a gift Club 1848
 const LIMIT = 10000000;                           // $100,000: anything larger is a typing slip
 
+let origin = SITE;
 const cors = (body, status = 200) => new Response(body && JSON.stringify(body), {
   status,
   headers: {
     "content-type": "application/json",
-    "access-control-allow-origin": SITE,
+    "access-control-allow-origin": origin,
+    "vary": "origin",
     "access-control-allow-methods": "POST, OPTIONS",
     "access-control-allow-headers": "content-type",
   },
@@ -24,7 +29,10 @@ const cors = (body, status = 200) => new Response(body && JSON.stringify(body), 
 
 export default {
   async fetch(req, env) {
+    const from = req.headers.get("origin") || "";
+    origin = ORIGINS.includes(from) ? from : SITE;
     if (req.method === "OPTIONS") return cors(null, 204);
+    if (!env.STRIPE_SECRET_KEY) return cors({ error: "no key yet" }, 503);
     if (req.method !== "POST") return cors({ error: "POST only" }, 405);
     let cents, mode;
     try { ({ cents, mode } = await req.json()); } catch { return cors({ error: "bad request" }, 400); }
@@ -44,8 +52,8 @@ export default {
     if (mode === "monthly") f.set("line_items[0][price_data][recurring][interval]", "month");
     else f.set("submit_type", "donate");
     f.set("metadata[club1848]", club ? (mode === "once" ? "lifetime" : "monthly") : "no");
-    f.set("success_url", `${SITE}/alumni.html?${club ? "joined" : "gave"}=1`);
-    f.set("cancel_url", `${SITE}/alumni.html#give`);
+    f.set("success_url", `${origin}/alumni.html?${club ? "joined" : "gave"}=1`);
+    f.set("cancel_url", `${origin}/alumni.html#give`);
 
     const r = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
