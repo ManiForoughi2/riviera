@@ -54,8 +54,8 @@
 <link rel="stylesheet" href="css/m-nav.css?v=e9aa154b">
 <link rel="stylesheet" href="css/m-home.css?v=e9aa154b">
 <link rel="stylesheet" href="css/m-pages.css?v=e9aa154b">
-<link rel="stylesheet" href="css/chart.css?v=e9aa154b">
-<link rel="stylesheet" href="css/chart-m.css?v=e9aa154b">
+<link rel="stylesheet" href="css/chart.css?v=c7f68a2f">
+<link rel="stylesheet" href="css/chart-m.css?v=c7f68a2f">
 </head>
 <body>
 
@@ -109,48 +109,64 @@
 </header>
 </div>
 
-<main class="sheet">
-  <div class="plan-band">
-    <div class="plan" aria-hidden="true">
+<main class="sheet is-faq">
+  <div class="shore-band" aria-hidden="true">
+    <div class="plan">
       <div class="plan-sheet">
         <div class="plan-ink"></div>
-        <span class="plan-label is-water lab-lake">Tempe Town Lake</span>
-        <span class="plan-label lab-town">Tempe, Arizona<b>33&deg;25'N 111&deg;56'W</b></span>
       </div>
     </div>
-    <div class="compass" aria-hidden="true"><i class="c-shadow"></i><i class="c-bezel"></i><i class="c-text"></i><i class="c-well"><i class="c-card"></i></i><i class="c-shade"></i><i class="c-glass"></i><i class="c-lubber"></i><i class="c-cap"></i></div>
+    <canvas class="shore"></canvas>
+    <i class="berth" data-fix></i>
   </div>
 
-  <div class="wrap">
-    <div class="ask">
-      <details class="q">
-        <summary><span>Do I need to know anyone?</span><i class="q-mark" aria-hidden="true"></i></summary>
-        <p>No. Plenty of guys walk in knowing nobody. Come to an open night and talk to whoever's there.</p>
-      </details>
-      <details class="q">
-        <summary><span>When is rush?</span><i class="q-mark" aria-hidden="true"></i></summary>
-        <p>Every fall and spring. The schedule changes each semester, so fill out the rush form and we&#39;ll send you the dates.</p>
-      </details>
-      <details class="q">
-        <summary><span>Where is GLV?</span><i class="q-mark" aria-hidden="true"></i></summary>
-        <p>The Greek Leadership Village on ASU's Tempe campus. Our house is the one with the ΦΓΔ letters out front.</p>
-      </details>
-      <details class="q">
-        <summary><span>What should I wear?</span><i class="q-mark" aria-hidden="true"></i></summary>
-        <p>For open nights, whatever you'd wear to class. We'll tell you ahead of time if a night needs more than that.</p>
-      </details>
-      <details class="q">
-        <summary><span>How much does it cost?</span><i class="q-mark" aria-hidden="true"></i></summary>
-        <p>Dues change from year to year, so ask the rush chairs for this semester's number. They'll give you a straight answer.</p>
-      </details>
-      <details class="q">
-        <summary><span>Who do I talk to?</span><i class="q-mark" aria-hidden="true"></i></summary>
-        <p>Lincoln Sneed and Carson Ziegler are the rush chairs. DM @asufiji and it gets to them.</p>
-      </details>
+  <div class="lane">
+    <i class="way way-a" data-fix aria-hidden="true"></i>
+    <div class="wrap">
+      <div class="ask">
+        <details class="q">
+          <summary><span>Do I need to know anyone?</span><i class="q-mark" aria-hidden="true"></i></summary>
+          <p>No. Plenty of guys walk in knowing nobody. Come to an open night and talk to whoever's there.</p>
+        </details>
+        <details class="q">
+          <summary><span>When is rush?</span><i class="q-mark" aria-hidden="true"></i></summary>
+          <p>Every fall and spring. The schedule changes each semester, so fill out the rush form and we&#39;ll send you the dates.</p>
+        </details>
+        <details class="q">
+          <summary><span>Where is GLV?</span><i class="q-mark" aria-hidden="true"></i></summary>
+          <p>The Greek Leadership Village on ASU's Tempe campus. Our house is the one with the ΦΓΔ letters out front.</p>
+        </details>
+        <details class="q">
+          <summary><span>What should I wear?</span><i class="q-mark" aria-hidden="true"></i></summary>
+          <p>For open nights, whatever you'd wear to class. We'll tell you ahead of time if a night needs more than that.</p>
+        </details>
+        <details class="q">
+          <summary><span>How much does it cost?</span><i class="q-mark" aria-hidden="true"></i></summary>
+          <p>Dues change from year to year, so ask the rush chairs for this semester's number. They'll give you a straight answer.</p>
+        </details>
+        <details class="q">
+          <summary><span>Who do I talk to?</span><i class="q-mark" aria-hidden="true"></i></summary>
+          <p>Lincoln Sneed and Carson Ziegler are the rush chairs. DM @asufiji and it gets to them.</p>
+        </details>
+      </div>
     </div>
-    <p class="sheet-note">Ready? <a href="join.html">See the rush schedule</a>.</p>
-    <p class="plan-credit">Chart data &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a></p>
+    <i class="way way-b" data-fix aria-hidden="true"></i>
   </div>
+
+  <div class="port-band">
+    <div class="plan" role="img" aria-label="Chart of the east side of campus: the Greek Leadership Village stands at Rural Road and Terrace Road.">
+      <div class="plan-sheet" aria-hidden="true">
+        <div class="plan-ink"></div>
+        <span class="plan-label lab-road lab-rural">Rural Rd</span>
+        <span class="plan-label lab-road lab-terrace">Terrace Rd</span>
+        <i class="glv" data-fix></i>
+        <span class="plan-label lab-glv">GLV<b>Greek Leadership Village</b></span>
+      </div>
+    </div>
+    <a class="plan-imprint" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">&copy; OpenStreetMap contributors</a>
+  </div>
+
+  <div class="compass" aria-hidden="true"><i class="c-shadow"></i><i class="c-bezel"></i><i class="c-text"></i><i class="c-well"><i class="c-card"></i></i><i class="c-shade"></i><i class="c-glass"></i><i class="c-lubber"></i><i class="c-cap"></i></div>
 </main>
 
 <footer class="foot">
@@ -162,6 +178,6 @@
 </footer>
 
 <script type="module" src="main.js?v=e9aa154b"></script>
-<script type="module" src="chart.js?v=e9aa154b"></script>
+<script type="module" src="chart.js?v=c7f68a2f"></script>
 </body>
 </html>

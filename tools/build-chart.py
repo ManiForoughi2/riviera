@@ -1,5 +1,9 @@
-# draws the engraved plan of Tempe used across the site (assets/chart/tempe.svg): one alpha-only svg,
-# shown through a css mask so the page can ink it in either theme.
+# draws the engraved plan of Tempe for the chart pages: one alpha-only svg, shown through a css mask so
+# the page can ink it in either theme.
+#   assets/chart/tempe.svg  the land south of Tempe Town Lake: shoreline, relief, streets, rail, buildings
+#   assets/chart/land.svg   that land as one solid shape. the pages cut the paper sheet with it, and
+#                           chart.js reads the shoreline out of it for the water it draws along the shore
+# everything north of the lake's south shore is left out: on the page that is the sea in the header.
 # sources: OpenStreetMap (ODbL, credited on the pages that show it) for water, streets, rail and buildings;
 # Mapzen / AWS open terrain tiles for the contours on Hayden Butte.
 # run: uv run --with numpy --with pillow --with shapely --with contourpy python tools/build-chart.py
@@ -137,17 +141,22 @@ def add(paths, **attrs):
     a = " ".join(f'{k.replace("_","-")}="{v}"' for k, v in attrs.items())
     out.append(f'<path {a} d="{"".join(paths)}"/>')
 
-# ---- water: shoreline + water-lining ----
+# ---- the shore: the lake's south bank, taken straight from the lake polygon ----
 lake = unary_union([w for w, n in water if w.area * (1 / K) ** 2 > 20000])
+lake_in = lake.intersection(FRAME)
+NS = 480
+prof = []
+for i in range(NS + 1):
+    x = min(max(W * i / NS, 0.5), W - 0.5)
+    seg = lake_in.intersection(LineString([(x, -10), (x, H + 10)]))
+    prof.append(None if seg.is_empty else seg.bounds[3])
+assert all(v is not None for v in prof), "the lake does not span the frame"
+shore_line = LineString([(W * i / NS, y) for i, y in enumerate(prof)]).simplify(0.6)
+land = Polygon(list(shore_line.coords) + [(W, H), (0, H)]).buffer(0)
+# from here on everything is clipped to the land
+FRAME = land
 small_water = [w for w, n in water if w.area * (1 / K) ** 2 <= 20000 and w.intersects(FRAME)]
-shore = lake.boundary.intersection(FRAME)
-add(geom_paths(shore.simplify(0.8)), fill="none", stroke="#000", stroke_width="3", stroke_linejoin="round", stroke_linecap="round")
-dists = [7, 15, 24, 34, 45, 57]
-for i, dm in enumerate(dists):
-    inner = lake.buffer(-dm * K)
-    if inner.is_empty: continue
-    ln = inner.boundary.intersection(FRAME).simplify(1.0)
-    add(geom_paths(ln), fill="none", stroke="#000", stroke_width=f"{1.5 - i * 0.16:.2f}", stroke_opacity=f"{0.8 - i * 0.11:.2f}", stroke_linejoin="round", stroke_linecap="round")
+add([path_of(shore_line.coords)], fill="none", stroke="#000", stroke_width="3.4", stroke_linejoin="round", stroke_linecap="round")
 sw = [p for w in small_water for p in geom_paths(w.intersection(FRAME).simplify(0.8))]
 add(sw, fill="#000", fill_opacity=".12", stroke="#000", stroke_width="1.2")
 add([p for c in canals for p in geom_paths(c.intersection(FRAME).simplify(1))], fill="none", stroke="#000", stroke_width="1.4", stroke_opacity=".7")
@@ -217,6 +226,9 @@ add([p for b in glv for p in geom_paths(b.simplify(0.8))], fill="#000", stroke="
 
 svg = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W:.0f} {H:.0f}">' + "".join(out) + '</svg>'
 (ROOT / 'assets/chart/tempe.svg').write_text(svg)
+pts = "L".join(f"{x:.1f} {y:.1f}" for x, y in shore_line.coords)
+(ROOT / 'assets/chart/land.svg').write_text(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W:.0f} {H:.0f}" preserveAspectRatio="none"><path d="M0 {H:.0f}L{pts}L{W:.0f} {H:.0f}Z"/></svg>')
+print("shore y/H: min %.4f max %.4f, points %d" % (min(prof) / H, max(prof) / H, len(shore_line.coords)), file=sys.stderr)
 print("bytes", len(svg), "big", len(big), "small", len(small), file=sys.stderr)
 
 # points of interest as fractions of the frame, for html labels
@@ -235,10 +247,10 @@ info = {
 # the fractions the pages use to place labels and marks on the plan
 print(json.dumps(info), file=sys.stderr)
 
-# lake band at a few x positions (fractions), for placing the start of the course and the lake label
-from shapely.geometry import LineString as LS
-for fx in (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9):
-    seg = lake.intersection(LS([(fx * W, 0), (fx * W, H)]))
-    if not seg.is_empty:
-        b = seg.bounds
-        print(f"lake x={fx}: y {b[1]/H:.3f}..{b[3]/H:.3f} mid {((b[1]+b[3])/2)/H:.3f}", file=sys.stderr)
+# what the pages place by hand: the Greek Leadership Village, and the two roads it stands on
+for b_ in glv: print("glv building centre  x %.4f  y %.4f" % (b_.centroid.x / W, b_.centroid.y / H), file=sys.stderr)
+for nm in ("South Rural Road", "South Terrace Road"):
+    ls = [LineString(geom_pts(e["geometry"])) for e in els if e["type"] == "way" and e.get("tags", {}).get("name") == nm and "highway" in e.get("tags", {})]
+    u = unary_union(ls).intersection(box(W * 0.5, H * 0.6, W * 0.8, H * 0.92))
+    b_ = u.bounds
+    print("%s  x %.4f..%.4f  y %.4f..%.4f" % (nm, b_[0] / W, b_[2] / W, b_[1] / H, b_[3] / H), file=sys.stderr)

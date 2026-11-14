@@ -1,15 +1,25 @@
 /* the chart room: internships.html and faq.html only (html.chart). nothing here reaches the other pages.
-   the hero, nav, splash and footer are the site's own. under the hero these two pages do not sink:
-   the water runs out into a chart sheet, an engraved plan of Tempe with a brass compass lying on it.
-   phone-only rules live in css/chart-m.css; the instruments move with chart.js. */
+   the nav, splash and footer are the site's own, and so is the hero scene. on the other pages the camera
+   sinks under that sea; on these two it tilts down to where the sea ends. the water in the header is
+   Tempe Town Lake, it runs out along the lake's real south bank, and from the bank on the page is a
+   chart of the town: the engraved plan, a brass compass, and a course down to the Greek Leadership
+   Village at the foot. phone-only rules live in css/chart-m.css; chart.js draws the shallows and moves
+   the compass. */
 
 html.chart {
   --wrap: 1240px;
-  /* how far the top of the sheet feathers up over the water */
-  --F: 150px;
   --fiber: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='f'><feTurbulence type='fractalNoise' baseFrequency='.004 .55' numOctaves='3' seed='9' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncR type='linear' slope='.22' intercept='.8'/><feFuncG type='linear' slope='.22' intercept='.8'/><feFuncB type='linear' slope='.22' intercept='.8'/></feComponentTransfer></filter><rect width='100%' height='100%' filter='url(%23f)'/></svg>");
-  --tempe: url("../assets/chart/tempe.svg");
-  --lacquer: linear-gradient(180deg, #1d2745 0%, #131c33 46%, #0e1528 100%);
+  /* ?v=2: the plan was redrawn as the land south of the lake; the old drawing must not come back from a cache */
+  --tempe: url("../assets/chart/tempe.svg?v=2");
+  --land: url("../assets/chart/land.svg");
+
+  /* the plan at the shore. --pw is its full width; its height is always .90625 of that (2400 x 2175).
+     the bank's lowest point is .3059 down the plan and its highest .1924: --py puts the lowest point
+     6px above the foot of the header, and --reach is how far up the header the land comes */
+  --pw: 100vw; --px: 0px;
+  --ph: calc(var(--pw) * .90625);
+  --py: calc(var(--pw) * -.27722 - 6px);
+  --reach: calc(var(--pw) * .1029 + 22px);
 
   /* night (default): the chart under the lamp, brass ink on lacquer */
   --s-bg: #0d1322;
@@ -20,6 +30,7 @@ html.chart {
   --s-tex: var(--grain); --s-tex-size: 180px 180px; --s-blend: soft-light;
   --plan-ink: #cfae86; --plan-op: .5;
   --dots: rgba(236, 220, 194, .42);
+  --course: #e0c19a;
 }
 html.chart[data-theme="light"] {
   --s-bg: #e9dcc6;
@@ -30,31 +41,39 @@ html.chart[data-theme="light"] {
   --s-tex: var(--fiber); --s-tex-size: 300px 300px; --s-blend: multiply;
   --plan-ink: #19203a; --plan-op: .52;
   --dots: rgba(25, 32, 58, .4);
+  --course: #19203a;
 }
 
-/* ---------- the handoff: the sheet rises over the held scene, its top edge feathered into the water ----------
-   the hero holds still for one screen (the site's own .surface), as it does on every page. here the next
-   layer is paper, not water: the paper reaches --F above the foot of the hero and thickens from nothing
-   to solid over that distance, so the sea dissolves into the sheet and its engraved lake with no edge.
-   (the paper and the plan reach up by themselves; a negative margin on the sheet would only collapse
-   into the one the header already has.) */
+/* ---------- the handoff: the sea runs out on the chart ----------
+   on these pages the header does not hold while the next layer rises; it scrolls with the sheet, so
+   the shore stays where it is on the water. a little more of the sea shows, to give the bank room. */
+html.chart.sub { --hh: max(68svh, 480px); }
+.chart .surface { height: var(--hh); margin-bottom: 0; }
+.chart .hero { position: relative; }
+/* the line under the title keeps to the deep water, a fixed step under the letters */
+.chart .hero-sub .hero-base { top: calc(var(--hh) * .63 + 34px); bottom: auto; }
+
 .sheet {
   position: relative; z-index: 1; display: flow-root;
-  padding-bottom: calc(var(--dune) + 3svh);
+  padding-bottom: var(--dune);
   color: var(--s-ink);
 }
+/* the paper. it is cut along the lake's south bank (land.svg, the same shape the plan is drawn from) and
+   reaches up into the header as far as the land does; under the header's foot it is the whole sheet.
+   the cut sits 8px out from the bank, under the water chart.js draws, so the wet edge is never bare */
 .sheet::before {
-  content: ""; position: absolute; z-index: 0; inset: calc(var(--F) * -1) 0 0 0; pointer-events: none;
+  content: ""; position: absolute; z-index: 0; inset: calc(var(--reach) * -1) 0 0 0; pointer-events: none;
   background: var(--s-tex) 0 0 / var(--s-tex-size), var(--s-bg);
   background-blend-mode: var(--s-blend), normal;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.05) calc(var(--F) * .14), rgba(0,0,0,.16) calc(var(--F) * .28), rgba(0,0,0,.34) calc(var(--F) * .42), rgba(0,0,0,.55) calc(var(--F) * .56), rgba(0,0,0,.74) calc(var(--F) * .69), rgba(0,0,0,.89) calc(var(--F) * .81), rgba(0,0,0,.97) calc(var(--F) * .91), #000 var(--F));
-  mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.05) calc(var(--F) * .14), rgba(0,0,0,.16) calc(var(--F) * .28), rgba(0,0,0,.34) calc(var(--F) * .42), rgba(0,0,0,.55) calc(var(--F) * .56), rgba(0,0,0,.74) calc(var(--F) * .69), rgba(0,0,0,.89) calc(var(--F) * .81), rgba(0,0,0,.97) calc(var(--F) * .91), #000 var(--F));
+  -webkit-mask:
+    var(--land) var(--px) calc(var(--reach) + var(--py) - 8px) / var(--pw) var(--ph) no-repeat,
+    linear-gradient(to bottom, transparent var(--reach), #000 var(--reach));
+  mask:
+    var(--land) var(--px) calc(var(--reach) + var(--py) - 8px) / var(--pw) var(--ph) no-repeat,
+    linear-gradient(to bottom, transparent var(--reach), #000 var(--reach));
 }
 .sheet > * { position: relative; z-index: 1; }
 .sheet .wrap { max-width: var(--wrap); margin: 0 auto; padding-inline: var(--g); }
-/* the line under the title keeps the site's own place wherever that already clears the feather
-   (mouse and trackpad), and steps up above the feather where it would not (touch) */
-.chart .hero-sub .hero-base { bottom: calc(env(safe-area-inset-bottom) + max(var(--wh) + 2.6svh, var(--F))); }
 
 /* ---------- chrome over the sheet ----------
    over the sky the bar is the site's own. these pages never go under water, so where the other pages
@@ -71,10 +90,9 @@ html.chart.js.on-sheet .rail, html.chart.js.on-sheet .theme-toggle {
 html.chart.js .rail.open { --r-ink: var(--u); --r-ink2: var(--u2); --r-accent: var(--ua); }
 
 /* ---------- the engraved plan of Tempe (openstreetmap + open elevation data, tools/build-chart.py) ----------
-   .plan is the window, .plan-sheet is the whole chart inside it, so labels sit at true positions */
-.plan-band { position: relative; margin-top: calc(var(--F) * -1); }
-.plan { position: relative; overflow: hidden; height: var(--plan-h); }
-.plan-sheet { position: absolute; left: var(--plan-x, 0px); top: var(--plan-y, 0px); width: var(--plan-w, 100%); aspect-ratio: 2400 / 2175; }
+   .plan is the window, .plan-sheet is the whole chart inside it, so marks and labels sit at true positions */
+.plan { position: absolute; left: 0; right: 0; overflow: hidden; }
+.plan-sheet { position: absolute; left: var(--px); width: var(--pw); aspect-ratio: 2400 / 2175; }
 .plan-ink {
   position: absolute; inset: 0; background: var(--plan-ink); opacity: var(--plan-op);
   -webkit-mask: var(--tempe) center / 100% 100% no-repeat; mask: var(--tempe) center / 100% 100% no-repeat;
@@ -85,27 +103,82 @@ html.chart.js .rail.open { --r-ink: var(--u); --r-ink2: var(--u2); --r-accent: v
   color: var(--s-ink);
   text-shadow: 0 0 3px var(--s-bg), 0 0 3px var(--s-bg), 0 0 6px var(--s-bg), 0 0 10px var(--s-bg);
 }
-.plan-label.is-water { letter-spacing: .62em; text-indent: .62em; color: var(--s-accent); }
-.lab-lake { left: 24%; top: 18%; }
-.lab-town { left: 12.5%; top: 12.4%; }
-.is-west .lab-lake { left: 66%; top: 25.2%; }
-.is-west .lab-town { left: 87%; top: 14%; }
 .plan-label b { display: block; margin-top: 5px; font: 500 1em/1.2 var(--serif); letter-spacing: .12em; text-indent: .12em; font-variant-numeric: lining-nums; color: var(--s-ink2); }
-.plan-band .plan {
-  --plan-h: clamp(330px, 31vw, 520px); --plan-w: 100%; --plan-y: -8.5vw;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.3) 7%, rgba(0,0,0,.8) 16%, #000 26%, #000 50%, rgba(0,0,0,.74) 62%, rgba(0,0,0,.42) 75%, rgba(0,0,0,.16) 88%, transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.3) 7%, rgba(0,0,0,.8) 16%, #000 26%, #000 50%, rgba(0,0,0,.74) 62%, rgba(0,0,0,.42) 75%, rgba(0,0,0,.16) 88%, transparent 100%);
+
+/* --- at the shore: the bank, the first of the town, and the compass's place on it --- */
+.shore-band { --band: clamp(300px, 29vw, 470px); height: var(--band); }
+.shore-band .plan {
+  top: calc(var(--reach) * -1); height: calc(var(--reach) + var(--band));
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 52%, rgba(0,0,0,.74) 64%, rgba(0,0,0,.42) 77%, rgba(0,0,0,.16) 89%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 52%, rgba(0,0,0,.74) 64%, rgba(0,0,0,.42) 77%, rgba(0,0,0,.16) 89%, transparent 100%);
 }
-.plan-band .compass {
-  position: absolute; z-index: 2; top: clamp(34px, 4.4vw, 70px);
+.shore-band .plan-sheet { top: calc(var(--reach) + var(--py)); }
+/* the shallows (chart.js sizes this and draws into it). with no webgl the bank is simply the paper's edge */
+.shore { position: absolute; z-index: 1; left: 0; width: 100%; pointer-events: none; opacity: 0; transition: opacity .5s ease; }
+.shore.is-live { opacity: 1; }
+
+/* the compass. at rest it lies by the shore (.berth marks the place); once chart.js has measured the
+   course it carries it along with a transform instead */
+.sheet > .compass, .berth {
+  position: absolute; z-index: 3; top: clamp(18px, 2.6vw, 44px);
   right: max(var(--g), calc((100vw - var(--wrap)) / 2 + var(--g)));
   --size: clamp(250px, 21vw, 320px);
 }
-.plan-band.is-west .compass { right: auto; left: max(var(--g), calc((100vw - var(--wrap)) / 2 + var(--g))); }
-.plan-credit { margin-top: clamp(40px, 7vh, 72px); font-size: 13px; color: var(--s-ink3); text-align: center; }
-.plan-credit a { text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); text-underline-offset: 3px; border-radius: 3px; transition: color .2s ease; }
-.plan-credit a:hover { color: var(--s-ink); }
-.plan-credit a:active { opacity: .7; }
+.berth { z-index: 0; width: var(--size); aspect-ratio: 1; pointer-events: none; }
+.sheet.is-west > .compass, .is-west .berth { right: auto; left: max(var(--g), calc((100vw - var(--wrap)) / 2 + var(--g))); }
+/* (important: the resting place is set by several rules, on phones too; under way none of them may apply) */
+.sheet > .compass.is-under-way { top: 0 !important; left: 0 !important; right: auto !important; will-change: transform; }
+.compass.is-small .c-text { opacity: 0; }
+.c-text { transition: opacity .25s ease; }
+
+/* --- the course: pencilled ahead, inked behind (chart.js draws both through every [data-fix]) --- */
+.sheet { --lane: max(30px, calc((100vw - 860px) / 4)); --mini: 42px; --dock: 58px; }
+.sheet.is-wall { --lane: max(22px, calc((100vw - 1180px) / 4)); }
+.sheet > .course { position: absolute; left: 0; top: 0; z-index: 1; overflow: visible; pointer-events: none; }
+.course path { fill: none; stroke: var(--course); stroke-linecap: round; stroke-linejoin: round; }
+.course-plan { stroke-width: 1.5; stroke-dasharray: .1 7; opacity: .7; }
+.course-run { stroke-width: 1.7; opacity: .9; }
+.lane { position: relative; }
+.way { position: absolute; width: 0; height: 0; right: var(--lane); }
+.is-west .way { right: auto; left: var(--lane); }
+.way-a { top: 10px; }
+.way-b { bottom: -30px; }
+
+/* --- the foot of the sheet: the plan again, at the Greek Leadership Village --- */
+.port-band {
+  /* the window runs from .42 to .86 down the plan, so the village sits low in it and lands near mid-screen at the end of the scroll */
+  --band: calc(var(--pw) * .40);
+  --top: calc(var(--pw) * -.38063);
+  height: var(--band); margin-top: clamp(30px, 6vh, 70px);
+}
+.port-band .plan {
+  top: 0; height: 100%;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.14) 7%, rgba(0,0,0,.4) 15%, rgba(0,0,0,.74) 24%, #000 34%, #000 92%, rgba(0,0,0,.55) 96.5%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.14) 7%, rgba(0,0,0,.4) 15%, rgba(0,0,0,.74) 24%, #000 34%, #000 92%, rgba(0,0,0,.55) 96.5%, transparent 100%);
+}
+.port-band .plan-sheet { top: var(--top); }
+/* the village: the navigator's ring for a place you mean to reach. the compass lands inside it */
+.glv {
+  position: absolute; left: 62.71%; top: 76.54%; width: calc(var(--dock) + 20px); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%;
+  border: 1.6px solid var(--course);
+  box-shadow: 0 0 0 3.5px var(--s-bg), 0 0 0 4.6px color-mix(in srgb, var(--course) 55%, transparent);
+}
+.lab-glv { left: 62.71%; top: 76.54%; translate: calc(-100% - var(--dock) * .5 - 26px) -50%; text-align: right; letter-spacing: .2em; text-indent: 0; font-size: clamp(13px, 1.1vw, 16px); }
+.lab-glv b { letter-spacing: .08em; text-indent: 0; font-size: .8em; text-transform: none; }
+.is-west .lab-glv { translate: calc(var(--dock) * .5 + 26px) -50%; text-align: left; }
+.lab-road { font-size: clamp(9px, .72vw, 10.5px); letter-spacing: .24em; text-indent: .24em; color: var(--s-ink2); }
+.lab-rural { left: 60.26%; top: 63.4%; rotate: -90deg; }
+.lab-terrace { left: 69%; top: 80.75%; rotate: 47.9deg; }
+/* the plan's imprint: who the survey belongs to, small in the corner, as on any printed chart */
+.plan-imprint {
+  position: absolute; z-index: 2; left: max(var(--g), calc((100vw - var(--wrap)) / 2 + var(--g))); bottom: 13%;
+  font: 500 10px/1.3 var(--serif); letter-spacing: .07em; color: var(--s-ink3);
+  text-shadow: 0 0 3px var(--s-bg), 0 0 6px var(--s-bg);
+  border-radius: 3px; transition: color .2s ease;
+}
+.is-west .plan-imprint { left: auto; right: max(var(--g), calc((100vw - var(--wrap)) / 2 + var(--g))); }
+.plan-imprint:hover { color: var(--s-ink); }
+.plan-imprint:active { opacity: .7; }
 
 /* generated by tools/build-instruments.py: engraved compass card, bezel inscription */
 :root {
@@ -180,7 +253,7 @@ html.chart.js .rail.open { --r-ink: var(--u); --r-ink2: var(--u2); --r-accent: v
 .is-looking, .is-looking .plan { cursor: none; }
 
 /* ---------- faq: the questions on the sheet ---------- */
-.ask { max-width: 860px; margin: 0 auto; padding-top: clamp(6px, 2vh, 22px); }
+.ask { max-width: 860px; margin: 0 auto; padding-top: clamp(0px, 1vh, 14px); }
 .q { background: radial-gradient(circle 1.3px, var(--dots) 96%, #0000) 0 100% / 9px 4px repeat-x; }
 .q:last-child { background: none; }
 .q summary {
@@ -203,11 +276,6 @@ html.chart.js .rail.open { --r-ink: var(--u); --r-ink2: var(--u2); --r-accent: v
 }
 .q[open] .q-mark { transform: rotate(90deg); }
 .q p { padding: 0 4px 28px; max-width: 62ch; color: var(--s-ink2); font-size: 18px; line-height: 1.6; }
-.sheet-note { margin-top: clamp(40px, 7vh, 72px); font-size: 18px; color: var(--s-ink2); text-align: center; }
-.sheet-note a { color: var(--s-accent); font-weight: 600; border-radius: 4px; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); transition: color .2s ease; }
-.sheet-note a:hover { color: var(--s-ink); }
-.sheet-note a:active { opacity: .7; }
-
 /* ---------- internships: the site's logo wall, inked for the sheet ---------- */
 .sheet .logo-wall { padding-top: clamp(0px, 1vh, 14px); }
 .sheet .logo { color: var(--s-ink); }
@@ -217,9 +285,13 @@ html.chart.js .rail.open { --r-ink: var(--u); --r-ink2: var(--u2); --r-accent: v
   .q-mark { transition: none; }
 }
 
-/* narrower desktops and tablets */
-@media (max-width: 1000px) {
-  .plan-band .compass { --size: clamp(210px, 28vw, 280px); }
+/* narrower desktops and tablets: the margins are slim, so the compass travels smaller */
+@media (max-width: 1100px) {
+  .sheet > .compass, .berth { --size: clamp(210px, 28vw, 280px); }
+  .sheet { --lane: calc(var(--g) * .5); --mini: 26px; --dock: 46px; }
+}
+@media (max-width: 1380px) {
+  .sheet.is-wall { --lane: calc(var(--g) * .5); --mini: 26px; }
 }
 
 /* the compass answers the hand, so it takes the site's brass cursor */

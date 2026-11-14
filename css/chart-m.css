@@ -1,36 +1,49 @@
 /* the chart room on phones (internships.html and faq.html only). desktop must stay unchanged.
-   the plan is drawn at twice the width so the lake, the butte and the stadium read at phone size;
-   the compass sits on its lower corner. everything is in place at load: nothing fades in on scroll. */
+   the plan is drawn at about twice the screen's width so the bank, the butte and the stadium read at
+   phone size. the compass leaves from the right of the shore and travels down the right-hand gutter,
+   small enough to pass clear of every question and every mark. nothing fades in on scroll. */
 
 @media (max-width: 760px) {
-  html.chart { --F: 76px; }
-  .chart .hero-sub .hero-base { bottom: calc(env(safe-area-inset-bottom) + var(--F) + 10px); }
+  html.chart { --pw: 212vw; --px: -34vw; }
+  html.chart.sub { --hh: max(62svh, 460px); }
+  .chart .hero-sub .hero-base { top: calc(var(--hh) * .58 + 24px); bottom: auto; }
 
   /* the bar: bare over the sky, navy lacquer once the sheet is behind it */
   html.chart.js .rail::before { opacity: 0; background: linear-gradient(180deg, #19223d, #0f172b); }
   html.chart.js.on-sheet .rail::before { opacity: 1; box-shadow: 0 6px 10px -8px rgba(4, 8, 18, .8); }
   html.chart.js .rail.open::before { opacity: 0; }
 
-  .plan-band .plan { --plan-h: 300px; --plan-w: 212vw; --plan-x: -34vw; --plan-y: -22vw; }
-  .plan-band .compass, .plan-band.is-west .compass { top: auto; bottom: -58px; left: auto; right: var(--g); --size: 178px; }
-  .plan-band .c-text { display: none; }
+  /* the shore */
+  .shore-band { --band: 292px; }
+  .sheet > .compass, .berth, .sheet.is-west > .compass, .is-west .berth { top: 64px; left: auto; right: var(--g); --size: 176px; }
+  .c-text { display: none; }
   .plan-label { font-size: 10px; }
-  .lab-lake, .is-west .lab-lake { left: 36%; top: 19.3%; }
-  .lab-town { display: none; }
-  .plan-credit { margin-top: 40px; }
+
+  /* the course keeps to the right-hand gutter on both pages */
+  .sheet, .sheet.is-wall { --lane: 23px; --mini: 26px; --dock: 36px; }
+  /* the right-hand gutter is widened into a lane the compass can travel in */
+  .lane .wrap { padding-right: 48px; }
+  .is-west .way { left: auto; right: var(--lane); }
+  .course-plan { stroke-dasharray: .1 6; }
 
   /* faq: full-row tap targets, every question on one line */
-  .ask { padding-top: 78px; }
+  .ask { padding-top: 20px; }
   .q summary {
     min-height: 68px; gap: 14px; padding: 20px 2px; white-space: nowrap;
     font-size: min(21px, calc((100vw - 2 * var(--g) - 44px) / 13.2)); line-height: 1.3;
   }
   .q p { padding: 0 2px 26px; font-size: 17px; }
-  .sheet-note { margin-top: 44px; font-size: 17px; text-wrap: balance; }
-  .sheet-note a { display: inline-block; padding-block: 13px; }
 
   /* internships */
-  .sheet .logo-wall { padding-top: 74px; }
+  .sheet .logo-wall { padding-top: 16px; font-size: min(9px, calc((100vw - var(--g) - 48px) / 42)); }
+
+  /* the foot: the village a little right of centre, its name to the left, the imprint in the far corner */
+  .port-band { --band: calc(var(--pw) * .44); margin-top: 36px; }
+  .port-band .plan-sheet { left: -78vw; }
+  .lab-glv, .is-west .lab-glv { translate: calc(-100% - var(--dock) * .5 - 16px) -50%; text-align: right; font-size: 13px; }
+  .lab-road { font-size: 9px; letter-spacing: .2em; text-indent: .2em; }
+  .lab-terrace { display: none; }
+  .plan-imprint, .is-west .plan-imprint { left: auto; right: var(--g); bottom: 9%; font-size: 9.5px; padding: 14px 0; margin: -14px 0; }
 }
 
 /* touch: a tapped logo shouldn't stay lit like it's selected */
@@ -38,9 +51,10 @@
   .sheet .logo:hover .logo-mark { color: inherit; }
 }
 
-/* landscape phones */
+/* landscape phones: the short screen sets the header */
 @media (max-height: 500px) and (orientation: landscape) {
-  html.chart { --F: 70px; }
+  html.chart.sub { --hh: max(100svh, 340px); }
+  .chart .hero-sub .hero-base { top: calc(var(--hh) * .63 + 18px); bottom: auto; }
 }
 
 @media (max-width: 760px), (hover: none) and (pointer: coarse) {
