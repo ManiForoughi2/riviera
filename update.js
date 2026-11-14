@@ -7,8 +7,14 @@
 //   fields  this page's field name -> that form's entry id (entry.123456789), one per question
 // until it is connected the form says so instead of pretending to send.
 const FORM = {
-  action: "",
-  fields: { name: "", grad: "", init: "", address: "", phone: "", email: "", company: "", title: "", other: "" },
+  // "FIJI Alpha Sigma: alumni info update", in the chapter's Google account; answers also go to the
+  // sheet "FIJI Alpha Sigma alumni updates"
+  action: "https://docs.google.com/forms/d/e/1FAIpQLSeMtNAWWZluwcBw5BpruInq9VdTGUfdhSM9ArZ-Cp8XHpI7HQ/formResponse",
+  fields: {
+    name: "entry.677166305", grad: "entry.1135096423", init: "entry.493177223",
+    address: "entry.593810086", phone: "entry.1931302270", email: "entry.978666676",
+    company: "entry.852570660", title: "entry.1166350155", other: "entry.1392230411",
+  },
 };
 
 const form = document.querySelector(".update");
