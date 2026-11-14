@@ -1,5 +1,5 @@
-import { startSea } from "./sea.js?v=933a0c64";
-import { startWater } from "./under.js?v=933a0c64";
+import { startSea } from "./sea.js?v=042c1b2d";
+import { startWater } from "./under.js?v=042c1b2d";
 
 const root = document.documentElement;
 root.classList.add("js");                         // the head script waits for this before trusting its opening state
@@ -184,35 +184,53 @@ if (shots.length && "IntersectionObserver" in window) {
   }, { rootMargin: "-22% 0px -22% 0px" });
   shots.forEach((v) => sio.observe(v));
   document.addEventListener("visibilitychange", sync);
+  setInterval(sync, 2000);                        // a refused or interrupted play() gets another go
 }
-// the three tall cuts take turns: one rises out of its still, plays through once at its own speed,
-// and settles back into the same still before the next begins. nothing loops on a jump, and only
-// one film is ever decoding here
+// the three tall cuts. on desktop every one that is on screen plays; on phones the ones in view
+// take turns. no cut loops on a jump: near its end it dissolves into its own still (which is its
+// first frame) and starts again from there. a slow watchdog restarts anything that should be
+// playing and is not (a play() the browser refused, a tab that was away)
 const strips = [...document.querySelectorAll(".strip video")];
 if (strips.length && !reduced && "IntersectionObserver" in window) {
   const near = new Set();
-  let turn = 0, busy = false, wait = 0;
-  const next = () => {
-    if (busy || document.visibilityState !== "visible") return;
-    let v = null;
-    for (let i = 0; i < strips.length && !v; i++) { const c = strips[(turn + i) % strips.length]; if (near.has(c)) { v = c; turn = (turn + i + 1) % strips.length; } }
-    if (!v) return;
-    busy = true;
+  let turn = 0, current = null;
+  const start = (v, rewind) => {
     v.loop = false;
-    try { v.currentTime = 0; } catch {}
-    v.play().catch(() => { busy = false; });
+    if (rewind || v.ended || (v.duration && v.currentTime > v.duration - 0.05)) { try { v.currentTime = 0; } catch {} }
+    v.play().catch(() => {});
+  };
+  const tick = () => {
+    if (document.visibilityState !== "visible") return;
+    if (!phoneMQ.matches) {
+      for (const v of strips) {
+        if (near.has(v)) { if (v.paused) start(v); }
+        else if (!v.paused) v.pause();
+      }
+      return;
+    }
+    if (current && !near.has(current)) { current.pause(); current = null; }
+    if (current && !current.paused) return;
+    if (current && !current.ended) return start(current);
+    for (let i = 0; i < strips.length; i++) {
+      const c = strips[(turn + i) % strips.length];
+      if (!near.has(c)) continue;
+      current = c; turn = (turn + i + 1) % strips.length;
+      return start(c, true);
+    }
+    current = null;
   };
   strips.forEach((v) => {
     v.addEventListener("playing", () => v.classList.add("on"));
     v.addEventListener("timeupdate", () => { if (v.duration && v.currentTime > v.duration - 0.5) v.classList.remove("on"); });
-    v.addEventListener("ended", () => { v.classList.remove("on"); busy = false; clearTimeout(wait); wait = setTimeout(next, 500); });
+    v.addEventListener("ended", () => { v.classList.remove("on"); if (current === v) current = null; setTimeout(tick, 320); });
   });
   const stio = new IntersectionObserver((entries) => {
     for (const e of entries) e.isIntersecting ? near.add(e.target) : near.delete(e.target);
-    next();
-  }, { rootMargin: "-14% 0px -14% 0px", threshold: 0.5 });
+    tick();
+  }, { threshold: 0.35 });
   strips.forEach((v) => stio.observe(v));
-  document.addEventListener("visibilitychange", next);
+  document.addEventListener("visibilitychange", tick);
+  setInterval(tick, 1500);
 }
 
 // ---------- sign-in shell: accounts aren't live yet, so say so on submit ----------

@@ -48,11 +48,12 @@ void main(){
   float t = uTime;
 
   // the waterline: a slow swell, a shorter one crossing it, a little chop
-  float sw = (vnoise(vec2(xa * 1.1 + t * 0.10, t * 0.06)) - 0.5) * 0.050
-           + (vnoise(vec2(xa * 3.7 - t * 0.21, 3.0 + t * 0.12)) - 0.5) * 0.016
-           + (vnoise(vec2(xa * 13.0 + t * 0.5, 7.0 - t * 0.3)) - 0.5) * 0.004;
+  float sw = (vnoise(vec2(xa * 0.9 + t * 0.11, t * 0.07)) - 0.5) * 0.074
+           + (vnoise(vec2(xa * 2.9 - t * 0.23, 3.0 + t * 0.13)) - 0.5) * 0.034
+           + (vnoise(vec2(xa * 8.0 + t * 0.42, 7.0 - t * 0.3)) - 0.5) * 0.011
+           + (vnoise(vec2(xa * 24.0 - t * 0.9, 11.0 + t * 0.5)) - 0.5) * 0.0032;
   float d = fc.y - (uSurf + sw * uVH * uAmp);                   // px below the waterline
-  if (d < -4.0 * uPx) { gl_FragColor = vec4(0.0); return; }
+  if (d < -26.0 * uPx) { gl_FragColor = vec4(0.0); return; }
   float s = max(d, 0.0) / uVH;                                  // screens below it
 
   // base colour, the same linear stops the css column uses below this canvas
@@ -73,8 +74,9 @@ void main(){
   float c = caustic(pl * 0.42 + vec2(t * 0.012, t * 0.02), t * 0.6);
   float fog = exp(-(z - 1.0) * 0.20) * (1.0 - smoothstep(0.66, 1.0, v));
   float window = exp(-v * 4.2);                                 // straight up, the sky shows through
-  vec3 ceilc = uSky * (c * 1.05 + window * 0.26 + c * window * 0.9) * fog;
-  ceilc = ceilc / (1.0 + ceilc * 0.75);                         // roll the highlights off, never a white slab
+  // lit water, not white: the brightest it gets is the surface colour lifted part of the way to the sky
+  vec3 bright = mix(uW0, uSky, 0.42);
+  float ck = clamp((c * 0.62 + window * 0.16 + c * window * 0.5) * fog, 0.0, 0.86);
   // right under the lip the surface mirrors the dark below it
   base *= 1.0 - 0.34 * exp(-max(d, 0.0) / (9.0 * uPx)) * (0.6 + 0.4 * vnoise(vec2(xa * 21.0, t * 0.4)));
 
@@ -88,13 +90,17 @@ void main(){
   vec3 light = uRay * r * fall * (0.62 + c2 * 1.6) * uLight;
 
   // the lip: light caught along the waterline, thicker and thinner as it goes
-  float lw = (1.3 + 2.4 * vnoise(vec2(xa * 8.0 - t * 0.5, t * 0.35))) * uPx;
-  float lip = exp(-(d * d) / (lw * lw)) * (0.5 + 1.0 * vnoise(vec2(xa * 26.0 + t * 0.7, 2.0)));
-  vec3 lipc = uSky * lip * 1.15;
+  float lw = (1.2 + 2.2 * vnoise(vec2(xa * 8.0 - t * 0.5, t * 0.35))) * uPx;
+  float lip = exp(-(d * d) / (lw * lw)) * (0.35 + 0.8 * vnoise(vec2(xa * 26.0 + t * 0.7, 2.0)));
+  // and a soft bloom of the same light above and below it, so the line is never a cut
+  float halo = exp(-abs(d) / (7.0 * uPx)) * 0.20;
+  vec3 lipc = bright * (lip + halo);
 
-  float edge = smoothstep(-1.6 * uPx, 0.6 * uPx, d);
-  vec3 rgb = (base * aBase + ceilc + light) * edge + lipc;
-  float a = clamp(aBase * edge + dot(ceilc + light + lipc, vec3(0.34)), 0.0, 1.0);
+  // the water itself comes in over a few pixels, thinner where the swell is steep
+  float edge = smoothstep(-2.6 * uPx, 2.2 * uPx, d);
+  vec3 water = mix(base, bright, ck);
+  vec3 rgb = (water * aBase + bright * ck * (1.0 - aBase) + light) * edge + lipc * (1.0 - 0.55 * edge);
+  float a = clamp((aBase + ck * (1.0 - aBase)) * edge + dot(light * edge + lipc, vec3(0.34)), 0.0, 1.0);
   rgb += (hash(fc + fract(t) * 91.0) - 0.5) * (2.0 / 255.0);     // dither, so the long fades do not band
   gl_FragColor = vec4(rgb, a);
 }`;
@@ -133,9 +139,9 @@ export function startWater(canvas, { deep, reduced, phone }) {
     const light = document.documentElement.getAttribute("data-theme") === "light";
     const v = (n) => hex(css.getPropertyValue(n).trim());
     gl.uniform3fv(U.uW0, v("--w0")); gl.uniform3fv(U.uW1, v("--w1")); gl.uniform3fv(U.uW2, v("--w2"));
-    gl.uniform3fv(U.uSky, light ? [1.0, 0.95, 0.84] : [0.62, 0.72, 0.92]);
+    gl.uniform3fv(U.uSky, light ? [0.96, 0.94, 0.86] : [0.50, 0.60, 0.82]);
     gl.uniform3fv(U.uRay, light ? [1.0, 0.86, 0.62] : [0.56, 0.68, 0.95]);
-    gl.uniform1f(U.uLight, light ? 0.40 : 0.22);
+    gl.uniform1f(U.uLight, light ? 0.30 : 0.20);
     gl.uniform1f(U.uFloor, phone ? 0.0 : 0.16);
     gl.uniform1f(U.uAmp, phone ? 0.9 : 1.0);
   }

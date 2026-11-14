@@ -264,7 +264,8 @@ html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; back
 .hero-sub .hero-base { bottom: calc(env(safe-area-inset-bottom) + var(--wh) + 2.6svh); }
 
 /* ---------- the deep: one water column from the surface to the sand ---------- */
-.deep { position: relative; z-index: 1; padding-bottom: calc(var(--dune) + 5svh); color: var(--u); }
+/* flow-root: the canvas's negative top margin must lift the canvas alone, not collapse through and drag the column up */
+.deep { position: relative; z-index: 1; display: flow-root; padding-bottom: calc(var(--dune) + 5svh); color: var(--u); }
 /* the column itself. it fades in over --feather at the top, so even with no script there is no edge:
    the water thickens out of the scene above it. under.js draws the real waterline over this */
 .deep::before {
@@ -277,11 +278,24 @@ html.splash::before { content: ""; position: fixed; inset: 0; z-index: 200; back
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.05) calc(var(--feather) * .15), rgba(0,0,0,.2) calc(var(--feather) * .32), rgba(0,0,0,.5) calc(var(--feather) * .52), rgba(0,0,0,.8) calc(var(--feather) * .72), rgba(0,0,0,.95) calc(var(--feather) * .88), #000 var(--feather));
   mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.05) calc(var(--feather) * .15), rgba(0,0,0,.2) calc(var(--feather) * .32), rgba(0,0,0,.5) calc(var(--feather) * .52), rgba(0,0,0,.8) calc(var(--feather) * .72), rgba(0,0,0,.95) calc(var(--feather) * .88), #000 var(--feather));
 }
-:root { --dune: clamp(90px, 12vw, 170px); --feather: 96px; --m: 72px; }
+:root { --dune: clamp(90px, 12vw, 170px); --feather: 96px; --m: 110px; }
 .deep > section, .deep > .page { position: relative; z-index: 1; }
 /* the lit water (under.js): a canvas that rides with the screen, from just above the waterline down.
    it only exists once the script has a WebGL context; main.js sets its height (--sh) */
-.water { display: none; }
+.water, .lens { display: none; }
+/* just above the waterline the scene behind bends and swims, more the closer it gets to the water:
+   a strip that refracts whatever is behind it (the title, the sky, the sea) through moving noise.
+   chromium takes the svg filter; other browsers keep the plain soft focus. pointer devices only */
+@media (hover: hover) and (pointer: fine) {
+  .gl-water .lens {
+    display: block; position: absolute; z-index: 0; left: 0; right: 0; pointer-events: none;
+    top: calc(var(--m) * -1 - 40px); height: calc(var(--m) + 90px);
+    -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+    backdrop-filter: url(#fx-surface);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.12) 18%, rgba(0,0,0,.45) 36%, rgba(0,0,0,.85) 54%, #000 68%);
+    mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.12) 18%, rgba(0,0,0,.45) 36%, rgba(0,0,0,.85) 54%, #000 68%);
+  }
+}
 .gl-water .water {
   display: block; position: sticky; z-index: 0; top: 0; width: 100%;
   height: var(--sh, 100vh); margin-top: calc(var(--m) * -1); margin-bottom: calc(var(--m) - var(--sh, 100vh));
