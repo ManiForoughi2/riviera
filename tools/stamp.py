@@ -8,8 +8,8 @@
 # preloads), which must match the names main.js imports letter for letter.
 import hashlib, re, pathlib
 root = pathlib.Path(__file__).resolve().parent.parent
-assets = ["styles.css", "main.js", "sea.js", "under.js", "chart.js", "idle.js", "transit.js", "vendor/design-how/text-reveal.js", "vendor/design-how/ghosty-reveal.js"] + sorted(str(p.relative_to(root)) for p in (root / "css").glob("*.css"))
-pat = re.compile(r'((?:/|\./)?(?:styles\.css|css/m-[a-z]+\.css|css/chart(?:-m)?\.css|main\.js|sea\.js|under\.js|chart\.js|idle\.js|transit\.js|members\.js))(?:\?v=[0-9a-f]+)?(["\'])')
+assets = ["styles.css", "main.js", "sea.js", "under.js", "chart.js", "idle.js", "update.js", "transit.js", "vendor/design-how/text-reveal.js", "vendor/design-how/ghosty-reveal.js"] + sorted(str(p.relative_to(root)) for p in (root / "css").glob("*.css"))
+pat = re.compile(r'((?:/|\./)?(?:styles\.css|css/m-[a-z]+\.css|css/chart(?:-m)?\.css|main\.js|sea\.js|under\.js|chart\.js|idle\.js|update\.js|transit\.js|members\.js))(?:\?v=[0-9a-f]+)?(["\'])')
 bare = lambda a: pat.sub(lambda m: m.group(1) + m.group(2), (root / a).read_text()).encode()
 v = hashlib.sha1(b"".join(bare(a) for a in assets)).hexdigest()[:8]
 changed = 0

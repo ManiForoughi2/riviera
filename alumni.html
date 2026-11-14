@@ -74,7 +74,7 @@
         if (as) l.as = as;
         document.head.appendChild(l);
       };
-      add("modulepreload", "sea.js?v=dc20a558"); add("modulepreload", "under.js?v=dc20a558");
+      add("modulepreload", "sea.js?v=2bf8a7b9"); add("modulepreload", "under.js?v=2bf8a7b9");
       if (d.classList.contains("splash")) ["splash", "wild-type", "loud-burst"].forEach(function (m) { add("modulepreload", "vendor/design-how/" + m + ".js"); });
       try {
         [].forEach.call(document.querySelectorAll('link[rel="preload"][as="image"][media]'), function (l) {
@@ -85,12 +85,12 @@
     });
   })();
 </script>
-<link rel="stylesheet" href="styles.css?v=dc20a558">
-<link rel="stylesheet" href="css/m-global.css?v=dc20a558">
-<link rel="stylesheet" href="css/m-perf.css?v=dc20a558">
-<link rel="stylesheet" href="css/m-nav.css?v=dc20a558">
-<link rel="stylesheet" href="css/m-home.css?v=dc20a558">
-<link rel="stylesheet" href="css/m-pages.css?v=dc20a558">
+<link rel="stylesheet" href="styles.css?v=2bf8a7b9">
+<link rel="stylesheet" href="css/m-global.css?v=2bf8a7b9">
+<link rel="stylesheet" href="css/m-perf.css?v=2bf8a7b9">
+<link rel="stylesheet" href="css/m-nav.css?v=2bf8a7b9">
+<link rel="stylesheet" href="css/m-home.css?v=2bf8a7b9">
+<link rel="stylesheet" href="css/m-pages.css?v=2bf8a7b9">
 </head>
 <body>
 
@@ -163,11 +163,59 @@
         <p class="card-what">News from the chapter, and every past issue in one place.</p>
         <p class="card-soon">First issue coming soon</p>
       </div>
-      <a class="card" href="https://www.instagram.com/asufiji/" target="_blank" rel="noopener">
+      <a class="card" href="#update">
         <svg class="card-icon" viewBox="0 0 256 256" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"><rect x="32" y="56" width="192" height="144" rx="12"/><path d="m32 72 96 72 96-72"/></g></svg>
         <h3 class="card-name">Info update <span class="card-arrow" aria-hidden="true">&rarr;</span></h3>
-        <p class="card-what">New address, email or job? Send it to us so you keep hearing from the chapter.</p>
+        <p class="card-what">Moved, new number or new job? Tell us in a minute so you keep hearing from the chapter.</p>
       </a>
+    </div>
+  </section>
+
+  <section class="page page-next" id="update">
+    <h2 class="title" style="--r:7.9">Update your info</h2>
+    <form class="update" novalidate>
+      <fieldset class="up-set">
+        <legend class="up-step">1. You</legend>
+        <div class="up-grid">
+          <label class="up-field up-wide"><span>Full name</span><input class="up-input" name="name" autocomplete="name" required></label>
+          <label class="up-field"><span>Graduation year</span><input class="up-input" name="grad" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+          <label class="up-field"><span>Initiation year <small>optional</small></span><input class="up-input" name="init" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+        </div>
+      </fieldset>
+      <fieldset class="up-set">
+        <legend class="up-step">2. What changed? <small>Pick all that apply</small></legend>
+        <div class="up-chips">
+          <label class="chip"><input type="checkbox" name="what" value="address"><span>Address</span></label>
+          <label class="chip"><input type="checkbox" name="what" value="phone"><span>Phone</span></label>
+          <label class="chip"><input type="checkbox" name="what" value="email"><span>Email</span></label>
+          <label class="chip"><input type="checkbox" name="what" value="job"><span>Job</span></label>
+          <label class="chip"><input type="checkbox" name="what" value="other"><span>Something else</span></label>
+        </div>
+      </fieldset>
+      <div class="up-more" data-for="address" data-label="address">
+        <label class="up-field up-wide"><span>New mailing address</span><textarea class="up-input" name="address" rows="3" autocomplete="street-address" placeholder="Street, city, state, ZIP"></textarea></label>
+      </div>
+      <div class="up-more" data-for="phone" data-label="phone number">
+        <label class="up-field"><span>New phone number</span><input class="up-input" name="phone" type="tel" autocomplete="tel"></label>
+      </div>
+      <div class="up-more" data-for="email" data-label="email">
+        <label class="up-field up-wide"><span>New email</span><input class="up-input" name="email" type="email" autocomplete="email"></label>
+      </div>
+      <div class="up-more" data-for="job" data-label="job">
+        <label class="up-field"><span>Company</span><input class="up-input" name="company" autocomplete="organization"></label>
+        <label class="up-field"><span>Job title</span><input class="up-input" name="title" autocomplete="organization-title"></label>
+      </div>
+      <div class="up-more" data-for="other" data-label="details">
+        <label class="up-field up-wide"><span>What else should we know?</span><textarea class="up-input" name="other" rows="3" placeholder="A spouse or kids to add, an old number to remove"></textarea></label>
+      </div>
+      <div class="up-foot">
+        <button class="btn-brass btn-lg magnetic up-send" type="submit">Send update</button>
+        <p class="up-msg" role="status" aria-live="polite"></p>
+      </div>
+    </form>
+    <div class="up-done" tabindex="-1" hidden>
+      <p class="up-done-head">Thanks, <span class="up-done-name"></span>.</p>
+      <p class="up-done-line">Your update is in. The chapter will have it on file.</p>
     </div>
   </section>
 
@@ -208,6 +256,7 @@
   <div class="wordmark" aria-hidden="true">PHI GAMMA DELTA</div>
 </footer>
 
-<script type="module" src="main.js?v=dc20a558"></script>
+<script type="module" src="update.js?v=2bf8a7b9"></script>
+<script type="module" src="main.js?v=2bf8a7b9"></script>
 </body>
 </html>
