@@ -1,5 +1,5 @@
-import { startSea } from "./sea.js?v=26dafae3";
-import { startWater } from "./under.js?v=26dafae3";
+import { startSea } from "./sea.js?v=7cbc8d6a";
+import { startWater } from "./under.js?v=7cbc8d6a";
 
 const root = document.documentElement;
 root.classList.add("js");                         // the head script waits for this before trusting its opening state
@@ -343,7 +343,8 @@ function frame() {
   }
   // the camera sinks: the hero sea's eye drops toward the water as the surface comes up the screen
   if (!diving && sea && top > 0 && y < top * 1.2) sea.setEye(1 - 0.9 * Math.pow(clamp(y / top, 0, 1), 0.8));
-  if (reduced || phoneMQ.matches) return;
+  // calmer: the film and the words beside it no longer drift against the scroll
+  return;
   // every read first, then every write
   const boxes = drift.map(([el]) => el.getBoundingClientRect());
   const cboxes = copies.map((el) => el.parentElement.getBoundingClientRect());
@@ -447,14 +448,14 @@ if (!reduced && finePointer) {
 
 // it is asked for here, apart from the modules above, so on a first visit it never stands between the
 // page and its splash; on a page reached through a page change it is already in the cache
-import("./transit.js?v=26dafae3")
+import("./transit.js?v=7cbc8d6a")
   .then((m) => m.startTransit({ root, reduced, phone: phoneMQ.matches, seaCanvas, menuIsOpen: () => menuOpen }))
   .catch(() => root.classList.remove("arriving"));
 
 // ---------- once the page is up and still: the next page and the next visit (idle.js) ----------
 // after the load, and never while the splash is playing: nothing may share the main thread with it
 {
-  const later = () => import("./idle.js?v=26dafae3").catch(() => {});
+  const later = () => import("./idle.js?v=7cbc8d6a").catch(() => {});
   const whenIdle = () => {
     if (root.classList.contains("splash")) return setTimeout(whenIdle, 500);
     window.requestIdleCallback ? requestIdleCallback(later, { timeout: 4000 }) : setTimeout(later, 1200);

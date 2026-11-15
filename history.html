@@ -46,16 +46,6 @@
     // the scroll; if it never arrives, fall back to the plain filled bar
     d.classList.add("at-top", "over");
     setTimeout(function () { if (!d.classList.contains("js")) d.classList.remove("at-top", "over"); }, 4000);
-    // splash: the first page of a visit only, and never under reduced motion. css holds the cover,
-    // main.js plays the word over it and drops the class when the word bursts. the timer is only a
-    // backstop for a script that never arrives, so the cover can never be stranded
-    try {
-      if (!sessionStorage.getItem("asufiji-in") && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        sessionStorage.setItem("asufiji-in", "1");
-        d.classList.add("splash");
-        window.__splashT = setTimeout(function () { d.classList.remove("splash"); }, 3200);
-      }
-    } catch (e) {}
     // second wave. the first frame cannot start until the css below has loaded, and this runs at the
     // start of that frame, before its layout asks for any picture in the page. so these requests go
     // out after the css (which the first paint needs whole, undiluted) and ahead of the film stills
@@ -72,7 +62,7 @@
         if (as) l.as = as;
         document.head.appendChild(l);
       };
-      add("modulepreload", "sea.js?v=26dafae3"); add("modulepreload", "under.js?v=26dafae3");
+      add("modulepreload", "sea.js?v=7cbc8d6a"); add("modulepreload", "under.js?v=7cbc8d6a");
       if (d.classList.contains("splash")) ["splash", "wild-type", "loud-burst"].forEach(function (m) { add("modulepreload", "vendor/design-how/" + m + ".js"); });
       try {
         [].forEach.call(document.querySelectorAll('link[rel="preload"][as="image"][media]'), function (l) {
@@ -83,12 +73,12 @@
     });
   })();
 </script>
-<link rel="stylesheet" href="styles.css?v=26dafae3">
-<link rel="stylesheet" href="css/m-global.css?v=26dafae3">
-<link rel="stylesheet" href="css/m-perf.css?v=26dafae3">
-<link rel="stylesheet" href="css/m-nav.css?v=26dafae3">
-<link rel="stylesheet" href="css/m-home.css?v=26dafae3">
-<link rel="stylesheet" href="css/m-pages.css?v=26dafae3">
+<link rel="stylesheet" href="styles.css?v=7cbc8d6a">
+<link rel="stylesheet" href="css/m-global.css?v=7cbc8d6a">
+<link rel="stylesheet" href="css/m-perf.css?v=7cbc8d6a">
+<link rel="stylesheet" href="css/m-nav.css?v=7cbc8d6a">
+<link rel="stylesheet" href="css/m-home.css?v=7cbc8d6a">
+<link rel="stylesheet" href="css/m-pages.css?v=7cbc8d6a">
 </head>
 <body>
 
@@ -127,7 +117,7 @@
       <a class="btn-brass btn-lg rail-join" href="recruitment.html">Recruitment</a>
     </div>
   </div>
-  <a class="btn-brass btn-sm magnetic" href="recruitment.html">Recruitment</a>
+  <a class="btn-brass btn-sm" href="recruitment.html">Recruitment</a>
   <button class="rail-menu" type="button" aria-expanded="false" aria-controls="rail-links">Menu</button>
 </nav>
 <button class="theme-toggle" type="button" aria-label="Switch to day" title="Day / night">
@@ -182,6 +172,6 @@
   <div class="wordmark" aria-hidden="true">PHI GAMMA DELTA</div>
 </footer>
 
-<script type="module" src="main.js?v=26dafae3"></script>
+<script type="module" src="main.js?v=7cbc8d6a"></script>
 </body>
 </html>

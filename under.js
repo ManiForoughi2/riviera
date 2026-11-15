@@ -329,7 +329,8 @@ export function startWater(canvas, { deep, reduced, phone, dive, follow, onPlung
         if (airing) { burst = Math.min(1, burst + dt / 0.2); if (burst >= 1) airing = false; }
         else burst = Math.max(0, burst - dt / 1.5);
       }
-      air = reduced ? 0 : Math.max(burst * burst * (3 - 2 * burst), Math.sin(Math.PI * p) * 0.9);
+      // calmer: a few bubbles at the crossing, not a rush of them
+      air = reduced ? 0 : 0.3 * Math.max(burst * burst * (3 - 2 * burst), Math.sin(Math.PI * p) * 0.9);
       const e = ease(p);
       const rest = vhCss + 14 - Math.min(y, 140) * 0.3;          // at rest the water only laps at the bottom edge
       surf = rest + (-(vhCss * 0.1 + 150) - rest) * e;
