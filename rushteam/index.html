@@ -99,7 +99,8 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
 .noig { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink2); cursor: pointer; }
 .noig input { width: 18px; height: 18px; accent-color: var(--purple); }
 .ig .field:disabled { opacity: .45; }
-.official { margin: 0; font-size: 14px; color: var(--ink2); }
+.official { margin: 0; display: grid; gap: 2px; font-size: 14px; color: var(--ink2); }
+.official-line:first-child { color: var(--ink); }
 .official:empty { display: none; }
 .official a { font-weight: 600; text-decoration: none; }
 .official span { color: var(--ink3); font-size: 12px; }
@@ -313,8 +314,8 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
         <span class="mine-label">Your rating</span>
         <div class="stars" role="group" aria-label="Your rating">${[1, 2, 3, 4, 5].map((i) => `<button type="button" data-r="${i}" aria-label="${i} of 5">★</button>`).join("")}</div>
         <textarea class="field" name="thoughts" maxlength="1500" placeholder="Your first thoughts"></textarea>
-        <p class="official"></p>
         <div class="ig"><input class="field" name="ig" placeholder="His Instagram handle" autocomplete="off" autocapitalize="off"><a target="_blank" rel="noopener" hidden>Open</a></div>
+        <p class="official"></p>
         <label class="noig"><input type="checkbox" name="noig"> Can't find his Instagram</label>
         <details class="others"><summary></summary><ul></ul></details>
         <p class="state" aria-live="polite"></p>
@@ -330,17 +331,25 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     noig.checked = mine.ig === NONE; ig.disabled = noig.checked;
     ig.value = mine.ig && mine.ig !== NONE ? mine.ig : "";
     const drawOfficial = () => {
+      // a handle two or more brothers entered is the assumed one; one-off entries are listed under it
       const o = official(p), box = el.querySelector(".official");
-      if (o.list.length) {
-        box.replaceChildren(document.createTextNode(o.list.length > 1 ? "Instagram (different accounts found): " : "Instagram: "));
-        o.list.forEach(([h, c], i) => {
-          if (i) box.append(document.createTextNode(" · "));
-          const a = document.createElement("a"); a.target = "_blank"; a.rel = "noopener";
-          a.href = "https://www.instagram.com/" + encodeURIComponent(h) + "/"; a.textContent = "@" + h;
-          box.append(a);
-          if (c > 1 || o.list.length > 1) { const n = document.createElement("span"); n.textContent = ` (${c})`; box.append(n); }
-        });
-      } else box.textContent = o.none ? "Instagram: couldn't find it" : "";
+      const link = ([h, c]) => {
+        const a = document.createElement("a"); a.target = "_blank"; a.rel = "noopener";
+        a.href = "https://www.instagram.com/" + encodeURIComponent(h) + "/"; a.textContent = "@" + h;
+        const n = document.createElement("span"); n.textContent = ` (${c})`;
+        return [a, n];
+      };
+      const line = (label, items) => {
+        const l = document.createElement("span"); l.className = "official-line"; l.append(label);
+        items.forEach((it, i) => { if (i) l.append(" · "); l.append(...link(it)); });
+        return l;
+      };
+      const sure = o.list.filter(([, c]) => c >= 2), once = o.list.filter(([, c]) => c < 2);
+      box.replaceChildren(
+        ...(sure.length ? [line("Assumed insta handle: ", sure)] : []),
+        ...(once.length ? [line(sure.length ? "Also entered: " : "Entered: ", once)] : []),
+      );
+      if (!o.list.length && o.none) box.textContent = "Instagram: couldn't find it";
     };
     drawOfficial();
     const showLink = () => { const h = ig.value.trim().replace(/^@/, ""); link.hidden = !h || noig.checked; link.href = "https://www.instagram.com/" + encodeURIComponent(h) + "/"; };
