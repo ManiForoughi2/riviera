@@ -162,7 +162,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
         <button type="button" data-sub="done" aria-pressed="false">Reviewed</button>
       </div>
       <input class="field search" id="q" type="search" placeholder="Search a name" autocomplete="off">
-      <select class="field sort" id="sort" aria-label="Sort"><option value="high" selected>Highest score</option><option value="az">A to Z</option><option value="low">Lowest score</option><option value="most">Most ratings</option><option value="fewest">Fewest ratings</option></select>
+      <select class="field sort" id="sort" aria-label="Sort"><option value="shuffle">Shuffled</option><option value="high" selected>Highest score</option><option value="az">A to Z</option><option value="low">Lowest score</option><option value="most">Most ratings</option><option value="fewest">Fewest ratings</option></select>
       <span class="count" id="count"></span>
     </div>
   </header>
@@ -260,13 +260,14 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
   }
   function setSub(v) {
     sub = v;
+    $("#sort").value = v === "todo" ? "shuffle" : "high";
     document.querySelectorAll(".seg button[data-sub]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.sub === v)));
     draw(); scrollTo(0, 0);
   }
   function setView(v) {
     view = v;
     $("#sub").hidden = v !== "rate";
-    if (v === "group" && $("#sort").value === "az") $("#sort").value = "high";
+    $("#sort").value = v === "rate" && sub === "todo" ? "shuffle" : "high";
     document.querySelectorAll(".seg button[data-view]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
     draw();
   }
@@ -278,6 +279,9 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     else if (view === "group") list = list.filter((p) => p.group === g);
     if (q) list = list.filter((p) => (p.first + " " + p.last).toLowerCase().includes(q));
     const sort = $("#sort").value, by = {
+      // each brother gets his own order, the same every time he opens it, with kids nobody has rated
+      // yet first: a group of six starts on six different kids instead of all at the top
+      shuffle: (a, b) => score(a).n - score(b).n || mix(a.id) - mix(b.id),
       high: (a, b) => score(b).avg - score(a).avg || score(b).n - score(a).n,
       low: (a, b) => (score(a).n ? score(a).avg : 9) - (score(b).n ? score(b).avg : 9),
       most: (a, b) => score(b).n - score(a).n,
@@ -290,6 +294,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
   // done for you: you rated him, or you looked and couldn't find his Instagram
   const finished = (p) => { const m = mineOf(p); return !!(m?.rating || m?.ig === NONE || m?.frat || m?.priv); };
   const privCount = (p) => (ratings[p.id] || []).filter((r) => r.priv).length;
+  const mix = (id) => { let h = 2166136261; for (const ch of me() + "|" + id) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return h >>> 0; };
   const fratCount = (p) => (ratings[p.id] || []).filter((r) => r.frat).length;
   // three or more brothers saying he's already in a frat takes him off every list
   const OUT = 3, gone = (p) => fratCount(p) >= OUT;
