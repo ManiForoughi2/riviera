@@ -173,6 +173,8 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
   const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }, del: (k) => { try { localStorage.removeItem(k); } catch {} } };
   let token = store.get("rush-token"), roster = null, notes = {}, ratings = {}, view = "rate", synced = 0;
   const NONE = "__none__";
+  // a pasted link, "@Name" or " name " all become "name" (the worker cleans it the same way)
+  const cleanHandle = (v) => String(v || "").trim().replace(/^(https?:\/\/)?((www|m)\.)?(instagram\.com|instagr\.am)\//i, "").replace(/^@/, "").replace(/[/?#].*$/, "").toLowerCase().replace(/[^a-z0-9._]/g, "").slice(0, 30);
 
   const call = async (path, opts = {}) => {
     const r = await fetch(API + path, { ...opts, headers: { authorization: "Bearer " + token, ...(opts.headers || {}) } });
@@ -366,7 +368,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
       if (!o.list.length && o.none) box.textContent = "Instagram: couldn't find it";
     };
     drawOfficial();
-    const showLink = () => { const h = ig.value.trim().replace(/^@/, ""); link.hidden = !h || noig.checked; link.href = "https://www.instagram.com/" + encodeURIComponent(h) + "/"; };
+    const showLink = () => { const h = cleanHandle(ig.value); link.hidden = !h || noig.checked; link.href = "https://www.instagram.com/" + encodeURIComponent(h) + "/"; };
     showLink();
     const drawScore = () => {
       const sc = score(p), fc = fratCount(p);
@@ -415,7 +417,9 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     th.addEventListener("change", () => rate({ thoughts: th.value.trim() }));
     const saveIg = (value) => rate({ ig: value });
     ig.addEventListener("input", showLink);
-    ig.addEventListener("change", () => saveIg(ig.value.trim()));
+    ig.addEventListener("change", () => { ig.value = cleanHandle(ig.value); showLink(); saveIg(ig.value); });
+    // a pasted link turns into the handle straight away
+    ig.addEventListener("paste", () => setTimeout(() => { ig.value = cleanHandle(ig.value); showLink(); }, 0));
     noig.addEventListener("change", () => { ig.disabled = noig.checked; if (noig.checked) ig.value = ""; showLink(); saveIg(noig.checked ? NONE : ""); });
     el.querySelector(".pic input").addEventListener("change", async (e) => {
       const file = e.target.files[0]; if (!file) return;

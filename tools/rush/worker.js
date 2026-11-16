@@ -49,7 +49,7 @@ const clip = (v, n) => String(v ?? "").slice(0, n);
 const handle = (v) => {
   const t = clip(v, 120).trim();
   if (t === "__none__") return t;
-  return t.replace(/^https?:\/\/(www\.)?instagram\.com\//i, "").replace(/^@/, "").replace(/[/?#].*$/, "").toLowerCase().replace(/[^a-z0-9._]/g, "").slice(0, 30);
+  return t.replace(/^(https?:\/\/)?((www|m)\.)?(instagram\.com|instagr\.am)\//i, "").replace(/^@/, "").replace(/[/?#].*$/, "").toLowerCase().replace(/[^a-z0-9._]/g, "").slice(0, 30);
 };
 
 export default {
