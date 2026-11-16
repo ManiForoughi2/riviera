@@ -102,6 +102,8 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
 .official { margin: 0; display: grid; gap: 2px; font-size: 14px; color: var(--ink2); }
 .frat-tag { margin: 6px 0 0; display: inline-block; padding: 3px 8px; border-radius: 6px; font: 600 12px/1.2 var(--body); color: #1a1435; background: #f0c27a; }
 .frat-tag:empty { display: none; }
+.priv-tag { margin: 6px 0 0 6px; display: inline-block; padding: 3px 8px; border-radius: 6px; font: 600 12px/1.2 var(--body); color: #1a1435; background: #b9c7e8; }
+.priv-tag:empty { display: none; }
 .official-line:first-child { color: var(--ink); }
 .official:empty { display: none; }
 .official a { font-weight: 600; text-decoration: none; }
@@ -286,7 +288,8 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
   // what makes a kid "done" in each list: rated by you, or his photo and Instagram found (or known to be missing)
 
   // done for you: you rated him, or you looked and couldn't find his Instagram
-  const finished = (p) => { const m = mineOf(p); return !!(m?.rating || m?.ig === NONE || m?.frat); };
+  const finished = (p) => { const m = mineOf(p); return !!(m?.rating || m?.ig === NONE || m?.frat || m?.priv); };
+  const privCount = (p) => (ratings[p.id] || []).filter((r) => r.priv).length;
   const fratCount = (p) => (ratings[p.id] || []).filter((r) => r.frat).length;
   // three or more brothers saying he's already in a frat takes him off every list
   const OUT = 3, gone = (p) => fratCount(p) >= OUT;
@@ -332,6 +335,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
         <p class="meta"></p>
         <p class="score"></p>
         <p class="frat-tag"></p>
+        <p class="priv-tag"></p>
       </div>
       <div class="body">
         <span class="mine-label">Your rating</span>
@@ -339,7 +343,8 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
         <textarea class="field" name="thoughts" maxlength="1500" placeholder="Your first thoughts"></textarea>
         <div class="ig"><input class="field" name="ig" placeholder="His Instagram handle" autocomplete="off" autocapitalize="off"><a target="_blank" rel="noopener" hidden>Open</a></div>
         <p class="official"></p>
-        <label class="noig"><input type="checkbox" name="noig"> Can't find Instagram / private account</label>
+        <label class="noig"><input type="checkbox" name="noig"> Can't find Instagram</label>
+        <label class="noig"><input type="checkbox" name="priv"> Private account</label>
         <label class="noig"><input type="checkbox" name="frat"> Already in a frat</label>
         <details class="others"><summary></summary><ul></ul></details>
         <p class="state" aria-live="polite"></p>
@@ -354,6 +359,9 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     const noig = el.querySelector('[name="noig"]'), frat = el.querySelector('[name="frat"]');
     frat.checked = !!mine.frat;
     frat.addEventListener("change", () => rate({ frat: frat.checked ? 1 : 0 }));
+    const priv = el.querySelector('[name="priv"]');
+    priv.checked = !!mine.priv;
+    priv.addEventListener("change", () => rate({ priv: priv.checked ? 1 : 0 }));
     noig.checked = mine.ig === NONE; ig.disabled = noig.checked;
     ig.value = mine.ig && mine.ig !== NONE ? mine.ig : "";
     const drawOfficial = () => {
@@ -384,6 +392,8 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
       const sc = score(p), fc = fratCount(p);
       el.classList.toggle("in-frat", fc > 0);
       el.querySelector(".frat-tag").textContent = fc ? `In a frat (${fc})` : "";
+      const pc = privCount(p);
+      el.querySelector(".priv-tag").textContent = pc ? `Private account (${pc})` : "";
       el.querySelector(".score").innerHTML = sc.n ? `<b>${sc.avg.toFixed(1)}</b> ★ · ${sc.n} of ${sc.size} rated` : "Not rated yet";
       const others = (ratings[p.id] || []).filter((r) => r.by !== me());
       const det = el.querySelector(".others");
@@ -412,7 +422,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     const rate = async (patch) => {
       if (!me()) { state.className = "state err"; state.textContent = "Pick your name at the top first."; return; }
       const cur = mineOf(p) || {};
-      const body = { by: me(), rating: patch.rating ?? cur.rating ?? 0, thoughts: patch.thoughts ?? cur.thoughts ?? "", ig: patch.ig ?? cur.ig ?? "", frat: patch.frat ?? cur.frat ?? 0 };
+      const body = { by: me(), rating: patch.rating ?? cur.rating ?? 0, thoughts: patch.thoughts ?? cur.thoughts ?? "", ig: patch.ig ?? cur.ig ?? "", frat: patch.frat ?? cur.frat ?? 0, priv: patch.priv ?? cur.priv ?? 0 };
       state.className = "state"; state.textContent = "Saving…";
       try {
         const r = await call(`/rate/${p.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
