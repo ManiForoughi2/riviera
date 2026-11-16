@@ -99,6 +99,10 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
 .noig { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink2); cursor: pointer; }
 .noig input { width: 18px; height: 18px; accent-color: var(--purple); }
 .ig .field:disabled { opacity: .45; }
+.official { margin: 0; font-size: 14px; color: var(--ink2); }
+.official:empty { display: none; }
+.official a { font-weight: 600; text-decoration: none; }
+.official span { color: var(--ink3); font-size: 12px; }
 .score { display: flex; align-items: baseline; gap: 6px; margin-top: 6px; font-size: 13px; color: var(--ink3); }
 .score b { font: 600 20px/1 var(--serif); color: #e9c46a; }
 .mine-label { font: 600 12px/1 var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
@@ -165,6 +169,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
   const $ = (q) => document.querySelector(q);
   const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }, del: (k) => { try { localStorage.removeItem(k); } catch {} } };
   let token = store.get("rush-token"), roster = null, notes = {}, ratings = {}, view = "rate";
+  const NONE = "__none__";
 
   const call = async (path, opts = {}) => {
     const r = await fetch(API + path, { ...opts, headers: { authorization: "Bearer " + token, ...(opts.headers || {}) } });
@@ -182,6 +187,19 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     return { avg: rs.length ? rs.reduce((t, r) => t + r.rating, 0) / rs.length : 0, n: rs.length, size };
   };
   const mineOf = (p) => (ratings[p.id] || []).find((r) => r.by === me());
+  // the official handle: the one most brothers entered (ties go to whoever entered it first). if nobody
+  // found one and someone ticked "can't find", the card says so
+  const official = (p) => {
+    const tally = new Map(); let none = 0;
+    for (const r of [...(ratings[p.id] || [])].sort((a, b) => a.at - b.at)) {
+      if (!r.ig) continue;
+      if (r.ig === NONE) { none++; continue; }
+      tally.set(r.ig, (tally.get(r.ig) || 0) + 1);
+    }
+    let best = "", n = 0;
+    for (const [h, c] of tally) if (c > n) { best = h; n = c; }
+    return { handle: best, agree: n, total: [...tally.values()].reduce((t, c) => t + c, 0), others: [...tally.keys()].filter((h) => h !== best), none };
+  };
 
   // ---------- the door ----------
   $("#gate-form").addEventListener("submit", async (e) => {
@@ -251,7 +269,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     return by ? [...list].sort(by) : list;
   }
   // what makes a kid "done" in each list: rated by you, or his photo and Instagram found (or known to be missing)
-  const NONE = "__none__";
+
   const finished = (p) => !!mineOf(p)?.rating;
   function counts(list) {
     if (view === "rate") return `${list.filter((p) => mineOf(p)?.rating).length} of ${list.length} rated by you`;
@@ -296,7 +314,8 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
         <span class="mine-label">Your rating</span>
         <div class="stars" role="group" aria-label="Your rating">${[1, 2, 3, 4, 5].map((i) => `<button type="button" data-r="${i}" aria-label="${i} of 5">★</button>`).join("")}</div>
         <textarea class="field" name="thoughts" maxlength="1500" placeholder="Your first thoughts"></textarea>
-        <div class="ig"><input class="field" name="ig" placeholder="Instagram handle" autocomplete="off" autocapitalize="off"><a target="_blank" rel="noopener" hidden>Open</a></div>
+        <p class="official"></p>
+        <div class="ig"><input class="field" name="ig" placeholder="His Instagram handle" autocomplete="off" autocapitalize="off"><a target="_blank" rel="noopener" hidden>Open</a></div>
         <label class="noig"><input type="checkbox" name="noig"> Can't find his Instagram</label>
         <details class="others"><summary></summary><ul></ul></details>
         <p class="state" aria-live="polite"></p>
@@ -309,8 +328,17 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     const paint = (r) => stars.forEach((b) => b.classList.toggle("on", +b.dataset.r <= r));
     th.value = mine.thoughts || ""; paint(mine.rating || 0);
     const noig = el.querySelector('[name="noig"]');
-    noig.checked = n.ig === NONE; ig.disabled = noig.checked;
-    ig.value = n.ig && n.ig !== NONE ? n.ig : "";
+    noig.checked = mine.ig === NONE; ig.disabled = noig.checked;
+    ig.value = mine.ig && mine.ig !== NONE ? mine.ig : "";
+    const drawOfficial = () => {
+      const o = official(p), box = el.querySelector(".official");
+      if (o.handle) {
+        box.innerHTML = `Instagram: <a target="_blank" rel="noopener"></a> <span></span>`;
+        const a = box.querySelector("a"); a.href = "https://www.instagram.com/" + encodeURIComponent(o.handle) + "/"; a.textContent = "@" + o.handle;
+        box.querySelector("span").textContent = o.total > 1 ? `(${o.agree} of ${o.total} agree${o.others.length ? "; also typed: " + o.others.map((h) => "@" + h).join(", ") : ""})` : "";
+      } else box.textContent = o.none ? "Instagram: couldn't find it" : "";
+    };
+    drawOfficial();
     const showLink = () => { const h = ig.value.trim().replace(/^@/, ""); link.hidden = !h || noig.checked; link.href = "https://www.instagram.com/" + encodeURIComponent(h) + "/"; };
     showLink();
     const drawScore = () => {
@@ -323,7 +351,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
       det.querySelector("ul").replaceChildren(...others.map((r) => {
         const li = document.createElement("li");
         li.innerHTML = `<b></b><span class="st"></span><p></p>`;
-        li.querySelector("b").textContent = r.by;
+        li.querySelector("b").textContent = r.by + (r.ig && r.ig !== NONE ? ` · @${r.ig}` : "");
         li.querySelector(".st").textContent = r.rating ? "★".repeat(r.rating) : "";
         li.querySelector("p").textContent = r.thoughts || "";
         return li;
@@ -335,25 +363,20 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     const rate = async (patch) => {
       if (!me()) { state.className = "state err"; state.textContent = "Pick your name at the top first."; return; }
       const cur = mineOf(p) || {};
-      const body = { by: me(), rating: patch.rating ?? cur.rating ?? 0, thoughts: patch.thoughts ?? cur.thoughts ?? "" };
+      const body = { by: me(), rating: patch.rating ?? cur.rating ?? 0, thoughts: patch.thoughts ?? cur.thoughts ?? "", ig: patch.ig ?? cur.ig ?? "" };
       state.className = "state"; state.textContent = "Saving…";
       try {
         const r = await call(`/rate/${p.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
         ratings[p.id] = r.ratings;
         el.classList.toggle("done", !!mineOf(p)?.rating);
-        drawScore(); refreshCount();
+        drawScore(); drawOfficial(); refreshCount();
+        const mineNow = mineOf(p); if (mineNow?.ig && mineNow.ig !== NONE && document.activeElement !== ig) ig.value = mineNow.ig;
         state.className = "state saved"; state.textContent = "Saved";
       } catch (err) { state.className = "state err"; state.textContent = err.message === "pick your name first" ? "Pick your name at the top first." : "Didn't save. Check your connection."; }
     };
     stars.forEach((b) => b.addEventListener("click", () => { const r = +b.dataset.r === (mineOf(p)?.rating || 0) ? 0 : +b.dataset.r; paint(r); rate({ rating: r }); }));
     th.addEventListener("change", () => rate({ thoughts: th.value.trim() }));
-    const saveIg = async (value) => {
-      state.className = "state"; state.textContent = "Saving…";
-      try {
-        const r = await call(`/note/${p.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ig: value, by: me() }) });
-        notes[p.id] = r.note; state.className = "state saved"; state.textContent = "Saved"; refreshCount();
-      } catch { state.className = "state err"; state.textContent = "Didn't save. Check your connection."; }
-    };
+    const saveIg = (value) => rate({ ig: value });
     ig.addEventListener("input", showLink);
     ig.addEventListener("change", () => saveIg(ig.value.trim()));
     noig.addEventListener("change", () => { ig.disabled = noig.checked; if (noig.checked) ig.value = ""; showLink(); saveIg(noig.checked ? NONE : ""); });

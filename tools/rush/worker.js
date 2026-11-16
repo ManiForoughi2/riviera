@@ -1,8 +1,9 @@
 // Rush team: a Cloudflare Worker behind asufiji.com/rushteam. It holds the PNM roster (names and who
 // is assigned to each, no phone numbers or emails) in the KV namespace RUSH, and in the D1 database DB
 // (tools/rush/schema.sql): each PNM's Instagram handle and one photo (table notes, photos), and every
-// brother's own rating and thoughts on him (table ratings, one row per brother per PNM), so a PNM's
-// score is the average over everyone who rated him. Everything needs the rush team password.
+// brother's own rating, thoughts and Instagram handle for him (table ratings, one row per brother per
+// PNM). a PNM's score is the average over everyone who rated him, and his official handle is the one
+// most brothers entered, so one typo does not stick. Everything needs the rush team password.
 //
 // deploy:   npx wrangler deploy --config tools/rush/wrangler.toml
 // password: npx wrangler secret put RUSH_PASS --config tools/rush/wrangler.toml
@@ -43,6 +44,13 @@ async function valid(env, token) {
   return sig === await hmac(env.RUSH_PASS, "rush:" + exp);
 }
 const clip = (v, n) => String(v ?? "").slice(0, n);
+// an Instagram handle however it was typed: "@Name", "instagram.com/name/", " name " are all "name".
+// "__none__" means this brother could not find one
+const handle = (v) => {
+  const t = clip(v, 120).trim();
+  if (t === "__none__") return t;
+  return t.replace(/^https?:\/\/(www\.)?instagram\.com\//i, "").replace(/^@/, "").replace(/[/?#].*$/, "").toLowerCase().replace(/[^a-z0-9._]/g, "").slice(0, 30);
+};
 
 export default {
   async fetch(req, env) {
@@ -69,11 +77,11 @@ export default {
       const roster = await env.RUSH.get("roster", "json");
       const [n, r] = await env.DB.batch([
         env.DB.prepare("SELECT id, ig, by, photo, at FROM notes"),
-        env.DB.prepare("SELECT pnm, brother, rating, thoughts, at FROM ratings"),
+        env.DB.prepare("SELECT pnm, brother, rating, thoughts, ig, at FROM ratings"),
       ]);
       const notes = {}, ratings = {};
       for (const row of n.results) { const { id, ...rest } = row; notes[id] = rest; }
-      for (const row of r.results) (ratings[row.pnm] ||= []).push({ by: row.brother, rating: row.rating, thoughts: row.thoughts, at: row.at });
+      for (const row of r.results) (ratings[row.pnm] ||= []).push({ by: row.brother, rating: row.rating, thoughts: row.thoughts, ig: row.ig || "", at: row.at });
       return out({ roster, notes, ratings });
     }
 
@@ -98,9 +106,10 @@ export default {
       const by = clip(b.by, 40);
       if (!roster.groups.some((g) => g.members.includes(by))) return out({ error: "pick your name first" }, 400);
       const rating = Math.max(0, Math.min(5, Math.round(+b.rating || 0))), thoughts = clip(b.thoughts ?? "", 1500).trim(), at = Date.now();
-      if (!rating && !thoughts) await env.DB.prepare("DELETE FROM ratings WHERE pnm = ? AND brother = ?").bind(id, by).run();
-      else await env.DB.prepare("INSERT INTO ratings (pnm, brother, rating, thoughts, at) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT(pnm, brother) DO UPDATE SET rating = ?3, thoughts = ?4, at = ?5").bind(id, by, rating, thoughts, at).run();
-      const { results } = await env.DB.prepare("SELECT brother AS by, rating, thoughts, at FROM ratings WHERE pnm = ?").bind(id).all();
+      const ig = handle(b.ig);
+      if (!rating && !thoughts && !ig) await env.DB.prepare("DELETE FROM ratings WHERE pnm = ? AND brother = ?").bind(id, by).run();
+      else await env.DB.prepare("INSERT INTO ratings (pnm, brother, rating, thoughts, ig, at) VALUES (?1, ?2, ?3, ?4, ?5, ?6) ON CONFLICT(pnm, brother) DO UPDATE SET rating = ?3, thoughts = ?4, ig = ?5, at = ?6").bind(id, by, rating, thoughts, ig, at).run();
+      const { results } = await env.DB.prepare("SELECT brother AS by, rating, thoughts, ig, at FROM ratings WHERE pnm = ?").bind(id).all();
       return out({ ok: true, ratings: results });
     }
 
