@@ -1,0 +1,13 @@
+name = "asufiji-rush"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+workers_dev = true
+
+[[kv_namespaces]]
+binding = "RUSH"
+id = "ac4a916159e34ad1b7585da6df015f73"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "asufiji-rush"
+database_id = "0a29fd45-096a-4c17-8e3b-21990fa93450"

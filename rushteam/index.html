@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rush team | FIJI</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#120d26">
+<link rel="icon" type="image/png" href="../assets/favicon.png">
+<style>
+@font-face { font-family: "Recia"; src: url("../assets/fonts/recia-500.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Recia"; src: url("../assets/fonts/recia-600.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+:root {
+  --bg: #120d26; --bg2: #1a1435; --card: #1f1840; --line: rgba(236, 220, 194, .14);
+  --ink: #ecdcc2; --ink2: rgba(236, 220, 194, .74); --ink3: rgba(236, 220, 194, .5);
+  --accent: #cdb8f0; --purple: #6a3fa8; --purple-hi: #b89ae6; --ok: #9fd8a8; --bad: #f2a3a3;
+  --serif: "Recia", Georgia, serif; --body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --g: max(16px, env(safe-area-inset-left));
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { background: var(--bg); }
+body { margin: 0; min-height: 100svh; background: linear-gradient(180deg, var(--bg2), var(--bg) 40%); color: var(--ink); font: 400 16px/1.45 var(--body); -webkit-font-smoothing: antialiased; }
+button, input, textarea, select { font: inherit; color: inherit; }
+a { color: var(--accent); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 20px;
+  border: 0; border-radius: 10px; cursor: pointer; font: 600 14px/1 var(--serif); letter-spacing: .1em; text-transform: uppercase;
+  color: #f6efe3; background: linear-gradient(170deg, #9d7cd2 0%, #7650b3 30%, #5a3093 68%, #3d1c6b 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 2px 3px rgba(0,0,0,.3);
+}
+.btn:disabled { opacity: .6; }
+.field { width: 100%; padding: 12px 14px; border: 0; border-radius: 10px; background: rgba(236,220,194,.08); box-shadow: inset 0 0 0 1px var(--line); }
+.field:focus { outline: 2px solid var(--purple-hi); outline-offset: 1px; }
+textarea.field { resize: vertical; min-height: 84px; line-height: 1.4; }
+
+/* the door */
+.gate { min-height: 100svh; display: grid; place-items: center; padding: 24px var(--g); }
+.gate form { width: min(380px, 100%); display: grid; gap: 14px; text-align: center; }
+.gate h1 { margin: 0 0 6px; font: 500 clamp(40px, 9vw, 60px)/1 var(--serif); letter-spacing: -.01em; }
+.gate p { margin: 0 0 10px; color: var(--ink2); }
+.gate .msg { min-height: 1.4em; color: var(--bad); font-weight: 600; }
+
+/* the board */
+.top { position: sticky; top: 0; z-index: 5; padding: calc(env(safe-area-inset-top) + 12px) var(--g) 12px; background: rgba(18, 13, 38, .92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+.top-row { max-width: 1180px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.brand { font: 600 20px/1 var(--serif); letter-spacing: .08em; margin-right: auto; }
+.brand small { margin-left: 8px; font: 500 14px/1 var(--body); letter-spacing: 0; color: var(--ink3); }
+.who { display: flex; align-items: center; gap: 8px; }
+.who select { min-height: 42px; padding: 0 12px; border-radius: 10px; border: 0; background: rgba(236,220,194,.08); box-shadow: inset 0 0 0 1px var(--line); }
+.filters { max-width: 1180px; margin: 12px auto 0; display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+.seg { display: inline-flex; padding: 3px; border-radius: 999px; background: rgba(236,220,194,.07); box-shadow: inset 0 0 0 1px var(--line); }
+.seg button { min-height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: none; cursor: pointer; font-weight: 600; font-size: 14px; color: var(--ink2); }
+.seg button[aria-pressed="true"] { background: var(--purple); color: #fff; }
+.search { flex: 1 1 200px; min-height: 42px; }
+.count { font-size: 14px; color: var(--ink3); white-space: nowrap; }
+main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
+.hint { margin: 0 0 16px; color: var(--ink3); font-size: 14px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.card { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px 14px; padding: 14px; border-radius: 14px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
+.card.done { box-shadow: inset 0 0 0 1px rgba(159, 216, 168, .35); }
+.pic { position: relative; width: 96px; height: 120px; border-radius: 10px; overflow: hidden; background: rgba(236,220,194,.06); box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; display: grid; place-items: center; text-align: center; font-size: 12px; color: var(--ink3); }
+.pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.pic input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.pic .up { padding: 8px; line-height: 1.25; }
+.pic.busy::after { content: "Uploading…"; position: absolute; inset: 0; display: grid; place-items: center; background: rgba(18,13,38,.7); color: var(--ink); font-size: 12px; }
+.head { min-width: 0; }
+.name { margin: 0; font: 500 21px/1.15 var(--serif); }
+.meta { margin: 4px 0 0; font-size: 13px; color: var(--ink3); }
+.stars { display: flex; gap: 2px; margin-top: 8px; }
+.stars button { width: 30px; height: 30px; padding: 0; border: 0; background: none; cursor: pointer; font-size: 21px; line-height: 1; color: rgba(236,220,194,.25); }
+.stars button.on { color: #e9c46a; }
+.body { grid-column: 1 / -1; display: grid; gap: 8px; }
+.ig { display: flex; gap: 8px; align-items: center; }
+.ig .field { min-width: 0; }
+.ig a { flex: none; font-size: 13px; font-weight: 600; text-decoration: none; }
+.state { min-height: 1.2em; font-size: 12px; color: var(--ink3); }
+.state.saved { color: var(--ok); }
+.state.err { color: var(--bad); }
+.empty { padding: 40px 0; text-align: center; color: var(--ink3); }
+@media (max-width: 560px) {
+  .grid { grid-template-columns: 1fr; }
+  .brand small { display: none; }
+}
+</style>
+</head>
+<body>
+
+<section class="gate" id="gate">
+  <form id="gate-form">
+    <h1>Rush team</h1>
+    <p>FIJI, Alpha Sigma Chapter</p>
+    <label class="sr" for="pw">Password</label>
+    <input class="field" id="pw" type="password" autocomplete="current-password" placeholder="Password" required>
+    <button class="btn" type="submit">Enter</button>
+    <p class="msg" id="gate-msg" role="alert"></p>
+  </form>
+</section>
+
+<div id="board" hidden>
+  <header class="top">
+    <div class="top-row">
+      <div class="brand">FIJI RUSH <small>Spring &#39;27</small></div>
+      <label class="who"><span class="sr">I am</span><select id="me"><option value="">Who are you?</option></select></label>
+    </div>
+    <div class="filters">
+      <div class="seg" role="group" aria-label="Show">
+        <button type="button" data-view="mine" aria-pressed="true">Mine</button>
+        <button type="button" data-view="group" aria-pressed="false">My group</button>
+        <button type="button" data-view="all" aria-pressed="false">Everyone</button>
+      </div>
+      <input class="field search" id="q" type="search" placeholder="Search a name" autocomplete="off">
+      <span class="count" id="count"></span>
+    </div>
+  </header>
+  <main>
+    <p class="hint">Tap the photo box to upload a picture. Notes save by themselves when you leave a box.</p>
+    <div class="grid" id="grid"></div>
+  </main>
+</div>
+
+<script>
+(() => {
+  const API = "https://asufiji-rush.maniforoughi2.workers.dev";
+  const $ = (s) => document.querySelector(s);
+  const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }, del: (k) => { try { localStorage.removeItem(k); } catch {} } };
+  let token = store.get("rush-token"), roster = null, notes = {}, view = "mine";
+
+  const call = async (path, opts = {}) => {
+    const r = await fetch(API + path, { ...opts, headers: { authorization: "Bearer " + token, ...(opts.headers || {}) } });
+    if (r.status === 401 && path !== "/login") { store.del("rush-token"); location.reload(); throw new Error("signed out"); }
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || "failed");
+    return j;
+  };
+
+  // ---------- the door ----------
+  $("#gate-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector("button"); btn.disabled = true; $("#gate-msg").textContent = "";
+    try {
+      const r = await fetch(API + "/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ password: $("#pw").value }) });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || "failed");
+      token = j.token; store.set("rush-token", token); open();
+    } catch (err) {
+      $("#gate-msg").textContent = err.message === "wrong password" ? "Wrong password." : "Couldn't connect. Try again.";
+    }
+    btn.disabled = false;
+  });
+
+  // ---------- the board ----------
+  async function open() {
+    const d = await call("/data");
+    roster = d.roster; notes = d.notes || {};
+    $("#gate").hidden = true; $("#board").hidden = false;
+    const me = $("#me");
+    for (const g of roster.groups) {
+      const og = document.createElement("optgroup"); og.label = "Group " + g.n;
+      for (const m of g.members) { const o = document.createElement("option"); o.value = m; o.textContent = m; og.append(o); }
+      me.append(og);
+    }
+    me.value = store.get("rush-me") || "";
+    if (!me.value) view = "all";
+    me.addEventListener("change", () => { store.set("rush-me", me.value); if (me.value && view === "all") setView("mine"); else draw(); });
+    document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
+    $("#q").addEventListener("input", draw);
+    setView(view);
+  }
+  function setView(v) {
+    view = v;
+    document.querySelectorAll(".seg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
+    draw();
+  }
+  const myGroup = () => roster.groups.find((g) => g.members.includes($("#me").value))?.n;
+  const isDone = (n) => n && (n.photo || n.thoughts || n.rating);
+
+  function draw() {
+    const me = $("#me").value, q = $("#q").value.trim().toLowerCase(), g = myGroup();
+    let list = roster.pnms;
+    if (view === "mine" && me) list = list.filter((p) => p.brother === me);
+    else if (view === "group" && g) list = list.filter((p) => p.group === g);
+    if (q) list = list.filter((p) => (p.first + " " + p.last).toLowerCase().includes(q));
+    const done = list.filter((p) => isDone(notes[p.id])).length;
+    $("#count").textContent = `${done} of ${list.length} done`;
+    const grid = $("#grid");
+    grid.replaceChildren(...list.map(card));
+    if (!list.length) grid.innerHTML = `<p class="empty">${view !== "all" && !me ? "Pick your name at the top first." : "Nobody matches."}</p>`;
+  }
+
+  function card(p) {
+    const n = notes[p.id] || {};
+    const el = document.createElement("article");
+    el.className = "card" + (isDone(n) ? " done" : "");
+    el.innerHTML = `
+      <label class="pic"><span class="up">+ Add photo</span><input type="file" accept="image/*" aria-label="Photo of ${p.first} ${p.last}"></label>
+      <div class="head">
+        <h2 class="name"></h2>
+        <p class="meta">Group ${p.group} · ${p.brother}</p>
+        <div class="stars" role="group" aria-label="Rating">${[1, 2, 3, 4, 5].map((i) => `<button type="button" data-r="${i}" aria-label="${i} of 5">★</button>`).join("")}</div>
+      </div>
+      <div class="body">
+        <div class="ig"><input class="field" name="ig" placeholder="Instagram handle" autocomplete="off" autocapitalize="off"><a target="_blank" rel="noopener" hidden>Open</a></div>
+        <textarea class="field" name="thoughts" maxlength="1500" placeholder="First thoughts"></textarea>
+        <p class="state" aria-live="polite"></p>
+      </div>`;
+    el.querySelector(".name").textContent = `${p.first} ${p.last}`;
+    const ig = el.querySelector('[name="ig"]'), th = el.querySelector('[name="thoughts"]'), state = el.querySelector(".state"), link = el.querySelector(".ig a");
+    ig.value = n.ig || ""; th.value = n.thoughts || "";
+    const showLink = () => { const h = ig.value.trim().replace(/^@/, ""); link.hidden = !h; link.href = "https://www.instagram.com/" + encodeURIComponent(h) + "/"; };
+    showLink();
+    const stars = [...el.querySelectorAll(".stars button")];
+    const paintStars = (r) => stars.forEach((s) => s.classList.toggle("on", +s.dataset.r <= r));
+    paintStars(n.rating || 0);
+    if (n.by) state.textContent = `Last edit: ${n.by}`;
+    if (n.photo) setPhoto(el, p.id, n.photo);
+
+    const save = async (patch) => {
+      state.className = "state"; state.textContent = "Saving…";
+      try {
+        const r = await call(`/note/${p.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...patch, by: $("#me").value || "Someone" }) });
+        notes[p.id] = r.note; el.classList.toggle("done", !!isDone(r.note));
+        state.className = "state saved"; state.textContent = "Saved";
+        updateCount();
+      } catch { state.className = "state err"; state.textContent = "Didn't save. Check your connection."; }
+    };
+    ig.addEventListener("input", showLink);
+    ig.addEventListener("change", () => save({ ig: ig.value.trim() }));
+    th.addEventListener("change", () => save({ thoughts: th.value.trim() }));
+    stars.forEach((s) => s.addEventListener("click", () => { const r = +s.dataset.r === (notes[p.id]?.rating || 0) ? 0 : +s.dataset.r; paintStars(r); save({ rating: r }); }));
+
+    el.querySelector(".pic input").addEventListener("change", async (e) => {
+      const file = e.target.files[0]; if (!file) return;
+      const pic = el.querySelector(".pic"); pic.classList.add("busy");
+      try {
+        const blob = await shrink(file);
+        const r = await call(`/photo/${p.id}`, { method: "POST", headers: { "content-type": "image/jpeg" }, body: blob });
+        notes[p.id] = r.note; el.classList.add("done"); setPhoto(el, p.id, r.note.photo);
+        state.className = "state saved"; state.textContent = "Photo saved"; updateCount();
+      } catch { state.className = "state err"; state.textContent = "Photo didn't upload. Try again."; }
+      pic.classList.remove("busy"); e.target.value = "";
+    });
+    return el;
+  }
+  function setPhoto(el, id, v) {
+    const pic = el.querySelector(".pic");
+    pic.querySelector("img")?.remove();
+    const img = new Image(); img.alt = ""; img.loading = "lazy"; img.decoding = "async";
+    img.src = `${API}/photo/${id}?t=${encodeURIComponent(token)}&v=${v}`;
+    pic.prepend(img); pic.querySelector(".up").textContent = "";
+  }
+  function updateCount() {
+    const shown = [...document.querySelectorAll(".card")].length, done = document.querySelectorAll(".card.done").length;
+    $("#count").textContent = `${done} of ${shown} done`;
+  }
+  // phones take 12 megapixel photos: send a 720px JPEG instead (about 80 KB)
+  async function shrink(file) {
+    const bmp = await createImageBitmap(file, { imageOrientation: "from-image" }).catch(() => null);
+    const src = bmp || await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(file); });
+    const w = src.width, h = src.height, s = Math.min(1, 720 / Math.max(w, h));
+    const c = document.createElement("canvas"); c.width = Math.round(w * s); c.height = Math.round(h * s);
+    c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+    return new Promise((res) => c.toBlob(res, "image/jpeg", 0.82));
+  }
+
+  if (token) open().catch(() => { store.del("rush-token"); });
+})();
+</script>
+</body>
+</html>
