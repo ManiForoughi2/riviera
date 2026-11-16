@@ -77,11 +77,11 @@ export default {
       const roster = await env.RUSH.get("roster", "json");
       const [n, r] = await env.DB.batch([
         env.DB.prepare("SELECT id, ig, by, photo, at FROM notes"),
-        env.DB.prepare("SELECT pnm, brother, rating, thoughts, ig, at FROM ratings"),
+        env.DB.prepare("SELECT pnm, brother, rating, thoughts, ig, frat, at FROM ratings"),
       ]);
       const notes = {}, ratings = {};
       for (const row of n.results) { const { id, ...rest } = row; notes[id] = rest; }
-      for (const row of r.results) (ratings[row.pnm] ||= []).push({ by: row.brother, rating: row.rating, thoughts: row.thoughts, ig: row.ig || "", at: row.at });
+      for (const row of r.results) (ratings[row.pnm] ||= []).push({ by: row.brother, rating: row.rating, thoughts: row.thoughts, ig: row.ig || "", frat: row.frat || 0, at: row.at });
       return out({ roster, notes, ratings });
     }
 
@@ -106,10 +106,10 @@ export default {
       const by = clip(b.by, 40);
       if (!roster.groups.some((g) => g.members.includes(by))) return out({ error: "pick your name first" }, 400);
       const rating = Math.max(0, Math.min(5, Math.round(+b.rating || 0))), thoughts = clip(b.thoughts ?? "", 1500).trim(), at = Date.now();
-      const ig = handle(b.ig);
-      if (!rating && !thoughts && !ig) await env.DB.prepare("DELETE FROM ratings WHERE pnm = ? AND brother = ?").bind(id, by).run();
-      else await env.DB.prepare("INSERT INTO ratings (pnm, brother, rating, thoughts, ig, at) VALUES (?1, ?2, ?3, ?4, ?5, ?6) ON CONFLICT(pnm, brother) DO UPDATE SET rating = ?3, thoughts = ?4, ig = ?5, at = ?6").bind(id, by, rating, thoughts, ig, at).run();
-      const { results } = await env.DB.prepare("SELECT brother AS by, rating, thoughts, ig, at FROM ratings WHERE pnm = ?").bind(id).all();
+      const ig = handle(b.ig), frat = b.frat ? 1 : 0;      // frat: this brother says he is already in a fraternity
+      if (!rating && !thoughts && !ig && !frat) await env.DB.prepare("DELETE FROM ratings WHERE pnm = ? AND brother = ?").bind(id, by).run();
+      else await env.DB.prepare("INSERT INTO ratings (pnm, brother, rating, thoughts, ig, frat, at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) ON CONFLICT(pnm, brother) DO UPDATE SET rating = ?3, thoughts = ?4, ig = ?5, frat = ?6, at = ?7").bind(id, by, rating, thoughts, ig, frat, at).run();
+      const { results } = await env.DB.prepare("SELECT brother AS by, rating, thoughts, ig, frat, at FROM ratings WHERE pnm = ?").bind(id).all();
       return out({ ok: true, ratings: results });
     }
 
