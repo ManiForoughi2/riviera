@@ -155,6 +155,10 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
         <button type="button" data-view="group" aria-pressed="false">My group</button>
         <button type="button" data-view="all" aria-pressed="false">Everyone</button>
       </div>
+      <div class="seg sub" id="sub" role="group" aria-label="Rate">
+        <button type="button" data-sub="todo" aria-pressed="true">To do</button>
+        <button type="button" data-sub="done" aria-pressed="false">Reviewed</button>
+      </div>
       <input class="field search" id="q" type="search" placeholder="Search a name" autocomplete="off">
       <select class="field sort" id="sort" aria-label="Sort"><option value="high" selected>Highest score</option><option value="az">A to Z</option><option value="low">Lowest score</option><option value="most">Most ratings</option><option value="fewest">Fewest ratings</option></select>
       <span class="count" id="count"></span>
@@ -171,7 +175,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
   const API = "https://asufiji-rush.maniforoughi2.workers.dev";
   const $ = (q) => document.querySelector(q);
   const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }, del: (k) => { try { localStorage.removeItem(k); } catch {} } };
-  let token = store.get("rush-token"), roster = null, notes = {}, ratings = {}, view = "rate", synced = 0;
+  let token = store.get("rush-token"), roster = null, notes = {}, ratings = {}, view = "rate", sub = "todo", synced = 0;
   const NONE = "__none__";
   // a pasted link, "@Name" or " name " all become "name" (the worker cleans it the same way)
   const cleanHandle = (v) => String(v || "").trim().replace(/^(https?:\/\/)?((www|m)\.)?(instagram\.com|instagr\.am)\//i, "").replace(/^@/, "").replace(/[/?#].*$/, "").toLowerCase().replace(/[^a-z0-9._]/g, "").slice(0, 30);
@@ -246,15 +250,22 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
       if (!sel.value) { $("#board").hidden = true; $("#pick").hidden = false; store.del("rush-me"); scrollTo(0, 0); return; }
       store.set("rush-me", sel.value); setView("rate");
     });
-    document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
+    document.querySelectorAll(".seg button[data-view]").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
+    document.querySelectorAll(".seg button[data-sub]").forEach((b) => b.addEventListener("click", () => setSub(b.dataset.sub)));
     $("#q").addEventListener("input", draw);
     $("#sort").addEventListener("change", draw);
     setView("rate");
   }
+  function setSub(v) {
+    sub = v;
+    document.querySelectorAll(".seg button[data-sub]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.sub === v)));
+    draw(); scrollTo(0, 0);
+  }
   function setView(v) {
     view = v;
+    $("#sub").hidden = v !== "rate";
     if (v === "group" && $("#sort").value === "az") $("#sort").value = "high";
-    document.querySelectorAll(".seg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
+    document.querySelectorAll(".seg button[data-view]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
     draw();
   }
 
@@ -289,7 +300,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     return `${list.length} kids · ${list.filter((p) => score(p).n).length} rated`;
   }
   const HINTS = {
-    rate: "Everyone in your group rates every kid in your group. Tap the stars and write your first thoughts; they save by themselves. Rated kids move to Done the next time the list loads. No photo yet? Add one if you can find him on Instagram; everyone sees it.",
+    rate: "Everyone in your group rates every kid in your group. Tap the stars and write your first thoughts; they save by themselves. Reviewed kids move to the Reviewed tab the next time the list loads. No photo yet? Add one if you can find him on Instagram; everyone sees it.",
     group: "Your group's kids with everyone's ratings. Sort by highest score to see where they stand.",
     all: "Every kid, with his average score from his group.",
   };
@@ -300,14 +311,13 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     const grid = $("#grid");
     if (!list.length) { grid.innerHTML = `<p class="empty">Nobody matches.</p>`; return; }
     if (view !== "rate") { grid.replaceChildren(...list.map(card)); return; }
-    // a to-do list: what is left first, what is done after it
+    // the Rate tab: "To do" (what you haven't reviewed) or "Reviewed" (what you have)
     const todo = list.filter((p) => !finished(p)), done = list.filter(finished);
-    const head = (text, n, cls) => { const h = document.createElement("h2"); h.className = "section " + cls; h.innerHTML = `${text} <span>${n}</span>`; return h; };
-    grid.replaceChildren(
-      head("To rate", todo.length, "todo-head"), ...todo.map(card),
-      ...(todo.length ? [] : [Object.assign(document.createElement("p"), { className: "empty", textContent: "All done. Nice." })]),
-      ...(done.length ? [head("Done", done.length, "done-head"), ...done.map(card)] : []),
-    );
+    document.querySelector('[data-sub="todo"]').textContent = `To do (${todo.length})`;
+    document.querySelector('[data-sub="done"]').textContent = `Reviewed (${done.length})`;
+    const pick = sub === "done" ? done : todo;
+    grid.replaceChildren(...pick.map(card));
+    if (!pick.length) grid.innerHTML = `<p class="empty">${sub === "done" ? "You haven't reviewed anyone yet." : "All done. Nice."}</p>`;
   }
   const refreshCount = () => { $("#count").textContent = counts(shown()); };
 
