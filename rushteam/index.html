@@ -196,9 +196,8 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
       if (r.ig === NONE) { none++; continue; }
       tally.set(r.ig, (tally.get(r.ig) || 0) + 1);
     }
-    let best = "", n = 0;
-    for (const [h, c] of tally) if (c > n) { best = h; n = c; }
-    return { handle: best, agree: n, total: [...tally.values()].reduce((t, c) => t + c, 0), others: [...tally.keys()].filter((h) => h !== best), none };
+    // most votes first: when two brothers found different accounts, both show, as separate people
+    return { list: [...tally.entries()].sort((a, b) => b[1] - a[1]), none };
   };
 
   // ---------- the door ----------
@@ -332,10 +331,15 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     ig.value = mine.ig && mine.ig !== NONE ? mine.ig : "";
     const drawOfficial = () => {
       const o = official(p), box = el.querySelector(".official");
-      if (o.handle) {
-        box.innerHTML = `Instagram: <a target="_blank" rel="noopener"></a> <span></span>`;
-        const a = box.querySelector("a"); a.href = "https://www.instagram.com/" + encodeURIComponent(o.handle) + "/"; a.textContent = "@" + o.handle;
-        box.querySelector("span").textContent = o.total > 1 ? `(${o.agree} of ${o.total} agree${o.others.length ? "; also typed: " + o.others.map((h) => "@" + h).join(", ") : ""})` : "";
+      if (o.list.length) {
+        box.replaceChildren(document.createTextNode(o.list.length > 1 ? "Instagram (different accounts found): " : "Instagram: "));
+        o.list.forEach(([h, c], i) => {
+          if (i) box.append(document.createTextNode(" · "));
+          const a = document.createElement("a"); a.target = "_blank"; a.rel = "noopener";
+          a.href = "https://www.instagram.com/" + encodeURIComponent(h) + "/"; a.textContent = "@" + h;
+          box.append(a);
+          if (c > 1 || o.list.length > 1) { const n = document.createElement("span"); n.textContent = ` (${c})`; box.append(n); }
+        });
       } else box.textContent = o.none ? "Instagram: couldn't find it" : "";
     };
     drawOfficial();
