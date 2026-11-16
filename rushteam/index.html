@@ -258,7 +258,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
 
   function shown() {
     const g = groupOf(me())?.n, q = $("#q").value.trim().toLowerCase();
-    let list = roster.pnms;
+    let list = roster.pnms.filter((p) => !gone(p));
     if (view === "rate") list = list.filter((p) => p.group === g);
     else if (view === "group") list = list.filter((p) => p.group === g);
     if (q) list = list.filter((p) => (p.first + " " + p.last).toLowerCase().includes(q));
@@ -275,7 +275,13 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
   // done for you: you rated him, or you looked and couldn't find his Instagram
   const finished = (p) => { const m = mineOf(p); return !!(m?.rating || m?.ig === NONE || m?.frat); };
   const fratCount = (p) => (ratings[p.id] || []).filter((r) => r.frat).length;
+  // three or more brothers saying he's already in a frat takes him off every list
+  const OUT = 3, gone = (p) => fratCount(p) >= OUT;
   function counts(list) {
+    const out = roster.pnms.filter(gone).length, tail = out ? ` · ${out} removed (in a frat)` : "";
+    return countsOf(list) + tail;
+  }
+  function countsOf(list) {
     if (view === "rate") return `${list.filter(finished).length} of ${list.length} done`;
     if (view === "group") return `${list.length} kids · ${list.filter((p) => score(p).n).length} rated`;
     return `${list.length} kids · ${list.filter((p) => score(p).n).length} rated`;
@@ -384,6 +390,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     if (n.photo) setPhoto(el, p.id, n.photo);
     el.dataset.id = p.id;
     el._refresh = () => {
+      if (gone(p)) { el.remove(); return; }
       drawScore(); drawOfficial();
       const ph = notes[p.id]?.photo;
       if (ph && ph !== el._photo) setPhoto(el, p.id, ph);
