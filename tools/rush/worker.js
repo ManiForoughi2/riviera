@@ -44,6 +44,10 @@ async function valid(env, token) {
   return sig === await hmac(env.RUSH_PASS, "rush:" + exp);
 }
 const clip = (v, n) => String(v ?? "").slice(0, n);
+// kids added from the page: table "added", id = ADDED + row number (IFC ids are 8 digits, so no clash)
+const ADDED = 900000000;
+const addedKid = (r) => ({ id: String(ADDED + r.n), first: r.first, last: r.last, group: r.grp, brother: r.brother || "", added: true, by: r.by || "", ig: r.ig || "" });
+const same = (a, b) => String(a).trim().toLowerCase().replace(/\s+/g, " ") === String(b).trim().toLowerCase().replace(/\s+/g, " ");
 // an Instagram handle however it was typed: "@Name", "instagram.com/name/", " name " are all "name".
 // "__none__" means this brother could not find one
 const handle = (v) => {
@@ -77,21 +81,47 @@ export default {
     if (path === "/data" && req.method === "GET") {
       const since = Math.max(0, +url.searchParams.get("since") || 0), now = Date.now();
       const roster = since ? null : await env.RUSH.get("roster", "json");
-      const [n, r] = await env.DB.batch([
+      const [n, r, a] = await env.DB.batch([
         env.DB.prepare("SELECT id, ig, by, photo, at FROM notes WHERE at > ?").bind(since),
         env.DB.prepare("SELECT pnm, brother, rating, thoughts, ig, frat, priv, at FROM ratings WHERE at > ?").bind(since),
+        env.DB.prepare("SELECT n, first, last, grp, brother, by, ig, at FROM added WHERE at > ?").bind(since),
       ]);
       const notes = {}, ratings = {};
       for (const row of n.results) { const { id, ...rest } = row; notes[id] = rest; }
       for (const row of r.results) (ratings[row.pnm] ||= []).push({ by: row.brother, rating: row.rating, thoughts: row.thoughts, ig: row.ig || "", frat: row.frat || 0, priv: row.priv || 0, at: row.at });
-      return out({ roster, notes, ratings, now });
+      return out({ roster, notes, ratings, added: a.results.map(addedKid), now });
+    }
+
+    // a brother adds a kid who was not on the IFC list. the page checks for look-alike names first and
+    // asks; here only an exact repeat of a name is refused. he goes to the group with the fewest kids,
+    // and within it to the brother with the fewest
+    if (path === "/add" && req.method === "POST") {
+      let b = {};
+      try { b = await req.json(); } catch { return out({ error: "bad request" }, 400); }
+      const first = clip(b.first, 40).trim(), last = clip(b.last, 40).trim(), by = clip(b.by, 40);
+      if (!first || !last) return out({ error: "first and last name" }, 400);
+      const roster = await env.RUSH.get("roster", "json");
+      if (!roster.groups.some((g) => g.members.includes(by))) return out({ error: "pick your name first" }, 400);
+      const { results: added } = await env.DB.prepare("SELECT n, first, last, grp, brother, by, ig, at FROM added").all();
+      const all = [...roster.pnms, ...added.map(addedKid)];
+      const twin = all.find((p) => same(p.first, first) && same(p.last, last));
+      if (twin) return out({ error: "already on the list", kid: twin }, 409);
+      const count = (pred) => all.filter(pred).length;
+      const group = [...roster.groups].sort((x, y) => count((p) => p.group === x.n) - count((p) => p.group === y.n) || x.n - y.n)[0];
+      const brother = [...group.members].sort((x, y) => count((p) => p.brother === x) - count((p) => p.brother === y))[0];
+      const at = Date.now(), ig = handle(b.ig) === "__none__" ? "" : handle(b.ig);
+      const row = await env.DB.prepare("INSERT INTO added (first, last, grp, brother, by, ig, at) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING n, first, last, grp, brother, by, ig, at")
+        .bind(first, last, group.n, brother, by, ig, at).first();
+      return out({ ok: true, kid: addedKid(row) });
     }
 
     const m = path.match(/^\/(note|photo|rate)\/(\d{3,12})$/);
     if (!m) return out({ error: "not found" }, 404);
     const [, kind, id] = m;
     const roster = await env.RUSH.get("roster", "json");
-    if (!roster?.pnms?.some((p) => p.id === id)) return out({ error: "unknown PNM" }, 404);
+    const known = roster?.pnms?.some((p) => p.id === id)
+      || (+id > ADDED && !!(await env.DB.prepare("SELECT 1 AS x FROM added WHERE n = ?").bind(+id - ADDED).first()));
+    if (!known) return out({ error: "unknown PNM" }, 404);
 
     if (kind === "note" && req.method === "POST") {
       let b = {};

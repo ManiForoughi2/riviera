@@ -54,6 +54,26 @@ textarea.field { resize: vertical; min-height: 84px; line-height: 1.4; }
 .pick-group button { width: 100%; min-height: 48px; padding: 0 16px; border: 0; border-radius: 10px; text-align: left; cursor: pointer; font-weight: 600; background: rgba(236,220,194,.07); box-shadow: inset 0 0 0 1px var(--line); }
 .pick-group button:hover { background: rgba(150,110,210,.25); }
 
+/* adding a kid */
+.add-btn { min-height: 42px; padding: 0 14px; font-size: 12px; }
+.btn.ghost { background: rgba(236,220,194,.08); box-shadow: inset 0 0 0 1px var(--line); }
+dialog.add { width: min(460px, calc(100vw - 24px)); max-height: calc(100svh - 24px); padding: 0; border: 0; border-radius: 16px; background: var(--card); color: var(--ink); box-shadow: 0 20px 60px rgba(0,0,0,.6), inset 0 0 0 1px var(--line); }
+dialog.add::backdrop { background: rgba(8, 5, 20, .7); }
+.add form { display: grid; gap: 12px; padding: 22px; }
+.add h2 { margin: 0; font: 500 28px/1.1 var(--serif); }
+.add-note { margin: 0 0 4px; font-size: 14px; color: var(--ink2); }
+.add label { display: grid; gap: 6px; font-size: 13px; font-weight: 600; color: var(--ink2); }
+.add-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.add-warn { margin: 4px 0 6px; font-weight: 700; color: #f0c27a; }
+.add-matches ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.add-matches li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border-radius: 8px; background: rgba(236,220,194,.06); font-size: 14px; }
+.add-matches li small { color: var(--ink3); }
+.add-matches li button { flex: none; min-height: 34px; padding: 0 12px; border: 0; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; background: var(--purple); color: #fff; }
+.add-msg { min-height: 1.2em; margin: 0; font-size: 14px; font-weight: 600; color: var(--accent); }
+.add-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.new-tag { margin: 6px 0 0 6px; display: inline-block; padding: 3px 8px; border-radius: 6px; font: 600 12px/1.2 var(--body); color: #fff; background: var(--purple); }
+@media (max-width: 560px) { .add-row { grid-template-columns: 1fr; } }
+
 /* the board */
 .top { position: sticky; top: 0; z-index: 5; padding: calc(env(safe-area-inset-top) + 12px) var(--g) 12px; background: rgba(18, 13, 38, .92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
 .top-row { max-width: 1180px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
@@ -145,10 +165,32 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
   </div>
 </section>
 
+<dialog class="add" id="add">
+  <form id="add-form" method="dialog" novalidate>
+    <h2>Add a kid</h2>
+    <p class="add-note">For someone who isn't on the list yet. He goes to the group with the fewest kids.</p>
+    <div class="add-row">
+      <label><span>First name</span><input class="field" name="first" autocomplete="off" autocapitalize="words" required></label>
+      <label><span>Last name</span><input class="field" name="last" autocomplete="off" autocapitalize="words" required></label>
+    </div>
+    <label><span>Instagram (optional)</span><input class="field" name="ig" autocomplete="off" autocapitalize="off"></label>
+    <div class="add-matches" id="add-matches" hidden>
+      <p class="add-warn">Is he already on the list?</p>
+      <ul id="add-list"></ul>
+    </div>
+    <p class="add-msg" id="add-msg" role="status"></p>
+    <div class="add-actions">
+      <button class="btn ghost" type="button" id="add-cancel">Cancel</button>
+      <button class="btn" type="submit" id="add-go">Check and add</button>
+    </div>
+  </form>
+</dialog>
+
 <div id="board" hidden>
   <header class="top">
     <div class="top-row">
       <div class="brand">FIJI RUSH <small>Spring &#39;27</small></div>
+      <button class="btn add-btn" type="button" id="add-open">+ Add kid</button>
       <label class="who"><span class="sr">I am</span><select id="me"><option value="">Switch person…</option></select></label>
     </div>
     <div class="filters">
@@ -230,6 +272,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
   async function open() {
     const d = await call("/data");
     roster = d.roster; notes = d.notes || {}; ratings = d.ratings || {}; synced = d.now || Date.now();
+    roster.pnms = [...roster.pnms, ...(d.added || [])];
     $("#gate").hidden = true;
     const sel = $("#me");
     $("#pick-groups").replaceChildren(...roster.groups.map((g) => {
@@ -356,6 +399,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
       </div>`;
     el.querySelector(".name").textContent = `${p.first} ${p.last}`;
     el.querySelector(".meta").textContent = `Group ${p.group}`;
+    if (p.added) { const t = document.createElement("span"); t.className = "new-tag"; t.textContent = "Added by " + (p.by || "a brother"); el.querySelector(".head").append(t); }
     el.querySelector(".pic input").setAttribute("aria-label", `Photo of ${p.first} ${p.last}`);
     const th = el.querySelector('[name="thoughts"]'), ig = el.querySelector('[name="ig"]'), link = el.querySelector(".ig a"), state = el.querySelector(".state");
     const stars = [...el.querySelectorAll(".stars button")];
@@ -477,6 +521,103 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     return new Promise((res) => c.toBlob(res, "image/jpeg", 0.85));
   }
 
+  // ---------- adding a kid, and the check for someone already on the list ----------
+  // the same person is often typed differently: a nickname, a typo, the names swapped. names are
+  // compared after folding nicknames to one form and allowing a letter or two of difference
+  const NICK = [
+    ["matthew", "matt", "matty"], ["michael", "mike", "mikey"], ["christopher", "chris", "topher"], ["alexander", "alex", "alec", "xander"],
+    ["jacob", "jake"], ["joseph", "joe", "joey"], ["joshua", "josh"], ["anthony", "tony", "ant"], ["andrew", "andy", "drew"],
+    ["benjamin", "ben", "benny"], ["thomas", "tom", "tommy"], ["robert", "rob", "robbie", "robby", "bob", "bobby"],
+    ["william", "will", "billy", "liam"], ["samuel", "sam", "sammy"], ["daniel", "dan", "danny"], ["nicholas", "nick", "nico"],
+    ["nathaniel", "nathan", "nate"], ["zachary", "zach", "zack"], ["david", "dave"], ["jonathan", "jon", "john", "johnny", "jack"],
+    ["maximus", "max", "maximilian", "maxwell"], ["giovanni", "gio"], ["edward", "ed", "eddie", "ted"], ["richard", "rich", "rick", "ricky"],
+    ["charles", "charlie", "chuck"], ["james", "jim", "jimmy", "jamie"], ["timothy", "tim"], ["patrick", "pat"], ["gabriel", "gabe"],
+    ["jeremy", "jerry"], ["kenneth", "ken", "kenny"], ["steven", "stephen", "steve"], ["theodore", "theo", "teddy"], ["vincent", "vince", "vinny"],
+  ];
+  const CANON = new Map(NICK.flatMap((g) => g.map((n) => [n, g[0]])));
+  const fold = (v) => String(v || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z]/g, "");
+  const canon = (v) => CANON.get(fold(v)) || fold(v);
+  // typos between two spellings, where two letters swapped ("ie" for "ei") count as one
+  const lev = (a, b) => {
+    if (a === b) return 0;
+    const m = a.length, n = b.length, d = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+    for (let j = 1; j <= n; j++) d[0][j] = j;
+    for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) {
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+    }
+    return d[m][n];
+  };
+  const close = (a, b) => a === b || (Math.min(a.length, b.length) >= 4 && lev(a, b) <= (Math.max(a.length, b.length) >= 8 ? 2 : 1));
+  const firstLike = (a, b) => canon(a) === canon(b) || close(fold(a), fold(b)) || (fold(a).length <= 2 && fold(b).startsWith(fold(a))) || (fold(b).length <= 2 && fold(a).startsWith(fold(b)));
+  function lookalikes(first, last, ig) {
+    const h = cleanHandle(ig), F = first, L = fold(last);
+    const out = [];
+    for (const p of roster.pnms) {
+      let why = "";
+      if (h && (ratings[p.id] || []).some((r) => r.ig === h)) why = "same Instagram";
+      else if (close(fold(p.last), L) && firstLike(p.first, F)) why = fold(p.last) === L && canon(p.first) === canon(F) ? "same name" : "very close name";
+      else if (close(fold(p.last), fold(F)) && firstLike(p.first, last)) why = "names swapped";
+      else if (fold(p.last) === L && L.length >= 5) why = "same last name";
+      if (why) out.push({ p, why, rank: ["same Instagram", "same name", "very close name", "names swapped", "same last name"].indexOf(why) });
+    }
+    // brothers on the rush team are not PNMs: say so if the name is one of them
+    for (const g of roster.groups) for (const m of g.members) {
+      const [mf, ...ml] = m.split(" ");
+      if (ml.length && close(fold(ml.join(" ")), L) && firstLike(mf, F)) out.push({ p: { first: mf, last: ml.join(" "), group: g.n, brother: true }, why: "he's on the rush team", rank: -1 });
+    }
+    return out.sort((a, b) => a.rank - b.rank).slice(0, 6);
+  }
+
+  const dlg = $("#add"), form = $("#add-form"), amsg = $("#add-msg");
+  let checked = "";                                  // the name the last check was for: a second press adds him
+  const resetAdd = () => { form.reset(); $("#add-matches").hidden = true; amsg.textContent = ""; checked = ""; $("#add-go").textContent = "Check and add"; };
+  $("#add-open").addEventListener("click", () => { resetAdd(); dlg.showModal(); form.elements.first.focus(); });
+  $("#add-cancel").addEventListener("click", () => dlg.close());
+  form.addEventListener("input", () => { if (checked) { checked = ""; $("#add-go").textContent = "Check and add"; $("#add-matches").hidden = true; amsg.textContent = ""; } });
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const first = form.elements.first.value.trim(), last = form.elements.last.value.trim(), ig = form.elements.ig.value;
+    if (!first || !last) { amsg.textContent = "First and last name, please."; return; }
+    if (!me()) { amsg.textContent = "Pick your name at the top first."; return; }
+    const key = (first + "|" + last).toLowerCase();
+    if (checked !== key) {
+      const found = lookalikes(first, last, ig);
+      checked = key;
+      if (found.length) {
+        $("#add-list").replaceChildren(...found.map(({ p, why }) => {
+          const li = document.createElement("li");
+          li.innerHTML = `<span><b></b><br><small></small></span>`;
+          li.querySelector("b").textContent = `${p.first} ${p.last}`;
+          li.querySelector("small").textContent = p.brother ? why : `Group ${p.group} · ${why}`;
+          if (!p.brother) {
+            const b = document.createElement("button"); b.type = "button"; b.textContent = "That's him";
+            b.addEventListener("click", () => { dlg.close(); setView("all"); $("#q").value = `${p.first} ${p.last}`; draw(); });
+            li.append(b);
+          }
+          return li;
+        }));
+        $("#add-matches").hidden = false;
+        $("#add-go").textContent = "He's new, add him";
+        amsg.textContent = "";
+        return;
+      }
+    }
+    $("#add-go").disabled = true; amsg.textContent = "Adding…";
+    try {
+      const r = await fetch(API + "/add", { method: "POST", headers: { authorization: "Bearer " + token, "content-type": "application/json" }, body: JSON.stringify({ first, last, ig, by: me() }) });
+      const j = await r.json();
+      if (r.status === 409) { amsg.textContent = `${j.kid.first} ${j.kid.last} is already on the list (group ${j.kid.group}).`; return; }
+      if (!r.ok) throw new Error(j.error || "failed");
+      roster.pnms.push(j.kid);
+      if (j.kid.ig) (ratings[j.kid.id] ||= []).push({ by: me(), rating: 0, thoughts: "", ig: j.kid.ig, frat: 0, priv: 0, at: Date.now() });
+      amsg.textContent = `Added ${j.kid.first} ${j.kid.last} to group ${j.kid.group}.`;
+      draw();
+      setTimeout(() => { if (dlg.open) dlg.close(); }, 1400);
+    } catch { amsg.textContent = "Didn't add. Check your connection."; }
+    finally { $("#add-go").disabled = false; }
+  });
+
   // live: every 30 seconds an open page asks for whatever was saved since its last look (photos, ratings,
   // handles) and updates those cards in place. it does not re-sort, so nothing jumps while someone reads
   async function sync() {
@@ -490,6 +631,12 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
         const cur = ratings[id] || [];
         for (const r of list) { const i = cur.findIndex((x) => x.by === r.by); if (i >= 0) cur[i] = r; else cur.push(r); }
         ratings[id] = cur; touched.add(id);
+      }
+      const fresh = (d.added || []).filter((k) => !roster.pnms.some((p) => p.id === k.id));
+      if (fresh.length) {
+        roster.pnms.push(...fresh);
+        // a new kid shows up without pulling the page out from under someone who is typing
+        if (!document.activeElement?.matches("input, textarea")) { draw(); return; }
       }
       if (!touched.size) return;
       document.querySelectorAll(".card").forEach((c) => { if (touched.has(c.dataset.id)) c._refresh?.(); });
