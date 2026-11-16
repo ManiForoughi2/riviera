@@ -145,7 +145,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     <div class="filters">
       <div class="seg" role="group" aria-label="Show">
         <button type="button" data-view="rate" aria-pressed="true">Rate</button>
-        <button type="button" data-view="photos" aria-pressed="false">My photos</button>
+        <button type="button" data-view="group" aria-pressed="false">My group</button>
         <button type="button" data-view="all" aria-pressed="false">Everyone</button>
       </div>
       <input class="field search" id="q" type="search" placeholder="Search a name" autocomplete="off">
@@ -231,6 +231,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
   }
   function setView(v) {
     view = v;
+    if (v === "group" && $("#sort").value === "az") $("#sort").value = "high";
     document.querySelectorAll(".seg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
     draw();
   }
@@ -239,7 +240,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     const g = groupOf(me())?.n, q = $("#q").value.trim().toLowerCase();
     let list = roster.pnms;
     if (view === "rate") list = list.filter((p) => p.group === g);
-    else if (view === "photos") list = list.filter((p) => p.brother === me());
+    else if (view === "group") list = list.filter((p) => p.group === g);
     if (q) list = list.filter((p) => (p.first + " " + p.last).toLowerCase().includes(q));
     const sort = $("#sort").value, by = {
       high: (a, b) => score(b).avg - score(a).avg || score(b).n - score(a).n,
@@ -251,15 +252,15 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
   }
   // what makes a kid "done" in each list: rated by you, or his photo and Instagram found (or known to be missing)
   const NONE = "__none__";
-  const finished = (p) => view === "rate" ? !!mineOf(p)?.rating : view === "photos" ? !!(notes[p.id]?.photo && notes[p.id]?.ig) : false;
+  const finished = (p) => !!mineOf(p)?.rating;
   function counts(list) {
     if (view === "rate") return `${list.filter((p) => mineOf(p)?.rating).length} of ${list.length} rated by you`;
-    if (view === "photos") return `${list.filter((p) => notes[p.id]?.photo && notes[p.id]?.ig).length} of ${list.length} done`;
+    if (view === "group") return `${list.length} kids · ${list.filter((p) => score(p).n).length} rated`;
     return `${list.length} kids · ${list.filter((p) => score(p).n).length} rated`;
   }
   const HINTS = {
     rate: "Everyone in your group rates every kid in your group. Tap the stars and write your first thoughts; they save by themselves. Rated kids move to Done the next time the list loads. No photo yet? Add one if you can find him on Instagram; everyone sees it.",
-    photos: "These are yours to find: a photo and his Instagram. If you can't find his Instagram, tick the box.",
+    group: "Your group's kids with everyone's ratings. Sort by highest score to see where they stand.",
     all: "Every kid, with his average score from his group.",
   };
   function draw() {
@@ -268,12 +269,12 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     $("#count").textContent = counts(list);
     const grid = $("#grid");
     if (!list.length) { grid.innerHTML = `<p class="empty">Nobody matches.</p>`; return; }
-    if (view === "all") { grid.replaceChildren(...list.map(card)); return; }
+    if (view !== "rate") { grid.replaceChildren(...list.map(card)); return; }
     // a to-do list: what is left first, what is done after it
     const todo = list.filter((p) => !finished(p)), done = list.filter(finished);
     const head = (text, n, cls) => { const h = document.createElement("h2"); h.className = "section " + cls; h.innerHTML = `${text} <span>${n}</span>`; return h; };
     grid.replaceChildren(
-      head(view === "rate" ? "To rate" : "To find", todo.length, "todo-head"), ...todo.map(card),
+      head("To rate", todo.length, "todo-head"), ...todo.map(card),
       ...(todo.length ? [] : [Object.assign(document.createElement("p"), { className: "empty", textContent: "All done. Nice." })]),
       ...(done.length ? [head("Done", done.length, "done-head"), ...done.map(card)] : []),
     );
@@ -301,7 +302,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
         <p class="state" aria-live="polite"></p>
       </div>`;
     el.querySelector(".name").textContent = `${p.first} ${p.last}`;
-    el.querySelector(".meta").textContent = `Group ${p.group} · photo: ${p.brother}`;
+    el.querySelector(".meta").textContent = `Group ${p.group}`;
     el.querySelector(".pic input").setAttribute("aria-label", `Photo of ${p.first} ${p.last}`);
     const th = el.querySelector('[name="thoughts"]'), ig = el.querySelector('[name="ig"]'), link = el.querySelector(".ig a"), state = el.querySelector(".state");
     const stars = [...el.querySelectorAll(".stars button")];
