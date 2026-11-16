@@ -1,6 +1,8 @@
 // Rush team: a Cloudflare Worker behind asufiji.com/rushteam. It holds the PNM roster (names and who
-// is assigned to each, no phone numbers or emails) in the KV namespace RUSH, and each PNM's notes and
-// one photo in the D1 database DB (tools/rush/schema.sql). Everything needs the rush team password.
+// is assigned to each, no phone numbers or emails) in the KV namespace RUSH, and in the D1 database DB
+// (tools/rush/schema.sql): each PNM's Instagram handle and one photo (table notes, photos), and every
+// brother's own rating and thoughts on him (table ratings, one row per brother per PNM), so a PNM's
+// score is the average over everyone who rated him. Everything needs the rush team password.
 //
 // deploy:   npx wrangler deploy --config tools/rush/wrangler.toml
 // password: npx wrangler secret put RUSH_PASS --config tools/rush/wrangler.toml
@@ -65,13 +67,17 @@ export default {
     // everything the page needs in one go: the roster, and every note
     if (path === "/data" && req.method === "GET") {
       const roster = await env.RUSH.get("roster", "json");
-      const { results } = await env.DB.prepare("SELECT id, ig, thoughts, rating, by, photo, at FROM notes").all();
-      const notes = {};
-      for (const r of results) { const { id, ...n } = r; notes[id] = n; }
-      return out({ roster, notes });
+      const [n, r] = await env.DB.batch([
+        env.DB.prepare("SELECT id, ig, by, photo, at FROM notes"),
+        env.DB.prepare("SELECT pnm, brother, rating, thoughts, at FROM ratings"),
+      ]);
+      const notes = {}, ratings = {};
+      for (const row of n.results) { const { id, ...rest } = row; notes[id] = rest; }
+      for (const row of r.results) (ratings[row.pnm] ||= []).push({ by: row.brother, rating: row.rating, thoughts: row.thoughts, at: row.at });
+      return out({ roster, notes, ratings });
     }
 
-    const m = path.match(/^\/(note|photo)\/(\d{3,12})$/);
+    const m = path.match(/^\/(note|photo|rate)\/(\d{3,12})$/);
     if (!m) return out({ error: "not found" }, 404);
     const [, kind, id] = m;
     const roster = await env.RUSH.get("roster", "json");
@@ -80,18 +86,22 @@ export default {
     if (kind === "note" && req.method === "POST") {
       let b = {};
       try { b = await req.json(); } catch { return out({ error: "bad request" }, 400); }
-      const prev = (await env.DB.prepare("SELECT ig, thoughts, rating, by, photo FROM notes WHERE id = ?").bind(id).first()) || {};
-      const note = {
-        ig: clip(b.ig ?? prev.ig ?? "", 60).replace(/^@/, ""),
-        thoughts: clip(b.thoughts ?? prev.thoughts ?? "", 1500),
-        rating: Math.max(0, Math.min(5, Math.round(+(b.rating ?? prev.rating) || 0))),
-        by: clip(b.by ?? prev.by ?? "", 40),
-        photo: prev.photo || 0,
-        at: Date.now(),
-      };
-      await env.DB.prepare("INSERT INTO notes (id, ig, thoughts, rating, by, photo, at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) ON CONFLICT(id) DO UPDATE SET ig = ?2, thoughts = ?3, rating = ?4, by = ?5, at = ?7")
-        .bind(id, note.ig, note.thoughts, note.rating, note.by, note.photo, note.at).run();
+      const ig = clip(b.ig ?? "", 60).trim().replace(/^@/, ""), by = clip(b.by ?? "", 40), at = Date.now();
+      await env.DB.prepare("INSERT INTO notes (id, ig, by, at) VALUES (?1, ?2, ?3, ?4) ON CONFLICT(id) DO UPDATE SET ig = ?2, by = ?3, at = ?4").bind(id, ig, by, at).run();
+      const note = await env.DB.prepare("SELECT ig, by, photo, at FROM notes WHERE id = ?").bind(id).first();
       return out({ ok: true, note });
+    }
+
+    if (kind === "rate" && req.method === "POST") {
+      let b = {};
+      try { b = await req.json(); } catch { return out({ error: "bad request" }, 400); }
+      const by = clip(b.by, 40);
+      if (!roster.groups.some((g) => g.members.includes(by))) return out({ error: "pick your name first" }, 400);
+      const rating = Math.max(0, Math.min(5, Math.round(+b.rating || 0))), thoughts = clip(b.thoughts ?? "", 1500).trim(), at = Date.now();
+      if (!rating && !thoughts) await env.DB.prepare("DELETE FROM ratings WHERE pnm = ? AND brother = ?").bind(id, by).run();
+      else await env.DB.prepare("INSERT INTO ratings (pnm, brother, rating, thoughts, at) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT(pnm, brother) DO UPDATE SET rating = ?3, thoughts = ?4, at = ?5").bind(id, by, rating, thoughts, at).run();
+      const { results } = await env.DB.prepare("SELECT brother AS by, rating, thoughts, at FROM ratings WHERE pnm = ?").bind(id).all();
+      return out({ ok: true, ratings: results });
     }
 
     if (kind === "photo" && req.method === "POST") {
@@ -104,7 +114,7 @@ export default {
         env.DB.prepare("INSERT INTO photos (id, type, data) VALUES (?1, ?2, ?3) ON CONFLICT(id) DO UPDATE SET type = ?2, data = ?3").bind(id, type, body),
         env.DB.prepare("INSERT INTO notes (id, photo, at) VALUES (?1, ?2, ?2) ON CONFLICT(id) DO UPDATE SET photo = ?2, at = ?2").bind(id, now),
       ]);
-      const note = await env.DB.prepare("SELECT ig, thoughts, rating, by, photo, at FROM notes WHERE id = ?").bind(id).first();
+      const note = await env.DB.prepare("SELECT ig, by, photo, at FROM notes WHERE id = ?").bind(id).first();
       return out({ ok: true, note });
     }
 

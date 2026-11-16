@@ -43,6 +43,17 @@ textarea.field { resize: vertical; min-height: 84px; line-height: 1.4; }
 .gate p { margin: 0 0 10px; color: var(--ink2); }
 .gate .msg { min-height: 1.4em; color: var(--bad); font-weight: 600; }
 
+/* who are you */
+.pick { min-height: 100svh; padding: calc(env(safe-area-inset-top) + 40px) var(--g) 40px; }
+.pick-in { max-width: 900px; margin: 0 auto; }
+.pick h1 { margin: 0 0 6px; font: 500 clamp(34px, 7vw, 52px)/1.05 var(--serif); }
+.pick-in > p { margin: 0 0 26px; color: var(--ink2); }
+.pick-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 22px; }
+.pick-group h2 { margin: 0 0 10px; font: 600 13px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.pick-group ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.pick-group button { width: 100%; min-height: 48px; padding: 0 16px; border: 0; border-radius: 10px; text-align: left; cursor: pointer; font-weight: 600; background: rgba(236,220,194,.07); box-shadow: inset 0 0 0 1px var(--line); }
+.pick-group button:hover { background: rgba(150,110,210,.25); }
+
 /* the board */
 .top { position: sticky; top: 0; z-index: 5; padding: calc(env(safe-area-inset-top) + 12px) var(--g) 12px; background: rgba(18, 13, 38, .92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
 .top-row { max-width: 1180px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
@@ -80,6 +91,17 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
 .state.saved { color: var(--ok); }
 .state.err { color: var(--bad); }
 .empty { padding: 40px 0; text-align: center; color: var(--ink3); }
+.sort { flex: 0 0 auto; width: auto; min-height: 42px; padding: 0 12px; }
+.score { display: flex; align-items: baseline; gap: 6px; margin-top: 6px; font-size: 13px; color: var(--ink3); }
+.score b { font: 600 20px/1 var(--serif); color: #e9c46a; }
+.mine-label { font: 600 12px/1 var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+.others { font-size: 14px; }
+.others summary { cursor: pointer; color: var(--accent); font-weight: 600; }
+.others ul { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.others li { padding: 8px 10px; border-radius: 8px; background: rgba(236,220,194,.05); }
+.others li b { color: var(--ink); }
+.others .st { color: #e9c46a; margin-left: 6px; }
+.others p { margin: 4px 0 0; color: var(--ink2); white-space: pre-wrap; }
 @media (max-width: 560px) {
   .grid { grid-template-columns: 1fr; }
   .brand small { display: none; }
@@ -99,24 +121,33 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
   </form>
 </section>
 
+<section class="pick" id="pick" hidden>
+  <div class="pick-in">
+    <h1>Who are you?</h1>
+    <p>Pick your name to see the kids assigned to you.</p>
+    <div class="pick-groups" id="pick-groups"></div>
+  </div>
+</section>
+
 <div id="board" hidden>
   <header class="top">
     <div class="top-row">
       <div class="brand">FIJI RUSH <small>Spring &#39;27</small></div>
-      <label class="who"><span class="sr">I am</span><select id="me"><option value="">Who are you?</option></select></label>
+      <label class="who"><span class="sr">I am</span><select id="me"><option value="">Switch person…</option></select></label>
     </div>
     <div class="filters">
       <div class="seg" role="group" aria-label="Show">
-        <button type="button" data-view="mine" aria-pressed="true">Mine</button>
-        <button type="button" data-view="group" aria-pressed="false">My group</button>
+        <button type="button" data-view="rate" aria-pressed="true">Rate</button>
+        <button type="button" data-view="photos" aria-pressed="false">My photos</button>
         <button type="button" data-view="all" aria-pressed="false">Everyone</button>
       </div>
       <input class="field search" id="q" type="search" placeholder="Search a name" autocomplete="off">
+      <select class="field sort" id="sort" aria-label="Sort"><option value="az">A to Z</option><option value="top">Top score</option><option value="todo">Not rated by me</option></select>
       <span class="count" id="count"></span>
     </div>
   </header>
   <main>
-    <p class="hint">Tap the photo box to upload a picture. Notes save by themselves when you leave a box.</p>
+    <p class="hint" id="hint"></p>
     <div class="grid" id="grid"></div>
   </main>
 </div>
@@ -124,17 +155,26 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
 <script>
 (() => {
   const API = "https://asufiji-rush.maniforoughi2.workers.dev";
-  const $ = (s) => document.querySelector(s);
+  const $ = (q) => document.querySelector(q);
   const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }, del: (k) => { try { localStorage.removeItem(k); } catch {} } };
-  let token = store.get("rush-token"), roster = null, notes = {}, view = "mine";
+  let token = store.get("rush-token"), roster = null, notes = {}, ratings = {}, view = "rate";
 
   const call = async (path, opts = {}) => {
     const r = await fetch(API + path, { ...opts, headers: { authorization: "Bearer " + token, ...(opts.headers || {}) } });
-    if (r.status === 401 && path !== "/login") { store.del("rush-token"); location.reload(); throw new Error("signed out"); }
+    if (r.status === 401) { store.del("rush-token"); location.reload(); throw new Error("signed out"); }
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j.error || "failed");
     return j;
   };
+  const me = () => $("#me").value;
+  const groupOf = (name) => roster.groups.find((g) => g.members.includes(name));
+  // a PNM's score: the average of every rating given to him, and how many of his group rated him
+  const score = (p) => {
+    const rs = (ratings[p.id] || []).filter((r) => r.rating > 0);
+    const size = roster.groups.find((g) => g.n === p.group)?.members.length || 0;
+    return { avg: rs.length ? rs.reduce((t, r) => t + r.rating, 0) / rs.length : 0, n: rs.length, size };
+  };
+  const mineOf = (p) => (ratings[p.id] || []).find((r) => r.by === me());
 
   // ---------- the door ----------
   $("#gate-form").addEventListener("submit", async (e) => {
@@ -151,94 +191,153 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     btn.disabled = false;
   });
 
-  // ---------- the board ----------
+  // ---------- who are you, then the board ----------
   async function open() {
     const d = await call("/data");
-    roster = d.roster; notes = d.notes || {};
-    $("#gate").hidden = true; $("#board").hidden = false;
-    const me = $("#me");
-    for (const g of roster.groups) {
+    roster = d.roster; notes = d.notes || {}; ratings = d.ratings || {};
+    $("#gate").hidden = true;
+    const sel = $("#me");
+    $("#pick-groups").replaceChildren(...roster.groups.map((g) => {
+      const box = document.createElement("div"); box.className = "pick-group";
+      box.innerHTML = `<h2>Group ${g.n}</h2><ul></ul>`;
+      for (const m of g.members) {
+        const li = document.createElement("li"), b = document.createElement("button");
+        b.type = "button"; b.textContent = m;
+        b.addEventListener("click", () => { store.set("rush-me", m); sel.value = m; $("#pick").hidden = true; $("#board").hidden = false; setView("rate"); scrollTo(0, 0); });
+        li.append(b); box.querySelector("ul").append(li);
+      }
       const og = document.createElement("optgroup"); og.label = "Group " + g.n;
       for (const m of g.members) { const o = document.createElement("option"); o.value = m; o.textContent = m; og.append(o); }
-      me.append(og);
-    }
-    me.value = store.get("rush-me") || "";
-    if (!me.value) view = "all";
-    me.addEventListener("change", () => { store.set("rush-me", me.value); if (me.value && view === "all") setView("mine"); else draw(); });
+      sel.append(og);
+      return box;
+    }));
+    sel.value = store.get("rush-me") || "";
+    if (sel.value) $("#board").hidden = false; else $("#pick").hidden = false;
+    sel.addEventListener("change", () => {
+      if (!sel.value) { $("#board").hidden = true; $("#pick").hidden = false; store.del("rush-me"); scrollTo(0, 0); return; }
+      store.set("rush-me", sel.value); setView("rate");
+    });
     document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
     $("#q").addEventListener("input", draw);
-    setView(view);
+    $("#sort").addEventListener("change", draw);
+    setView("rate");
   }
   function setView(v) {
     view = v;
     document.querySelectorAll(".seg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
     draw();
   }
-  const myGroup = () => roster.groups.find((g) => g.members.includes($("#me").value))?.n;
-  const isDone = (n) => n && (n.photo || n.thoughts || n.rating);
 
-  function draw() {
-    const me = $("#me").value, q = $("#q").value.trim().toLowerCase(), g = myGroup();
+  function shown() {
+    const g = groupOf(me())?.n, q = $("#q").value.trim().toLowerCase();
     let list = roster.pnms;
-    if (view === "mine" && me) list = list.filter((p) => p.brother === me);
-    else if (view === "group" && g) list = list.filter((p) => p.group === g);
+    if (view === "rate") list = list.filter((p) => p.group === g);
+    else if (view === "photos") list = list.filter((p) => p.brother === me());
     if (q) list = list.filter((p) => (p.first + " " + p.last).toLowerCase().includes(q));
-    const done = list.filter((p) => isDone(notes[p.id])).length;
-    $("#count").textContent = `${done} of ${list.length} done`;
+    const sort = $("#sort").value;
+    if (sort === "top") list = [...list].sort((a, b) => score(b).avg - score(a).avg || score(b).n - score(a).n);
+    else if (sort === "todo") list = [...list].sort((a, b) => !!mineOf(a)?.rating - !!mineOf(b)?.rating);
+    return list;
+  }
+  function counts(list) {
+    if (view === "rate") return `${list.filter((p) => mineOf(p)?.rating).length} of ${list.length} rated by you`;
+    if (view === "photos") return `${list.filter((p) => notes[p.id]?.photo).length} of ${list.length} have a photo`;
+    return `${list.length} kids · ${list.filter((p) => score(p).n).length} rated`;
+  }
+  const HINTS = {
+    rate: "Everyone in your group rates every kid in your group. Tap the stars and write your first thoughts; they save by themselves.",
+    photos: "These are yours to find: add a photo and his Instagram. Tap the photo box to upload a picture.",
+    all: "Every kid, with his average score from his group.",
+  };
+  function draw() {
+    const list = shown();
+    $("#hint").textContent = HINTS[view];
+    $("#count").textContent = counts(list);
     const grid = $("#grid");
     grid.replaceChildren(...list.map(card));
-    if (!list.length) grid.innerHTML = `<p class="empty">${view !== "all" && !me ? "Pick your name at the top first." : "Nobody matches."}</p>`;
+    if (!list.length) grid.innerHTML = `<p class="empty">Nobody matches.</p>`;
   }
+  const refreshCount = () => { $("#count").textContent = counts(shown()); };
 
   function card(p) {
-    const n = notes[p.id] || {};
+    const n = notes[p.id] || {}, mine = mineOf(p) || {};
     const el = document.createElement("article");
-    el.className = "card" + (isDone(n) ? " done" : "");
+    el.className = "card" + (mine.rating ? " done" : "");
     el.innerHTML = `
-      <label class="pic"><span class="up">+ Add photo</span><input type="file" accept="image/*" aria-label="Photo of ${p.first} ${p.last}"></label>
+      <label class="pic"><span class="up">+ Add photo</span><input type="file" accept="image/*"></label>
       <div class="head">
         <h2 class="name"></h2>
-        <p class="meta">Group ${p.group} · ${p.brother}</p>
-        <div class="stars" role="group" aria-label="Rating">${[1, 2, 3, 4, 5].map((i) => `<button type="button" data-r="${i}" aria-label="${i} of 5">★</button>`).join("")}</div>
+        <p class="meta"></p>
+        <p class="score"></p>
       </div>
       <div class="body">
+        <span class="mine-label">Your rating</span>
+        <div class="stars" role="group" aria-label="Your rating">${[1, 2, 3, 4, 5].map((i) => `<button type="button" data-r="${i}" aria-label="${i} of 5">★</button>`).join("")}</div>
+        <textarea class="field" name="thoughts" maxlength="1500" placeholder="Your first thoughts"></textarea>
         <div class="ig"><input class="field" name="ig" placeholder="Instagram handle" autocomplete="off" autocapitalize="off"><a target="_blank" rel="noopener" hidden>Open</a></div>
-        <textarea class="field" name="thoughts" maxlength="1500" placeholder="First thoughts"></textarea>
+        <details class="others"><summary></summary><ul></ul></details>
         <p class="state" aria-live="polite"></p>
       </div>`;
     el.querySelector(".name").textContent = `${p.first} ${p.last}`;
-    const ig = el.querySelector('[name="ig"]'), th = el.querySelector('[name="thoughts"]'), state = el.querySelector(".state"), link = el.querySelector(".ig a");
-    ig.value = n.ig || ""; th.value = n.thoughts || "";
+    el.querySelector(".meta").textContent = `Group ${p.group} · photo: ${p.brother}`;
+    el.querySelector(".pic input").setAttribute("aria-label", `Photo of ${p.first} ${p.last}`);
+    const th = el.querySelector('[name="thoughts"]'), ig = el.querySelector('[name="ig"]'), link = el.querySelector(".ig a"), state = el.querySelector(".state");
+    const stars = [...el.querySelectorAll(".stars button")];
+    const paint = (r) => stars.forEach((b) => b.classList.toggle("on", +b.dataset.r <= r));
+    th.value = mine.thoughts || ""; paint(mine.rating || 0);
+    ig.value = n.ig || "";
     const showLink = () => { const h = ig.value.trim().replace(/^@/, ""); link.hidden = !h; link.href = "https://www.instagram.com/" + encodeURIComponent(h) + "/"; };
     showLink();
-    const stars = [...el.querySelectorAll(".stars button")];
-    const paintStars = (r) => stars.forEach((s) => s.classList.toggle("on", +s.dataset.r <= r));
-    paintStars(n.rating || 0);
-    if (n.by) state.textContent = `Last edit: ${n.by}`;
+    const drawScore = () => {
+      const sc = score(p);
+      el.querySelector(".score").innerHTML = sc.n ? `<b>${sc.avg.toFixed(1)}</b> ★ · ${sc.n} of ${sc.size} rated` : "Not rated yet";
+      const others = (ratings[p.id] || []).filter((r) => r.by !== me());
+      const det = el.querySelector(".others");
+      det.hidden = !others.length;
+      det.querySelector("summary").textContent = `What others said (${others.length})`;
+      det.querySelector("ul").replaceChildren(...others.map((r) => {
+        const li = document.createElement("li");
+        li.innerHTML = `<b></b><span class="st"></span><p></p>`;
+        li.querySelector("b").textContent = r.by;
+        li.querySelector(".st").textContent = r.rating ? "★".repeat(r.rating) : "";
+        li.querySelector("p").textContent = r.thoughts || "";
+        return li;
+      }));
+    };
+    drawScore();
     if (n.photo) setPhoto(el, p.id, n.photo);
 
-    const save = async (patch) => {
+    const rate = async (patch) => {
+      if (!me()) { state.className = "state err"; state.textContent = "Pick your name at the top first."; return; }
+      const cur = mineOf(p) || {};
+      const body = { by: me(), rating: patch.rating ?? cur.rating ?? 0, thoughts: patch.thoughts ?? cur.thoughts ?? "" };
       state.className = "state"; state.textContent = "Saving…";
       try {
-        const r = await call(`/note/${p.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...patch, by: $("#me").value || "Someone" }) });
-        notes[p.id] = r.note; el.classList.toggle("done", !!isDone(r.note));
+        const r = await call(`/rate/${p.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+        ratings[p.id] = r.ratings;
+        el.classList.toggle("done", !!mineOf(p)?.rating);
+        drawScore(); refreshCount();
         state.className = "state saved"; state.textContent = "Saved";
-        updateCount();
-      } catch { state.className = "state err"; state.textContent = "Didn't save. Check your connection."; }
+      } catch (err) { state.className = "state err"; state.textContent = err.message === "pick your name first" ? "Pick your name at the top first." : "Didn't save. Check your connection."; }
     };
+    stars.forEach((b) => b.addEventListener("click", () => { const r = +b.dataset.r === (mineOf(p)?.rating || 0) ? 0 : +b.dataset.r; paint(r); rate({ rating: r }); }));
+    th.addEventListener("change", () => rate({ thoughts: th.value.trim() }));
     ig.addEventListener("input", showLink);
-    ig.addEventListener("change", () => save({ ig: ig.value.trim() }));
-    th.addEventListener("change", () => save({ thoughts: th.value.trim() }));
-    stars.forEach((s) => s.addEventListener("click", () => { const r = +s.dataset.r === (notes[p.id]?.rating || 0) ? 0 : +s.dataset.r; paintStars(r); save({ rating: r }); }));
-
+    ig.addEventListener("change", async () => {
+      state.className = "state"; state.textContent = "Saving…";
+      try {
+        const r = await call(`/note/${p.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ig: ig.value.trim(), by: me() }) });
+        notes[p.id] = r.note; state.className = "state saved"; state.textContent = "Saved";
+      } catch { state.className = "state err"; state.textContent = "Didn't save. Check your connection."; }
+    });
     el.querySelector(".pic input").addEventListener("change", async (e) => {
       const file = e.target.files[0]; if (!file) return;
       const pic = el.querySelector(".pic"); pic.classList.add("busy");
       try {
         const blob = await shrink(file);
         const r = await call(`/photo/${p.id}`, { method: "POST", headers: { "content-type": "image/jpeg" }, body: blob });
-        notes[p.id] = r.note; el.classList.add("done"); setPhoto(el, p.id, r.note.photo);
-        state.className = "state saved"; state.textContent = "Photo saved"; updateCount();
+        notes[p.id] = r.note; setPhoto(el, p.id, r.note.photo); refreshCount();
+        state.className = "state saved"; state.textContent = "Photo saved";
       } catch { state.className = "state err"; state.textContent = "Photo didn't upload. Try again."; }
       pic.classList.remove("busy"); e.target.value = "";
     });
@@ -251,21 +350,17 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     img.src = `${API}/photo/${id}?t=${encodeURIComponent(token)}&v=${v}`;
     pic.prepend(img); pic.querySelector(".up").textContent = "";
   }
-  function updateCount() {
-    const shown = [...document.querySelectorAll(".card")].length, done = document.querySelectorAll(".card.done").length;
-    $("#count").textContent = `${done} of ${shown} done`;
-  }
-  // phones take 12 megapixel photos: send a 720px JPEG instead (about 80 KB)
+  // phones take 12 megapixel photos: send a 1200px JPEG instead (about 200 KB), sharp enough for a composite
   async function shrink(file) {
     const bmp = await createImageBitmap(file, { imageOrientation: "from-image" }).catch(() => null);
     const src = bmp || await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(file); });
-    const w = src.width, h = src.height, s = Math.min(1, 720 / Math.max(w, h));
-    const c = document.createElement("canvas"); c.width = Math.round(w * s); c.height = Math.round(h * s);
+    const w = src.width, h = src.height, k = Math.min(1, 1200 / Math.max(w, h));
+    const c = document.createElement("canvas"); c.width = Math.round(w * k); c.height = Math.round(h * k);
     c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
-    return new Promise((res) => c.toBlob(res, "image/jpeg", 0.82));
+    return new Promise((res) => c.toBlob(res, "image/jpeg", 0.85));
   }
 
-  if (token) open().catch(() => { store.del("rush-token"); });
+  if (token) open().catch(() => { store.del("rush-token"); location.reload(); });
 })();
 </script>
 </body>
