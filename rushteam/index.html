@@ -171,7 +171,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
   const API = "https://asufiji-rush.maniforoughi2.workers.dev";
   const $ = (q) => document.querySelector(q);
   const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }, del: (k) => { try { localStorage.removeItem(k); } catch {} } };
-  let token = store.get("rush-token"), roster = null, notes = {}, ratings = {}, view = "rate";
+  let token = store.get("rush-token"), roster = null, notes = {}, ratings = {}, view = "rate", synced = 0;
   const NONE = "__none__";
 
   const call = async (path, opts = {}) => {
@@ -221,7 +221,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
   // ---------- who are you, then the board ----------
   async function open() {
     const d = await call("/data");
-    roster = d.roster; notes = d.notes || {}; ratings = d.ratings || {};
+    roster = d.roster; notes = d.notes || {}; ratings = d.ratings || {}; synced = d.now || Date.now();
     $("#gate").hidden = true;
     const sel = $("#me");
     $("#pick-groups").replaceChildren(...roster.groups.map((g) => {
@@ -382,6 +382,13 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     };
     drawScore();
     if (n.photo) setPhoto(el, p.id, n.photo);
+    el.dataset.id = p.id;
+    el._refresh = () => {
+      drawScore(); drawOfficial();
+      const ph = notes[p.id]?.photo;
+      if (ph && ph !== el._photo) setPhoto(el, p.id, ph);
+      el.classList.toggle("done", finished(p));
+    };
 
     const rate = async (patch) => {
       if (!me()) { state.className = "state err"; state.textContent = "Pick your name at the top first."; return; }
@@ -421,6 +428,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     pic.querySelector("img")?.remove();
     const img = new Image(); img.alt = ""; img.loading = "lazy"; img.decoding = "async";
     img.src = `${API}/photo/${id}?t=${encodeURIComponent(token)}&v=${v}`;
+    el._photo = v;
     pic.prepend(img); pic.querySelector(".up").textContent = "";
   }
   // phones take 12 megapixel photos: send a 1200px JPEG instead (about 200 KB), sharp enough for a composite
@@ -432,6 +440,28 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
     return new Promise((res) => c.toBlob(res, "image/jpeg", 0.85));
   }
+
+  // live: every 30 seconds an open page asks for whatever was saved since its last look (photos, ratings,
+  // handles) and updates those cards in place. it does not re-sort, so nothing jumps while someone reads
+  async function sync() {
+    if (!roster || document.visibilityState !== "visible") return;
+    try {
+      const d = await call(`/data?since=${synced - 2000}`);
+      synced = d.now || Date.now();
+      const touched = new Set();
+      for (const [id, nn] of Object.entries(d.notes || {})) { notes[id] = nn; touched.add(id); }
+      for (const [id, list] of Object.entries(d.ratings || {})) {
+        const cur = ratings[id] || [];
+        for (const r of list) { const i = cur.findIndex((x) => x.by === r.by); if (i >= 0) cur[i] = r; else cur.push(r); }
+        ratings[id] = cur; touched.add(id);
+      }
+      if (!touched.size) return;
+      document.querySelectorAll(".card").forEach((c) => { if (touched.has(c.dataset.id)) c._refresh?.(); });
+      refreshCount();
+    } catch {}
+  }
+  setInterval(sync, 30000);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") sync(); });
 
   if (token) open().catch(() => { store.del("rush-token"); location.reload(); });
 })();

@@ -72,17 +72,19 @@ export default {
     const token = (req.headers.get("authorization") || "").replace(/^Bearer /, "") || url.searchParams.get("t");
     if (!(await valid(env, token))) return out({ error: "sign in again" }, 401);
 
-    // everything the page needs in one go: the roster, and every note
+    // everything the page needs in one go: the roster, and every note. with ?since=<ms> only what was
+    // saved after that moment, which is how open pages keep up with each other every 30 seconds
     if (path === "/data" && req.method === "GET") {
-      const roster = await env.RUSH.get("roster", "json");
+      const since = Math.max(0, +url.searchParams.get("since") || 0), now = Date.now();
+      const roster = since ? null : await env.RUSH.get("roster", "json");
       const [n, r] = await env.DB.batch([
-        env.DB.prepare("SELECT id, ig, by, photo, at FROM notes"),
-        env.DB.prepare("SELECT pnm, brother, rating, thoughts, ig, frat, at FROM ratings"),
+        env.DB.prepare("SELECT id, ig, by, photo, at FROM notes WHERE at > ?").bind(since),
+        env.DB.prepare("SELECT pnm, brother, rating, thoughts, ig, frat, at FROM ratings WHERE at > ?").bind(since),
       ]);
       const notes = {}, ratings = {};
       for (const row of n.results) { const { id, ...rest } = row; notes[id] = rest; }
       for (const row of r.results) (ratings[row.pnm] ||= []).push({ by: row.brother, rating: row.rating, thoughts: row.thoughts, ig: row.ig || "", frat: row.frat || 0, at: row.at });
-      return out({ roster, notes, ratings });
+      return out({ roster, notes, ratings, now });
     }
 
     const m = path.match(/^\/(note|photo|rate)\/(\d{3,12})$/);
