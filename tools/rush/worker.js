@@ -35,8 +35,8 @@ async function hmac(key, text) {
   const sig = await crypto.subtle.sign("HMAC", k, enc.encode(text));
   return btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/[+/=]/g, (c) => ({ "+": "-", "/": "_", "=": "" })[c]);
 }
-// a token is "<expiry>.<signature>": good for 30 days, and every token dies when the password changes
-const issue = async (env) => { const exp = Math.floor(Date.now() / 1000) + 30 * DAY; return `${exp}.${await hmac(env.RUSH_PASS, "rush:" + exp)}`; };
+// a token is "<expiry>.<signature>": good for 120 days (a whole rush season), and every token dies when the password changes
+const issue = async (env) => { const exp = Math.floor(Date.now() / 1000) + 120 * DAY; return `${exp}.${await hmac(env.RUSH_PASS, "rush:" + exp)}`; };
 async function valid(env, token) {
   const [exp, sig] = String(token || "").split(".");
   if (!exp || !sig || +exp < Date.now() / 1000) return false;

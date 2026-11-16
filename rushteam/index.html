@@ -92,6 +92,13 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
 .state.err { color: var(--bad); }
 .empty { padding: 40px 0; text-align: center; color: var(--ink3); }
 .sort { flex: 0 0 auto; width: auto; min-height: 42px; padding: 0 12px; }
+.section { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 10px; margin: 10px 0 0; font: 500 26px/1.1 var(--serif); }
+.section:first-child { margin-top: 0; }
+.section span { font: 600 14px/1 var(--body); color: var(--ink3); }
+.section.done-head { margin-top: 26px; color: var(--ink2); }
+.noig { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink2); cursor: pointer; }
+.noig input { width: 18px; height: 18px; accent-color: var(--purple); }
+.ig .field:disabled { opacity: .45; }
 .score { display: flex; align-items: baseline; gap: 6px; margin-top: 6px; font-size: 13px; color: var(--ink3); }
 .score b { font: 600 20px/1 var(--serif); color: #e9c46a; }
 .mine-label { font: 600 12px/1 var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
@@ -142,7 +149,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
         <button type="button" data-view="all" aria-pressed="false">Everyone</button>
       </div>
       <input class="field search" id="q" type="search" placeholder="Search a name" autocomplete="off">
-      <select class="field sort" id="sort" aria-label="Sort"><option value="az">A to Z</option><option value="top">Top score</option><option value="todo">Not rated by me</option></select>
+      <select class="field sort" id="sort" aria-label="Sort"><option value="az">A to Z</option><option value="high">Highest score</option><option value="low">Lowest score</option><option value="most">Most ratings</option><option value="fewest">Fewest ratings</option></select>
       <span class="count" id="count"></span>
     </div>
   </header>
@@ -234,19 +241,25 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     if (view === "rate") list = list.filter((p) => p.group === g);
     else if (view === "photos") list = list.filter((p) => p.brother === me());
     if (q) list = list.filter((p) => (p.first + " " + p.last).toLowerCase().includes(q));
-    const sort = $("#sort").value;
-    if (sort === "top") list = [...list].sort((a, b) => score(b).avg - score(a).avg || score(b).n - score(a).n);
-    else if (sort === "todo") list = [...list].sort((a, b) => !!mineOf(a)?.rating - !!mineOf(b)?.rating);
-    return list;
+    const sort = $("#sort").value, by = {
+      high: (a, b) => score(b).avg - score(a).avg || score(b).n - score(a).n,
+      low: (a, b) => (score(a).n ? score(a).avg : 9) - (score(b).n ? score(b).avg : 9),
+      most: (a, b) => score(b).n - score(a).n,
+      fewest: (a, b) => score(a).n - score(b).n,
+    }[sort];
+    return by ? [...list].sort(by) : list;
   }
+  // what makes a kid "done" in each list: rated by you, or his photo and Instagram found (or known to be missing)
+  const NONE = "__none__";
+  const finished = (p) => view === "rate" ? !!mineOf(p)?.rating : view === "photos" ? !!(notes[p.id]?.photo && notes[p.id]?.ig) : false;
   function counts(list) {
     if (view === "rate") return `${list.filter((p) => mineOf(p)?.rating).length} of ${list.length} rated by you`;
-    if (view === "photos") return `${list.filter((p) => notes[p.id]?.photo).length} of ${list.length} have a photo`;
+    if (view === "photos") return `${list.filter((p) => notes[p.id]?.photo && notes[p.id]?.ig).length} of ${list.length} done`;
     return `${list.length} kids · ${list.filter((p) => score(p).n).length} rated`;
   }
   const HINTS = {
-    rate: "Everyone in your group rates every kid in your group. Tap the stars and write your first thoughts; they save by themselves.",
-    photos: "These are yours to find: add a photo and his Instagram. Tap the photo box to upload a picture.",
+    rate: "Everyone in your group rates every kid in your group. Tap the stars and write your first thoughts; they save by themselves. Rated kids move to Done the next time the list loads.",
+    photos: "These are yours to find: a photo and his Instagram. If you can't find his Instagram, tick the box.",
     all: "Every kid, with his average score from his group.",
   };
   function draw() {
@@ -254,8 +267,16 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     $("#hint").textContent = HINTS[view];
     $("#count").textContent = counts(list);
     const grid = $("#grid");
-    grid.replaceChildren(...list.map(card));
-    if (!list.length) grid.innerHTML = `<p class="empty">Nobody matches.</p>`;
+    if (!list.length) { grid.innerHTML = `<p class="empty">Nobody matches.</p>`; return; }
+    if (view === "all") { grid.replaceChildren(...list.map(card)); return; }
+    // a to-do list: what is left first, what is done after it
+    const todo = list.filter((p) => !finished(p)), done = list.filter(finished);
+    const head = (text, n, cls) => { const h = document.createElement("h2"); h.className = "section " + cls; h.innerHTML = `${text} <span>${n}</span>`; return h; };
+    grid.replaceChildren(
+      head(view === "rate" ? "To rate" : "To find", todo.length, "todo-head"), ...todo.map(card),
+      ...(todo.length ? [] : [Object.assign(document.createElement("p"), { className: "empty", textContent: "All done. Nice." })]),
+      ...(done.length ? [head("Done", done.length, "done-head"), ...done.map(card)] : []),
+    );
   }
   const refreshCount = () => { $("#count").textContent = counts(shown()); };
 
@@ -275,6 +296,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
         <div class="stars" role="group" aria-label="Your rating">${[1, 2, 3, 4, 5].map((i) => `<button type="button" data-r="${i}" aria-label="${i} of 5">★</button>`).join("")}</div>
         <textarea class="field" name="thoughts" maxlength="1500" placeholder="Your first thoughts"></textarea>
         <div class="ig"><input class="field" name="ig" placeholder="Instagram handle" autocomplete="off" autocapitalize="off"><a target="_blank" rel="noopener" hidden>Open</a></div>
+        <label class="noig"><input type="checkbox" name="noig"> Can't find his Instagram</label>
         <details class="others"><summary></summary><ul></ul></details>
         <p class="state" aria-live="polite"></p>
       </div>`;
@@ -285,8 +307,10 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     const stars = [...el.querySelectorAll(".stars button")];
     const paint = (r) => stars.forEach((b) => b.classList.toggle("on", +b.dataset.r <= r));
     th.value = mine.thoughts || ""; paint(mine.rating || 0);
-    ig.value = n.ig || "";
-    const showLink = () => { const h = ig.value.trim().replace(/^@/, ""); link.hidden = !h; link.href = "https://www.instagram.com/" + encodeURIComponent(h) + "/"; };
+    const noig = el.querySelector('[name="noig"]');
+    noig.checked = n.ig === NONE; ig.disabled = noig.checked;
+    ig.value = n.ig && n.ig !== NONE ? n.ig : "";
+    const showLink = () => { const h = ig.value.trim().replace(/^@/, ""); link.hidden = !h || noig.checked; link.href = "https://www.instagram.com/" + encodeURIComponent(h) + "/"; };
     showLink();
     const drawScore = () => {
       const sc = score(p);
@@ -322,14 +346,16 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     };
     stars.forEach((b) => b.addEventListener("click", () => { const r = +b.dataset.r === (mineOf(p)?.rating || 0) ? 0 : +b.dataset.r; paint(r); rate({ rating: r }); }));
     th.addEventListener("change", () => rate({ thoughts: th.value.trim() }));
-    ig.addEventListener("input", showLink);
-    ig.addEventListener("change", async () => {
+    const saveIg = async (value) => {
       state.className = "state"; state.textContent = "Saving…";
       try {
-        const r = await call(`/note/${p.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ig: ig.value.trim(), by: me() }) });
-        notes[p.id] = r.note; state.className = "state saved"; state.textContent = "Saved";
+        const r = await call(`/note/${p.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ig: value, by: me() }) });
+        notes[p.id] = r.note; state.className = "state saved"; state.textContent = "Saved"; refreshCount();
       } catch { state.className = "state err"; state.textContent = "Didn't save. Check your connection."; }
-    });
+    };
+    ig.addEventListener("input", showLink);
+    ig.addEventListener("change", () => saveIg(ig.value.trim()));
+    noig.addEventListener("change", () => { ig.disabled = noig.checked; if (noig.checked) ig.value = ""; showLink(); saveIg(noig.checked ? NONE : ""); });
     el.querySelector(".pic input").addEventListener("change", async (e) => {
       const file = e.target.files[0]; if (!file) return;
       const pic = el.querySelector(".pic"); pic.classList.add("busy");
