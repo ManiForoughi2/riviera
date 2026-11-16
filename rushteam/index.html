@@ -270,9 +270,10 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
   }
   // what makes a kid "done" in each list: rated by you, or his photo and Instagram found (or known to be missing)
 
-  const finished = (p) => !!mineOf(p)?.rating;
+  // done for you: you rated him, or you looked and couldn't find his Instagram
+  const finished = (p) => { const m = mineOf(p); return !!(m?.rating || m?.ig === NONE); };
   function counts(list) {
-    if (view === "rate") return `${list.filter((p) => mineOf(p)?.rating).length} of ${list.length} rated by you`;
+    if (view === "rate") return `${list.filter(finished).length} of ${list.length} done`;
     if (view === "group") return `${list.length} kids · ${list.filter((p) => score(p).n).length} rated`;
     return `${list.length} kids · ${list.filter((p) => score(p).n).length} rated`;
   }
@@ -302,7 +303,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
   function card(p) {
     const n = notes[p.id] || {}, mine = mineOf(p) || {};
     const el = document.createElement("article");
-    el.className = "card" + (mine.rating ? " done" : "");
+    el.className = "card" + (finished(p) ? " done" : "");
     el.innerHTML = `
       <label class="pic"><span class="up">+ Add photo</span><input type="file" accept="image/*"></label>
       <div class="head">
@@ -381,7 +382,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
       try {
         const r = await call(`/rate/${p.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
         ratings[p.id] = r.ratings;
-        el.classList.toggle("done", !!mineOf(p)?.rating);
+        el.classList.toggle("done", finished(p));
         drawScore(); drawOfficial(); refreshCount();
         const mineNow = mineOf(p); if (mineNow?.ig && mineNow.ig !== NONE && document.activeElement !== ig) ig.value = mineNow.ig;
         state.className = "state saved"; state.textContent = "Saved";
