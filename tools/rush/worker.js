@@ -69,7 +69,8 @@ export default {
       let password = "";
       try { ({ password } = await req.json()); } catch {}
       // a wrong guess waits a moment, so the password cannot be tried quickly
-      if (password !== env.RUSH_PASS) { await new Promise((r) => setTimeout(r, 900)); return out({ error: "wrong password" }, 401); }
+      // phones add a capital or a space: the password is matched without either
+      if (String(password || "").trim().toLowerCase() !== env.RUSH_PASS.trim().toLowerCase()) { await new Promise((r) => setTimeout(r, 900)); return out({ error: "wrong password" }, 401); }
       return out({ token: await issue(env) });
     }
 

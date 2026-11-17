@@ -262,12 +262,12 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     e.preventDefault();
     const btn = e.target.querySelector("button"); btn.disabled = true; $("#gate-msg").textContent = "";
     try {
-      const r = await fetch(API + "/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ password: $("#pw").value }) });
+      const r = await fetch(API + "/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ password: $("#pw").value.trim() }) });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || "failed");
       token = j.token; store.set("rush-token", token); open();
     } catch (err) {
-      $("#gate-msg").textContent = err.message === "wrong password" ? "Wrong password." : "Couldn't connect. Try again.";
+      $("#gate-msg").textContent = err.message === "wrong password" ? "Wrong password." : "Couldn't reach the server. Check your connection, or turn off any content blocker for this site, and try again.";
     }
     btn.disabled = false;
   });
