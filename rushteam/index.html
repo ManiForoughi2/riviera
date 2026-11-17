@@ -115,6 +115,10 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
 .section { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 10px; margin: 10px 0 0; font: 500 26px/1.1 var(--serif); }
 .section:first-child { margin-top: 0; }
 .section span { font: 600 14px/1 var(--body); color: var(--ink3); }
+.more { grid-column: 1 / -1; display: grid; justify-items: start; gap: 10px; padding: 26px; border-radius: 14px; background: var(--card); box-shadow: inset 0 0 0 1px rgba(159, 216, 168, .35); }
+.more p { margin: 0; color: var(--ink2); }
+.more .more-head { font: 500 26px/1.15 var(--serif); color: var(--ink); }
+.more-btn { grid-column: 1 / -1; justify-self: center; }
 .section.done-head { margin-top: 26px; color: var(--ink2); }
 .noig { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink2); cursor: pointer; }
 .noig input { width: 18px; height: 18px; accent-color: var(--purple); }
@@ -219,7 +223,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
   const API = "https://asufiji-rush.maniforoughi2.workers.dev";
   const $ = (q) => document.querySelector(q);
   const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }, del: (k) => { try { localStorage.removeItem(k); } catch {} } };
-  let token = store.get("rush-token"), roster = null, notes = {}, ratings = {}, view = "rate", sub = "todo", synced = 0;
+  let token = store.get("rush-token"), roster = null, notes = {}, ratings = {}, view = "rate", sub = "todo", synced = 0, extra = 0;
   const NONE = "__none__";
   // a pasted link, "@Name" or " name " all become "name" (the worker cleans it the same way)
   const cleanHandle = (v) => String(v || "").trim().replace(/^(https?:\/\/)?((www|m)\.)?(instagram\.com|instagr\.am)\//i, "").replace(/^@/, "").replace(/[/?#].*$/, "").toLowerCase().replace(/[^a-z0-9._]/g, "").slice(0, 30);
@@ -362,13 +366,40 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
     const grid = $("#grid");
     if (!list.length) { grid.innerHTML = `<p class="empty">Nobody matches.</p>`; return; }
     if (view !== "rate") { grid.replaceChildren(...list.map(card)); return; }
-    // the Rate tab: "To do" (what you haven't reviewed) or "Reviewed" (what you have)
-    const todo = list.filter((p) => !finished(p)), done = list.filter(finished);
+    // the Rate tab: "To do" (what you haven't reviewed) or "Reviewed" (what you have, other groups' too)
+    const g = groupOf(me())?.n, q = $("#q").value.trim().toLowerCase();
+    const match = (p) => !q || (p.first + " " + p.last).toLowerCase().includes(q);
+    const todo = list.filter((p) => !finished(p));
+    const done = [...list.filter(finished), ...roster.pnms.filter((p) => p.group !== g && !gone(p) && match(p) && finished(p))];
     document.querySelector('[data-sub="todo"]').textContent = `To do (${todo.length})`;
     document.querySelector('[data-sub="done"]').textContent = `Reviewed (${done.length})`;
-    const pick = sub === "done" ? done : todo;
-    grid.replaceChildren(...pick.map(card));
-    if (!pick.length) grid.innerHTML = `<p class="empty">${sub === "done" ? "You haven't reviewed anyone yet." : "All done. Nice."}</p>`;
+    if (sub === "done") {
+      grid.replaceChildren(...done.map(card));
+      if (!done.length) grid.innerHTML = `<p class="empty">You haven't reviewed anyone yet.</p>`;
+      return;
+    }
+    grid.replaceChildren(...todo.map(card));
+    if (todo.length) return;
+    // finished your own group: offer the kids in other groups with the fewest ratings, unrated first
+    const others = roster.pnms.filter((p) => p.group !== g && !gone(p) && match(p) && !finished(p))
+      .sort((a, b) => score(a).n - score(b).n || mix(a.id) - mix(b.id));
+    if (!extra) {
+      const box = document.createElement("div"); box.className = "more";
+      box.innerHTML = `<p class="more-head">All done with your group. Nice.</p><p>Want to rate more? You'll get kids from other groups that have the fewest ratings.</p>`;
+      const b = document.createElement("button"); b.className = "btn"; b.type = "button"; b.textContent = "Rate more kids";
+      b.disabled = !others.length;
+      b.addEventListener("click", () => { extra = 20; draw(); scrollTo(0, 0); });
+      box.append(b);
+      if (!others.length) box.querySelector("p:last-of-type").textContent = "Every kid has been reviewed. That's everyone.";
+      grid.replaceChildren(box);
+      return;
+    }
+    const head = document.createElement("h2"); head.className = "section";
+    head.innerHTML = `Extra kids <span>from other groups, fewest ratings first</span>`;
+    const more = document.createElement("button"); more.className = "btn ghost more-btn"; more.type = "button"; more.textContent = "Show 20 more";
+    more.addEventListener("click", () => { extra += 20; draw(); });
+    grid.replaceChildren(head, ...others.slice(0, extra).map(card), ...(others.length > extra ? [more] : []));
+    if (!others.length) grid.innerHTML = `<p class="empty">Every kid has been reviewed. That's everyone.</p>`;
   }
   const refreshCount = () => { $("#count").textContent = counts(shown()); };
 
@@ -443,7 +474,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 18px var(--g) 60px; }
       el.querySelector(".frat-tag").textContent = fc ? `In a frat (${fc})` : "";
       const pc = privCount(p);
       el.querySelector(".priv-tag").textContent = pc ? `Private account (${pc})` : "";
-      el.querySelector(".score").innerHTML = sc.n ? `<b>${sc.avg.toFixed(1)}</b> ★ · ${sc.n} of ${sc.size} rated` : "Not rated yet";
+      el.querySelector(".score").innerHTML = sc.n ? `<b>${sc.avg.toFixed(1)}</b> ★ · ${sc.n > sc.size ? sc.n + " rated" : `${sc.n} of ${sc.size} rated`}` : "Not rated yet";
       const others = (ratings[p.id] || []).filter((r) => r.by !== me());
       const det = el.querySelector(".others");
       det.hidden = !others.length;
