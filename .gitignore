@@ -3,5 +3,3 @@ tools/members.json
 tools/.members-pass
 tools/.cache/
 
-# the rush team tool lives in ~/asufiji-rush (private), never in this public repo
-tools/rush/
