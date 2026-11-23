@@ -1,11 +1,10 @@
-// asufiji.com/rush: the sign-up form, and the two design.how effects (Misprint type on the poster, Spray
-// burst on the thank-you). a sign-up goes to a small sign-up service that only saves it.
+// asufiji.com/rush: the sign-up form, and the two design.how effects (Sunset slam on the FIJI RUSH title,
+// Spray burst on the thank-you). a sign-up goes to a small sign-up service that only saves it.
 const SIGNUP = "https://asufiji-join.maniforoughi2.workers.dev/";
-const TYPE = '"Archivo", "Arial Black", "Helvetica Neue", Arial, sans-serif';
-const fx = import("../vendor/design-how/rush-fx.js");
+const fx = import("../vendor/design-how/rush-fx.js?v=2");
 
 const poster = document.querySelector(".poster");
-if (poster) fx.then((m) => m.mountMisprint(poster, TYPE)).catch(() => {});
+if (poster) fx.then((m) => m.mountSlam(poster)).catch(() => {});
 
 const form = document.querySelector(".form");
 const msg = form.querySelector(".msg");

@@ -1,373 +1,756 @@
-// Misprint type (https://design.how/vault/misprint-type) and Spray burst (https://design.how/vault/spray-burst),
+// Sunset slam (https://design.how/vault/sunset-slam) and Spray burst (https://design.how/vault/spray-burst),
 // MIT, Arlan Marat (see LICENSE in this folder). the vault's engines bundled unchanged with esbuild; only the
-// VARIABLE values differ: the rush logo's brick red, cream, ink, sunset and wave teal, and the words SPRING RUSH.
-// exports mountMisprint(host, fontFamily) and mountSpray(host).
+// VARIABLE values differ: the rush logo's colours (teal dusk sky, red-to-sunset fan, cream), and the word FIJI RUSH
+// drawn on sunset slam's own block grid. exports mountSlam(host) and mountSpray(host).
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: !0, configurable: !0, writable: !0, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key != "symbol" ? key + "" : key, value);
 
-// misprint/params.ts
-var ART = { scale: 0.5, x: 180, y: 0 };
-var GROUND = "#b0503a", FILL = "#f4ecdb", OUTLINE = "#232323";
-var FILL_WEIGHT = 700, OUTLINE_WEIGHT = 700, CAP = 301, LINES = [
-  { text: "SPRING", baseline: 350, fillCx: 363, fillW: 624, outlineCx: 357, outlineW: 654 },
-  { text: "RUSH", baseline: 670, fillCx: 365, fillW: 452, outlineCx: 360, outlineW: 468 }
-], RING = 3, FOIL_EXTRA = 14, FOIL_SHIFT = -6, PARALLAX_FOIL = -6, FOIL_STOPS = ["#d9774a", "#e9c98f", "#2f6478", "#f0b48a"], FOIL_LINE_PITCH = 4, FOIL_LINE_ANGLE = 45, FOIL_LINE_ALPHA = 0.18, FOIL_LINE_SLIDE = 40, FOIL_PHASE_PER_TILT = 0.45, FOIL_DRIFT_HZ = 0.035;
-function foilSpanAt(line, r) {
-  let cx0 = line.outlineCx + FOIL_SHIFT, w0 = line.outlineW + FOIL_EXTRA;
-  return { cx: cx0 + (line.fillCx - cx0) * r, w: w0 + (line.fillW - w0) * r };
-}
-function foilPhase(tilt, t) {
-  return ((FOIL_PHASE_PER_TILT * (tilt.x * 0.7 + tilt.y * 0.3) + FOIL_DRIFT_HZ * t) % 1 + 1) % 1;
-}
-var PARALLAX_OUTLINE = 9, PARALLAX_FILL = -3, SHADOW_PER_TILT = 5, SHADOW_DROP = 2, SHADOW_BLUR = 6, SHADOW_ALPHA = 0.32, TILT_FOLLOW = 0.1, DRIFT = { ax: 0.85, ay: 0.7, px: 6.1, py: 8.3 }, PULL_MIN = 2.4, PULL_MAX = 4.6, SHIFT_MS = 520, SHIFT_X = 12, SHIFT_Y = 5, SHIFT_SEED = 8011545, EASE = [0.85, 0, 0.15, 1];
-function ease(t) {
-  if (t <= 0) return 0;
-  if (t >= 1) return 1;
-  let [x1, y1, x2, y2] = EASE, lo = 0, hi = 1;
-  for (let i = 0; i < 40; i++) {
-    let u2 = (lo + hi) / 2, v2 = 1 - u2;
-    3 * v2 * v2 * u2 * x1 + 3 * v2 * u2 * u2 * x2 + u2 * u2 * u2 < t ? lo = u2 : hi = u2;
-  }
-  let u = (lo + hi) / 2, v = 1 - u;
-  return 3 * v * v * u * y1 + 3 * v * u * u * y2 + u * u * u;
-}
-function shiftAt(n) {
-  if (n <= 0) return { x: 0, y: 0 };
-  let s = SHIFT_SEED + n * 7919 >>> 0, rnd = () => (s = s * 1664525 + 1013904223 >>> 0, s / 4294967296), x = (rnd() < 0.5 ? -1 : 1) * (4 + rnd() * (SHIFT_X - 4)), y = (rnd() * 2 - 1) * SHIFT_Y;
-  return { x, y };
-}
-function pullLength(n) {
-  let s = (SHIFT_SEED ^ n * 2654435761) >>> 0;
-  return s = s * 1664525 + 1013904223 >>> 0, PULL_MIN + s / 4294967296 * (PULL_MAX - PULL_MIN);
-}
-function sheetAt(t) {
-  let n = 0, start = 0, length = pullLength(0);
-  for (; t >= start + length; )
-    start += length, n++, length = pullLength(n);
-  return { n, start, length };
-}
-function reprintAt(t, base = 0) {
-  if (t <= 0 && base === 0) return { x: 0, y: 0 };
-  let { n, start, length } = sheetAt(Math.max(0, t)), within = Math.max(0, t) - start, from = shiftAt(n + base), to = shiftAt(n + base + 1), slideStart = length - SHIFT_MS / 1e3;
-  if (within < slideStart) return from;
-  let u = ease((within - slideStart) / (SHIFT_MS / 1e3));
-  return { x: from.x + (to.x - from.x) * u, y: from.y + (to.y - from.y) * u };
-}
-var REGISTER_IN = 0.14, REGISTER_OUT = 0.08;
-function outlineSpanAt(line, r) {
-  return {
-    cx: line.outlineCx + (line.fillCx - line.outlineCx) * r,
-    w: line.outlineW + (line.fillW - line.outlineW) * r
-  };
-}
-function tiltFromPointer(u, v) {
-  let r = Math.hypot(u, v);
-  return r <= 1 ? { x: u, y: v } : { x: u / r, y: v / r };
-}
-function driftAt(t) {
-  return tiltFromPointer(
-    DRIFT.ax * Math.sin(2 * Math.PI * t / DRIFT.px),
-    DRIFT.ay * Math.sin(2 * Math.PI * t / DRIFT.py + 1)
-  );
-}
-function planeOffsets(tilt) {
-  return {
-    outline: { x: tilt.x * PARALLAX_OUTLINE, y: tilt.y * PARALLAX_OUTLINE },
-    fill: { x: tilt.x * PARALLAX_FILL, y: tilt.y * PARALLAX_FILL },
-    shadow: { x: tilt.x * SHADOW_PER_TILT, y: tilt.y * SHADOW_PER_TILT + SHADOW_DROP }
-  };
-}
-var GRAIN_ALPHA = 0.03, GRAIN_TILE = 256, GRAIN_SEED = 1923884;
-function sheetOffset(n) {
-  if (n <= 0) return { x: 0, y: 0 };
-  let s = GRAIN_SEED + n * 40503 >>> 0, rnd = () => (s = s * 1664525 + 1013904223 >>> 0, s / 4294967296);
-  return { x: Math.floor(rnd() * GRAIN_TILE), y: Math.floor(rnd() * GRAIN_TILE) };
-}
-var STREAK_CELL = 36, STREAK_DEPTH = 0.14, PINHOLES = 46, PINHOLE_R = { min: 0.8, max: 2.2 }, INK_SEED = 3960563;
-function streaksFor(n) {
-  let s = INK_SEED + n * 7877 >>> 0, rnd = () => (s = s * 1664525 + 1013904223 >>> 0, s / 4294967296), cells = Math.ceil(720 / STREAK_CELL) + 2, raw = Array.from({ length: cells }, () => rnd());
-  return raw.map((v, i) => {
-    let l = raw[Math.max(0, i - 1)], r = raw[Math.min(cells - 1, i + 1)];
-    return (l + 2 * v + r) / 4 * STREAK_DEPTH;
-  });
-}
-function pinholesFor(n) {
-  let s = (INK_SEED ^ n * 1234567) >>> 0, rnd = () => (s = s * 1664525 + 1013904223 >>> 0, s / 4294967296);
-  return Array.from({ length: PINHOLES }, () => ({
-    x: rnd() * 720,
-    y: rnd() * 720,
-    r: PINHOLE_R.min + rnd() * (PINHOLE_R.max - PINHOLE_R.min)
-  }));
-}
-var RING_STAMPS = 16;
+// slam/params.ts
+var BG_TOP = "#0e2731", BG_BOTTOM = "#2a5f74";
+var FACE_TOP = "#ffffff", FACE_MID = "#f4f4fb", FACE_BOTTOM = "#c9cbe4";
+var RAMP = [
+  [0, [16, 38, 50]],
+  [0.22, [20, 50, 64]],
+  [0.42, [28, 68, 86]],
+  [0.58, [36, 84, 108]],
+  [0.7, [47, 100, 120]],
+  [0.79, [122, 84, 72]],
+  [0.86, [176, 80, 58]],
+  [0.885, [190, 92, 62]],
+  [0.91, [204, 106, 68]],
+  [0.945, [217, 119, 74]],
+  [0.968, [232, 152, 96]],
+  [0.985, [240, 196, 140]],
+  [1, [244, 236, 219]]
+], VP_DEPTH = 2.17, OUTLINE = 0.084, IGNITE_AT = 15, WW = [
+  506,
+  552,
+  600,
+  617,
+  625,
+  631,
+  635,
+  636,
+  634,
+  631,
+  625,
+  617,
+  593,
+  412,
+  302,
+  309,
+  335,
+  403,
+  612,
+  726,
+  792,
+  835,
+  864,
+  885,
+  901,
+  913,
+  922,
+  930,
+  937,
+  942,
+  946,
+  950,
+  952,
+  952,
+  949,
+  937,
+  919,
+  904,
+  870,
+  476,
+  519,
+  545,
+  582,
+  611,
+  621,
+  628,
+  632,
+  635,
+  635,
+  635,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637,
+  637
+], WCY = [
+  500,
+  495,
+  489.5,
+  487.5,
+  486.5,
+  486,
+  485.5,
+  485.5,
+  485.5,
+  486,
+  486.5,
+  487.5,
+  492,
+  515,
+  532,
+  529.5,
+  527,
+  507.5,
+  425,
+  393.5,
+  378,
+  367.5,
+  360,
+  353,
+  345,
+  338,
+  332,
+  328,
+  324,
+  321,
+  318,
+  316.5,
+  315.5,
+  315.5,
+  316,
+  320,
+  325.5,
+  329,
+  341,
+  545,
+  540,
+  513,
+  499,
+  491,
+  487,
+  485.5,
+  485.5,
+  486,
+  486,
+  486,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5,
+  485.5
+], D = [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  17,
+  29,
+  63,
+  160,
+  215,
+  246,
+  267,
+  281,
+  290,
+  298,
+  304,
+  309,
+  312,
+  315,
+  318,
+  320,
+  321,
+  322,
+  322,
+  321,
+  314,
+  305,
+  291,
+  259,
+  47,
+  44,
+  50,
+  56,
+  60,
+  63,
+  65,
+  66,
+  66,
+  66,
+  66,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67,
+  67
+], OFF = [
+  0.784,
+  0.884,
+  0.055,
+  1.031,
+  0.952,
+  0.774,
+  0.65,
+  0.518,
+  0.397,
+  0.312,
+  0.246,
+  0.173,
+  0.133,
+  1e-3,
+  -0.018,
+  -1e-3,
+  -0.024,
+  0.104,
+  0.104,
+  0.104,
+  3e-3,
+  -3e-3,
+  0.163,
+  0.177,
+  0.15,
+  0.12,
+  0.1,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08,
+  0.08
+], SPAN = [
+  -0.025,
+  0.097,
+  0.635,
+  -0.539,
+  -0.156,
+  0.117,
+  0.282,
+  0.446,
+  0.578,
+  0.654,
+  0.716,
+  0.791,
+  0.806,
+  0.934,
+  0.959,
+  0.925,
+  0.965,
+  0.799,
+  0.799,
+  0.804,
+  0.923,
+  0.952,
+  0.768,
+  0.598,
+  0.1,
+  0.06,
+  0.04,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0
+], TIPP = [
+  0.756,
+  0.977,
+  0.673,
+  0.37,
+  0.7,
+  0.773,
+  0.845,
+  0.878,
+  0.908,
+  0.932,
+  0.95,
+  0.977,
+  1,
+  0.977,
+  0.977,
+  0.977,
+  0.977,
+  0.977,
+  0.977,
+  0.977,
+  0.967,
+  0.967,
+  0.977,
+  0.87,
+  0.4,
+  0.252,
+  0.252,
+  0.254,
+  0.252,
+  0.252,
+  0.252,
+  0.254,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252,
+  0.252
+], TIP_BAND_FROM = 0.9, TIP_BAND_FULL = 0.97, REST_OFF = 0.06, REST_SPAN = 0.42, REST_TIPP = 0.62, REST_FROM = 42, REST_FULL = 52, BLOOM_LAYERS = [
+  [2.6, 0.3, 0.62],
+  [1.5, 0.42, 0.8],
+  [0.85, 0.62, 0.9],
+  [0.42, 0.8, 0.97]
+], BLOOM_R = 0.95, BLOOM_ALPHA = 0.26, BLOOM_REST = 0.08, BLOOM_DROP = 0.35;
+var WINDOW_SMOOTH = 2.2, OUTRO = 11, OUTRO_HOLD = 0.28, HOVER_WARM = 0.075, HOVER_SPREAD = 0.06, HOVER_BLOOM = 1.35, HOVER_IN = 0.24, HOVER_OUT = 0.48, BANDS = 0, CUTS = /* @__PURE__ */ new Set([88]), SETTLE_BRIDGE = 5, BRIDGE_AT = 38, WORD_W = 880, WORD_H = 122;
+var RECTS = [
+  // F
+  [0, 0, 40, 122],
+  [0, 0, 100, 24],
+  [0, 49, 84, 24],
+  // I
+  [118, 0, 40, 122],
+  // J
+  [236, 0, 40, 122],
+  [176, 98, 100, 24],
+  [176, 70, 40, 52],
+  // I
+  [294, 0, 40, 122],
+  // R
+  [394, 0, 40, 122],
+  [394, 0, 108, 24],
+  [462, 0, 40, 73],
+  [394, 49, 108, 24],
+  [436, 73, 40, 25],
+  [462, 98, 40, 24],
+  // U
+  [520, 0, 40, 122],
+  [588, 0, 40, 122],
+  [520, 98, 108, 24],
+  // S
+  [646, 0, 108, 24],
+  [646, 0, 40, 73],
+  [646, 49, 108, 24],
+  [714, 49, 40, 73],
+  [646, 98, 108, 24],
+  // H
+  [772, 0, 40, 122],
+  [840, 0, 40, 122],
+  [772, 49, 108, 24]
+], V_POLY = [], CONTENT_MID = 467.5;
 
-// misprint/engine.ts
-var MEASURE_PX = 160, MisprintType = class {
-  constructor(canvas, family = "sans-serif") {
+// slam/engine.ts
+function at(table2, u) {
+  let last = table2.length - 1;
+  if (u <= 0) return table2[0];
+  if (u >= last) return table2[last];
+  let i = Math.floor(u);
+  return CUTS.has(i) ? table2[i] : table2[i] + (table2[i + 1] - table2[i]) * (u - i);
+}
+function bridged(u) {
+  if (SETTLE_BRIDGE <= 0 || u < BRIDGE_AT) return u;
+  let span = 1 + SETTLE_BRIDGE;
+  if (u < BRIDGE_AT + span) {
+    let k = (u - BRIDGE_AT) / span;
+    return BRIDGE_AT + (1 - (1 - k) ** 3);
+  }
+  return u - SETTLE_BRIDGE;
+}
+function atFrom(table2, base, u) {
+  return at(table2, u - base < 0 ? 0 : u - base);
+}
+function window3(table2, base, u) {
+  if (WINDOW_SMOOTH <= 0) return atFrom(table2, base, u);
+  let r = WINDOW_SMOOTH, steps = 5, sum = 0, wsum = 0;
+  for (let i = -steps; i <= steps; i++) {
+    let o = i / steps * r, w = 1 - Math.abs(i) / (steps + 1);
+    sum += atFrom(table2, base, u + o) * w, wsum += w;
+  }
+  return sum / wsum;
+}
+var clamp01 = (v) => v < 0 ? 0 : v > 1 ? 1 : v, smooth = (v) => v * v * (3 - 2 * v), lerp = (a, b, k) => a + (b - a) * k;
+function outroK(u) {
+  if (OUTRO <= 0) return 0;
+  let start = 88;
+  return u <= start ? 0 : smooth(clamp01((u - start) / OUTRO));
+}
+function outroGeo(u) {
+  let k = outroK(u);
+  return k <= OUTRO_HOLD ? 0 : smooth((k - OUTRO_HOLD) / (1 - OUTRO_HOLD));
+}
+var SunsetSlam = class {
+  constructor(canvas) {
     this.canvas = canvas;
-    this.family = family;
     __publicField(this, "ctx");
-    __publicField(this, "ground", null);
-    __publicField(this, "fill", null);
-    __publicField(this, "bold", null);
-    __publicField(this, "rings", []);
-    __publicField(this, "foilMasks", []);
-    __publicField(this, "foil", null);
-    __publicField(this, "grain", null);
     __publicField(this, "raf", 0);
-    __publicField(this, "running", !1);
     __publicField(this, "t0", 0);
-    __publicField(this, "elapsed", 0);
+    __publicField(this, "running", !1);
     __publicField(this, "dpr", 1);
-    __publicField(this, "w", 0);
-    __publicField(this, "h", 0);
-    __publicField(this, "capFill", 0.7);
-    __publicField(this, "capOutline", 0.7);
-    __publicField(this, "runsFill", /* @__PURE__ */ new Map());
-    __publicField(this, "runsOutline", /* @__PURE__ */ new Map());
-    __publicField(this, "tilt", { x: 0, y: 0 });
-    __publicField(this, "target", { x: 0, y: 0 });
-    __publicField(this, "pointed", !1);
-    __publicField(this, "held", !1);
-    __publicField(this, "register", 0);
-    __publicField(this, "reprint", { x: 0, y: 0 });
-    __publicField(this, "sheet", -1);
-    __publicField(this, "now", 0);
-    __publicField(this, "dirty", !0);
+    __publicField(this, "word");
+    __publicField(this, "lut", []);
+    __publicField(this, "lastKey", "");
+    __publicField(this, "hover", 0);
+    __publicField(this, "hoverTo", 0);
+    __publicField(this, "lastNow", 0);
     __publicField(this, "ok");
-    this.ctx = canvas.getContext("2d"), this.ok = !!this.ctx, this.ok && (this.measure(), this.resize());
+    this.ctx = canvas.getContext("2d"), this.ok = !!this.ctx, this.word = this.buildWord(), this.buildLut(), this.ok && this.resize();
   }
-  font(weight, px) {
-    return `${weight} ${px}px ${this.family}`;
-  }
-  refreshFont(family) {
-    family && (this.family = family), this.measure(), this.dirty = !0, this.running || this.renderStill();
-  }
-  point(u, v = 0) {
-    if (u === null) {
-      this.pointed = !1;
-      return;
+  buildWord() {
+    let p = new Path2D();
+    if (V_POLY.length > 1) {
+      p.moveTo(V_POLY[0][0], V_POLY[0][1]);
+      for (let i = 1; i < V_POLY.length; i++) p.lineTo(V_POLY[i][0], V_POLY[i][1]);
+      p.closePath();
     }
-    this.pointed = !0, this.target = tiltFromPointer(u, v);
+    for (let [x, y, w, h] of RECTS) p.rect(x, y, w, h);
+    return p;
   }
-  hold(down) {
-    this.held = down;
+  buildLut() {
+    let raw = [];
+    for (let i = 0; i < 256; i++) {
+      let u = i / 255, k = RAMP.length - 2;
+      for (let j = 0; j < RAMP.length - 1; j++)
+        if (u <= RAMP[j + 1][0]) {
+          k = j;
+          break;
+        }
+      let [p0, c0] = RAMP[k], [p1, c1] = RAMP[k + 1], t = p1 > p0 ? (u - p0) / (p1 - p0) : 0, e = t * t * (3 - 2 * t);
+      raw.push([
+        c0[0] + (c1[0] - c0[0]) * e,
+        c0[1] + (c1[1] - c0[1]) * e,
+        c0[2] + (c1[2] - c0[2]) * e
+      ]);
+    }
+    let R = 7, src = raw;
+    for (let pass = 0; pass < 2; pass++) {
+      let out = [];
+      for (let i = 0; i < 256; i++) {
+        let r = 0, g = 0, b = 0, n = 0;
+        for (let o = -R; o <= R; o++) {
+          let j = Math.max(0, Math.min(255, i + o));
+          r += src[j][0], g += src[j][1], b += src[j][2], n++;
+        }
+        out.push([r / n, g / n, b / n]);
+      }
+      src = out;
+    }
+    for (let i = 0; i < 256; i++)
+      this.lut[i] = `rgb(${Math.round(src[i][0])},${Math.round(src[i][1])},${Math.round(src[i][2])})`;
   }
-  get k() {
-    return this.canvas.width / 720 * ART.scale;
+  ramp(u) {
+    let q = BANDS > 0 ? Math.round(u * BANDS) / BANDS : u, i = Math.max(0, Math.min(255, Math.round(q * 255)));
+    return this.lut[i];
   }
-  get ks() {
-    return this.canvas.width / 720;
+  rampRGB(u) {
+    let m = this.lut[Math.max(0, Math.min(255, Math.round(u * 255)))].match(/\d+/g);
+    return [+m[0], +m[1], +m[2]];
   }
   resize() {
-    let c = this.canvas, box = c.getBoundingClientRect(), w = Math.max(1, Math.round(box.width)), h = Math.max(1, Math.round(box.height)), dpr = Math.min(window.devicePixelRatio || 1, 2);
-    if (w === this.w && h === this.h && dpr === this.dpr) return;
-    this.w = w, this.h = h, this.dpr = dpr, c.width = Math.round(w * dpr), c.height = Math.round(h * dpr);
-    let make = () => {
-      let l = document.createElement("canvas");
-      l.width = c.width, l.height = c.height;
-      let lctx = l.getContext("2d");
-      return lctx ? { canvas: l, ctx: lctx } : null;
-    };
-    this.ground = make(), this.fill = make(), this.bold = make(), this.foil = make(), this.rings = LINES.map(() => make()).filter((l) => !!l), this.foilMasks = LINES.map(() => make()).filter((l) => !!l), this.grain = this.makeGrain(), this.sheet = -1, this.dirty = !0, this.running || this.renderStill();
-  }
-  measure() {
-    let off = document.createElement("canvas");
-    off.width = MEASURE_PX * 8, off.height = MEASURE_PX * 3;
-    let g = off.getContext("2d", { willReadFrequently: !0 });
-    if (!g) return;
-    let ox = MEASURE_PX / 2, oy = MEASURE_PX * 2;
-    g.textBaseline = "alphabetic", g.textAlign = "left", g.fillStyle = "#fff";
-    let box = (text, weight) => {
-      g.clearRect(0, 0, off.width, off.height), g.font = this.font(weight, MEASURE_PX), g.fillText(text, ox, oy);
-      let px = g.getImageData(0, 0, off.width, off.height).data, x0 = off.width, x1 = -1, y0 = off.height, y1 = -1;
-      for (let y = 0; y < off.height; y++)
-        for (let x = 0; x < off.width; x++)
-          px[(y * off.width + x) * 4 + 3] < 128 || (x < x0 && (x0 = x), x > x1 && (x1 = x), y < y0 && (y0 = y), y > y1 && (y1 = y));
-      return { cx: ((x0 + x1 + 1) / 2 - ox) / MEASURE_PX, w: (x1 - x0 + 1) / MEASURE_PX, h: (y1 - y0 + 1) / MEASURE_PX };
-    };
-    this.capFill = box("E", FILL_WEIGHT).h, this.capOutline = box("E", OUTLINE_WEIGHT).h;
-    for (let L of LINES) {
-      let r = box(L.text, FILL_WEIGHT);
-      this.runsFill.set(L.text, { cx: r.cx, w: r.w });
-      let b = box(L.text, OUTLINE_WEIGHT);
-      this.runsOutline.set(L.text, { cx: b.cx, w: b.w });
-    }
-  }
-  makeGrain() {
-    let ctx = this.ground?.ctx;
-    if (!ctx) return null;
-    let size = Math.round(GRAIN_TILE * this.dpr), tile = document.createElement("canvas");
-    tile.width = size, tile.height = size;
-    let tc = tile.getContext("2d");
-    if (!tc) return null;
-    let img = tc.createImageData(size, size), s = GRAIN_SEED >>> 0, rnd = () => (s = s * 1664525 + 1013904223 >>> 0, s / 4294967296);
-    for (let i = 0; i < size * size; i++) {
-      let dark = rnd() < 0.5;
-      img.data[i * 4] = dark ? 0 : 255, img.data[i * 4 + 1] = dark ? 0 : 255, img.data[i * 4 + 2] = dark ? 0 : 255, img.data[i * 4 + 3] = Math.round(rnd() * 255 * GRAIN_ALPHA * 2);
-    }
-    return tc.putImageData(img, 0, 0), ctx.createPattern(tile, "repeat");
-  }
-  paintGround(n) {
-    let L = this.ground;
-    if (!L) return;
-    let { ctx, canvas } = L;
-    if (ctx.setTransform(1, 0, 0, 1, 0, 0), ctx.globalAlpha = 1, ctx.fillStyle = GROUND, ctx.fillRect(0, 0, canvas.width, canvas.height), !this.grain) return;
-    let off = sheetOffset(n);
-    ctx.save(), ctx.translate(off.x * this.k, off.y * this.k), ctx.fillStyle = this.grain, ctx.fillRect(-off.x * this.k, -off.y * this.k, canvas.width, canvas.height), ctx.restore();
-  }
-  paintWord(L, weight, runs, capPerPx, spanOf, colour, only) {
-    let { ctx, canvas } = L, k = this.k, ox = this.ks * ART.x, oy = this.ks * ART.y;
-    ctx.setTransform(1, 0, 0, 1, 0, 0), ctx.globalCompositeOperation = "source-over", ctx.globalAlpha = 1, ctx.clearRect(0, 0, canvas.width, canvas.height);
-    let px = CAP / capPerPx;
-    ctx.font = this.font(weight, px), ctx.textBaseline = "alphabetic", ctx.textAlign = "left", ctx.fillStyle = colour;
-    for (let line of LINES) {
-      if (only && line !== only) continue;
-      let run = runs.get(line.text);
-      if (!run) continue;
-      let span = spanOf(line), squeeze = span.w / (run.w * px);
-      ctx.setTransform(k, 0, 0, k, ox, oy), ctx.translate(span.cx, line.baseline), ctx.scale(squeeze, 1), ctx.fillText(line.text, -run.cx * px, 0);
-    }
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  }
-  inkFill(n) {
-    let L = this.fill;
-    if (!L) return;
-    let { ctx } = L, k = this.k;
-    ctx.setTransform(k, 0, 0, k, this.ks * ART.x, this.ks * ART.y), ctx.globalCompositeOperation = "destination-out", ctx.fillStyle = "#000";
-    let streaks = streaksFor(n);
-    for (let i = 0; i < streaks.length; i++)
-      ctx.globalAlpha = streaks[i], ctx.fillRect((i - 1) * STREAK_CELL, 0, STREAK_CELL, 720);
-    ctx.globalAlpha = 1;
-    for (let p of pinholesFor(n))
-      ctx.beginPath(), ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2), ctx.fill();
-    ctx.globalCompositeOperation = "source-over", ctx.setTransform(1, 0, 0, 1, 0, 0);
-  }
-  paintRing(R, line) {
-    let B = this.bold;
-    if (!B) return;
-    this.paintWord(
-      B,
-      OUTLINE_WEIGHT,
-      this.runsOutline,
-      this.capOutline,
-      (l) => ({ cx: l.outlineCx, w: l.outlineW }),
-      OUTLINE,
-      line
-    );
-    let { ctx, canvas } = R;
-    ctx.setTransform(1, 0, 0, 1, 0, 0), ctx.globalCompositeOperation = "source-over", ctx.globalAlpha = 1, ctx.clearRect(0, 0, canvas.width, canvas.height);
-    let r = RING * this.k;
-    for (let i = 0; i < RING_STAMPS; i++) {
-      let a = i / RING_STAMPS * Math.PI * 2;
-      ctx.drawImage(B.canvas, Math.cos(a) * r, Math.sin(a) * r);
-    }
-    ctx.globalCompositeOperation = "destination-out", ctx.drawImage(B.canvas, 0, 0), ctx.globalCompositeOperation = "source-over";
-  }
-  paintFill() {
-    this.fill && this.paintWord(
-      this.fill,
-      FILL_WEIGHT,
-      this.runsFill,
-      this.capFill,
-      (l) => ({ cx: l.fillCx, w: l.fillW }),
-      FILL
-    );
-  }
-  paintWords() {
-    LINES.forEach((line, i) => {
-      let R = this.rings[i];
-      R && this.paintRing(R, line);
-      let M = this.foilMasks[i];
-      M && this.paintWord(
-        M,
-        OUTLINE_WEIGHT,
-        this.runsOutline,
-        this.capOutline,
-        (l) => foilSpanAt(l, 0),
-        "#fff",
-        line
-      );
-    }), this.dirty = !1, this.sheet = -1;
-  }
-  paintSheet(n) {
-    this.paintGround(n), this.paintFill(), this.inkFill(n), this.sheet = n;
-  }
-  placeLine(ctx, layer, line, own, now, offX, offY) {
-    let k = this.k, pivot = this.ks * ART.x + own.cx * k, sx = now.w / own.w;
-    ctx.save(), ctx.translate(pivot + (now.cx - own.cx) * k + offX * k, offY * k), ctx.scale(sx, 1), ctx.translate(-pivot, 0), ctx.drawImage(layer.canvas, 0, 0), ctx.restore();
-  }
-  paintFoil(r, offX, offY) {
-    let F = this.foil;
-    if (!F) return;
-    let { ctx, canvas } = F;
-    ctx.setTransform(1, 0, 0, 1, 0, 0), ctx.globalCompositeOperation = "source-over", ctx.globalAlpha = 1, ctx.clearRect(0, 0, canvas.width, canvas.height), LINES.forEach((line, i) => {
-      let M = this.foilMasks[i];
-      M && this.placeLine(ctx, M, line, foilSpanAt(line, 0), foilSpanAt(line, r), offX, offY);
-    });
-    let phase = foilPhase(this.tilt, this.now), ang = Math.atan2(this.tilt.y, this.tilt.x + 1e-6) + Math.PI / 4, cx = canvas.width / 2, cy = canvas.height / 2, len = Math.hypot(canvas.width, canvas.height) / 2, g = ctx.createLinearGradient(
-      cx - Math.cos(ang) * len,
-      cy - Math.sin(ang) * len,
-      cx + Math.cos(ang) * len,
-      cy + Math.sin(ang) * len
-    ), n = FOIL_STOPS.length;
-    for (let i = 0; i <= n * 2; i++) {
-      let stop = i / (n * 2), idx = ((i - Math.round(phase * n)) % n + n) % n;
-      g.addColorStop(stop, FOIL_STOPS[idx]);
-    }
-    ctx.globalCompositeOperation = "source-in", ctx.fillStyle = g, ctx.fillRect(0, 0, canvas.width, canvas.height), ctx.globalCompositeOperation = "source-atop", ctx.globalAlpha = FOIL_LINE_ALPHA, ctx.fillStyle = "#000";
-    let pitch = FOIL_LINE_PITCH * this.k, slide = (this.tilt.x * FOIL_LINE_SLIDE * this.k % pitch + pitch) % pitch;
-    ctx.save(), ctx.translate(cx, cy), ctx.rotate(FOIL_LINE_ANGLE * Math.PI / 180);
-    let span = len * 1.5;
-    for (let x = -span + slide; x < span; x += pitch)
-      ctx.fillRect(x, -span, pitch / 2, span * 2);
-    ctx.restore(), ctx.globalAlpha = 1, ctx.globalCompositeOperation = "source-over";
-  }
-  paintRings(ctx) {
-    let k = this.k, r = this.register, off = planeOffsets(this.tilt), rx = this.reprint.x * (1 - r), ry = this.reprint.y * (1 - r);
-    LINES.forEach((line, i) => {
-      let R = this.rings[i];
-      R && (ctx.save(), ctx.shadowColor = `rgba(0,0,0,${SHADOW_ALPHA * (1 - 0.6 * r)})`, ctx.shadowBlur = SHADOW_BLUR * k, ctx.shadowOffsetX = (off.shadow.x - off.outline.x) * k, ctx.shadowOffsetY = (off.shadow.y - off.outline.y) * k * (1 - 0.6 * r), this.placeLine(
-        ctx,
-        R,
-        line,
-        { cx: line.outlineCx, w: line.outlineW },
-        outlineSpanAt(line, r),
-        off.outline.x + rx,
-        off.outline.y + ry
-      ), ctx.restore());
-    });
-  }
-  render(sheet = 0) {
-    let ctx = this.ctx;
-    if (!ctx || !this.ground || !this.fill || this.rings.length < LINES.length) return;
-    this.dirty && this.paintWords(), this.sheet !== sheet && this.paintSheet(sheet);
-    let k = this.k, r = this.register, off = planeOffsets(this.tilt), rx = this.reprint.x * (1 - r), ry = this.reprint.y * (1 - r);
-    ctx.setTransform(1, 0, 0, 1, 0, 0), ctx.globalAlpha = 1, ctx.shadowColor = "transparent", ctx.drawImage(this.ground.canvas, 0, 0), this.paintFoil(r, this.tilt.x * PARALLAX_FOIL + rx * 0.5, this.tilt.y * PARALLAX_FOIL + ry * 0.5), this.foil && ctx.drawImage(this.foil.canvas, 0, 0), ctx.drawImage(this.fill.canvas, off.fill.x * k, off.fill.y * k), this.paintRings(ctx);
+    let c = this.canvas, r = c.getBoundingClientRect();
+    this.dpr = Math.min(window.devicePixelRatio || 1, 2), c.width = Math.round(r.width * this.dpr), c.height = Math.round(r.height * this.dpr), this.lastKey = "", this.running || this.renderStill();
   }
   start() {
     if (this.running || !this.ok) return;
-    this.running = !0, this.t0 = performance.now();
+    this.running = !0, this.t0 = performance.now(), this.lastKey = "", this.lastNow = performance.now();
     let tick = (now) => {
       if (!this.running) return;
-      let t = (this.elapsed + (now - this.t0)) / 1e3;
-      this.now = t, this.pointed || (this.target = driftAt(t)), this.tilt.x += (this.target.x - this.tilt.x) * TILT_FOLLOW, this.tilt.y += (this.target.y - this.tilt.y) * TILT_FOLLOW;
-      let goal = this.held ? 1 : 0;
-      this.register += (goal - this.register) * (this.held ? REGISTER_IN : REGISTER_OUT), this.reprint = reprintAt(t), this.render(sheetAt(t).n), this.raf = requestAnimationFrame(tick);
+      let dt = Math.min(Math.max((now - this.lastNow) / 1e3, 1 / 240), 0.1);
+      this.lastNow = now;
+      let rate = this.hoverTo > this.hover ? HOVER_IN : HOVER_OUT;
+      this.hover += (this.hoverTo - this.hover) * (1 - Math.exp(-dt / rate));
+      let span = 89 + SETTLE_BRIDGE + OUTRO;
+      this.draw(bridged((now - this.t0) / 1e3 * 25 % span)), this.raf = requestAnimationFrame(tick);
     };
     this.raf = requestAnimationFrame(tick);
   }
+  setHover(on) {
+    this.hoverTo = on ? 1 : 0;
+  }
   stop() {
-    this.running && (this.elapsed += performance.now() - this.t0), this.running = !1, cancelAnimationFrame(this.raf);
+    this.running = !1, this.raf && cancelAnimationFrame(this.raf), this.raf = 0;
   }
   renderStill() {
-    this.tilt = { x: 0, y: 0 }, this.reprint = { x: 0, y: 0 }, this.register = 0, this.render(0);
+    this.ok && this.draw(60);
   }
   destroy() {
-    this.stop();
-    for (let l of [this.ground, this.fill, this.bold, this.foil, ...this.rings, ...this.foilMasks]) l && (l.canvas.width = l.canvas.height = 0);
-    this.ground = this.fill = this.bold = this.foil = null, this.rings = [], this.foilMasks = [], this.grain = null, this.ctx = null;
+    this.stop(), this.ctx = null;
+  }
+  draw(u) {
+    let ctx = this.ctx;
+    if (!ctx) return;
+    let ok = outroK(u), og = outroGeo(u), ww = lerp(at(WW, u), WW[0], og), wcy = lerp(at(WCY, u), WCY[0], og), depth = at(D, u) * (1 - ok), off = window3(OFF, IGNITE_AT, u), span = window3(SPAN, IGNITE_AT, u), tipp = window3(TIPP, IGNITE_AT, u), ignited = u >= IGNITE_AT;
+    if (u > REST_FROM) {
+      let k = smooth(clamp01((u - REST_FROM) / (REST_FULL - REST_FROM)));
+      off += (REST_OFF - off) * k, span += (REST_SPAN - span) * k, tipp += (REST_TIPP - tipp) * k;
+    }
+    let hv = this.hover;
+    hv > 1e-3 && (off += HOVER_WARM * hv, span += HOVER_SPREAD * hv * Math.sign(span || 1), tipp += HOVER_WARM * hv);
+    let key = `${ww.toFixed(1)}|${wcy.toFixed(1)}|${depth.toFixed(1)}|${off.toFixed(4)}|${span.toFixed(4)}|${tipp.toFixed(4)}|${ignited}|${hv.toFixed(3)}`;
+    if (key === this.lastKey) return;
+    this.lastKey = key;
+    let { dpr } = this, W = this.canvas.width / dpr, H = this.canvas.height / dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    let sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, BG_TOP), sky.addColorStop(0.78, BG_BOTTOM), sky.addColorStop(1, BG_TOP), ctx.fillStyle = sky, ctx.fillRect(0, 0, W, H);
+    let sc = W / 1500;
+    ctx.translate(0, H / 2 - CONTENT_MID * sc), ctx.scale(sc, sc);
+    let ws = ww / WORD_W, wh = WORD_H * ws, wx = 1500 / 2 - ww / 2, wy = wcy - wh / 2, baseline = wy + wh, vpDist = VP_DEPTH * wh, strokeW = 2 * OUTLINE * WORD_H, copy = (f2) => {
+      let q = 1 - f2;
+      ctx.save(), ctx.translate(1500 / 2, baseline + vpDist), ctx.scale(q, q), ctx.translate(-1500 / 2, -(baseline + vpDist)), ctx.translate(wx, wy), ctx.scale(ws, ws);
+    };
+    {
+      let k = clamp01(depth / 322), a = (BLOOM_REST + (BLOOM_ALPHA - BLOOM_REST) * smooth(k)) * (1 + (HOVER_BLOOM - 1) * hv) * (1 - ok), cx = 1500 / 2, cy = baseline + BLOOM_DROP * wh, base = BLOOM_R * ww * (0.75 + 0.45 * k);
+      for (let [rMul, aMul, pos] of BLOOM_LAYERS) {
+        let r = base * rMul, la = a * aMul;
+        if (la < 4e-3) continue;
+        let [br, bg, bb] = this.rampRGB(pos), g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+        g.addColorStop(0, `rgba(${br},${bg},${bb},${la.toFixed(3)})`), g.addColorStop(0.45, `rgba(${br},${bg},${bb},${(la * 0.35).toFixed(3)})`), g.addColorStop(1, `rgba(${br},${bg},${bb},0)`), ctx.fillStyle = g, ctx.fillRect(-1500, -1500, 1500 * 3, 1500 * 3);
+      }
+    }
+    if (ignited && depth > 1) {
+      let n = Math.min(260, Math.max(12, Math.ceil(depth)));
+      ctx.lineJoin = "miter", ctx.lineWidth = strokeW;
+      for (let i = n; i >= 0; i--) {
+        let dd = depth * i / n;
+        copy(dd / vpDist);
+        let df = dd / depth, p = off + span * df;
+        if (df > TIP_BAND_FROM) {
+          let t = Math.min(1, (df - TIP_BAND_FROM) / (TIP_BAND_FULL - TIP_BAND_FROM));
+          p += (tipp - p) * t;
+        }
+        let col = this.ramp(p);
+        ctx.fillStyle = col, ctx.strokeStyle = col, ctx.fill(this.word), ctx.stroke(this.word), ctx.restore();
+      }
+    }
+    copy(0);
+    let faceG = ctx.createLinearGradient(0, 0, 0, WORD_H);
+    if (faceG.addColorStop(0, FACE_MID), faceG.addColorStop(0.18, FACE_TOP), faceG.addColorStop(1, FACE_BOTTOM), ctx.fillStyle = faceG, ctx.fill(this.word), ignited) {
+      let [rr, rg, rb] = this.rampRGB(Math.min(1, off + span * 0.55)), grad = ctx.createLinearGradient(0, WORD_H * (1 - 0.45), 0, WORD_H), rimA = 0.3 * (1 - ok);
+      grad.addColorStop(0, `rgba(${rr},${rg},${rb},0)`), grad.addColorStop(1, `rgba(${rr},${rg},${rb},${rimA.toFixed(3)})`), ctx.fillStyle = grad, ctx.fill(this.word);
+    }
+    ctx.restore(), ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 };
 
@@ -421,7 +804,7 @@ var ORDER = [1, 4, 0, 5, 2, 3], TRANSIT = [
   { paper: [243, 235, 217], plate: [233, 201, 143], ink: [176, 80, 58] },
   { paper: [242, 234, 216], plate: [36, 84, 108], ink: [233, 201, 143] }
 ], CARD_BG = PALETTES[0].paper, SNAP = [0, 0.012, 0.03, 0.055, 0.09, 0.42, 0.78, 0.9, 0.955, 0.985, 1], GLIDE = [0, 0.03, 0.08, 0.17, 0.34, 0.62, 0.82, 0.92, 0.97, 1];
-function ease2(table2, u) {
+function ease(table2, u) {
   let n = table2.length - 1, x = Math.min(Math.max(u, 0), 1) * n, i = Math.min(Math.floor(x), n - 1);
   return table2[i] + (table2[i + 1] - table2[i]) * (x - i);
 }
@@ -894,7 +1277,7 @@ var SprayBurst = class {
     if (!gl || !this.prog) return;
     let slot = Math.floor(frame / 72) % 6, scene = ORDER[slot], k = frame % 72, u = k / 72, pal = PALETTES[slot], paced = (table2, beats) => {
       let b = u * beats;
-      return Math.floor(b) + ease2(table2, b % 1);
+      return Math.floor(b) + ease(table2, b % 1);
     }, amt = this.cursor * CURSOR_AMOUNT[scene], gesture = CURSOR_GESTURE[scene], localR = CURSOR_LOCAL_R * this.unit, nearness = (x, y) => Math.max(0, 1 - Math.hypot(x - this.px, y - this.py) / localR), angles = this.angles, tips = this.tips, cx = (this.rect.x0 + this.rect.x1) * 0.5, cy = (this.rect.y0 + this.rect.y1) * 0.5;
     if (scene === 0) {
       if (this.starFrame(k, this.star), cx = this.star.cx, cy = this.star.cy, angles.set(this.star.a), tips.set(this.star.t), gesture === "reach" && amt > 0) {
@@ -914,7 +1297,7 @@ var SprayBurst = class {
     } else if (scene === 2) {
       let reach = Math.max(...BAR_L) * this.unit, span = this.rect.x1 - this.rect.x0 + 2 * reach;
       for (let i = 0; i < BAR_V.length; i++) {
-        let b = u * BAR_BEATS + BAR_OFF[i], g = Math.floor(b) + ease2(SNAP, b % 1), t = (BAR_V[i] * g % 1 + 1) % 1, x = this.rect.x0 - reach + t * span;
+        let b = u * BAR_BEATS + BAR_OFF[i], g = Math.floor(b) + ease(SNAP, b % 1), t = (BAR_V[i] * g % 1 + 1) % 1, x = this.rect.x0 - reach + t * span;
         angles[i] = x + amt * nearness(x, this.rect.y0 + (this.rect.y1 - this.rect.y0) * 0.5 + BAR_Y[i] * this.unit) * (this.px - x);
       }
     } else if (scene === 3) {
@@ -988,26 +1371,12 @@ function pause(el, engine) {
     hidden = document.hidden, sync();
   }), () => io.disconnect();
 }
-function mountMisprint(host, family) {
-  let canvas = host.querySelector("canvas"), engine = new MisprintType(canvas, family);
+function mountSlam(host) {
+  let canvas = host.querySelector("canvas"), engine = new SunsetSlam(canvas);
   if (!engine.ok) return null;
-  still() && engine.renderStill(), pause(host, engine);
-  let first = family.split(",")[0].replace(/["']/g, "").trim();
-  document.fonts?.load?.(`${FILL_WEIGHT} 1em "${first}"`).then(() => document.fonts.load(`${OUTLINE_WEIGHT} 1em "${first}"`)).then(() => engine.refreshFont(), () => {
-  });
-  let at = (e) => {
-    let r = host.getBoundingClientRect();
-    r.width && engine.point((e.clientX - r.left) / r.width * 2 - 1, (e.clientY - r.top) / r.height * 2 - 1);
-  };
-  host.addEventListener("pointermove", at), host.addEventListener("pointerdown", (e) => {
-    at(e), engine.hold(!0);
-  }), host.addEventListener("pointerup", () => engine.hold(!1));
-  for (let t2 of ["pointerleave", "pointercancel"]) host.addEventListener(t2, () => {
-    engine.point(null), engine.hold(!1);
-  });
-  host.addEventListener("keydown", (e) => {
-    (e.key === " " || e.key === "Enter") && (e.preventDefault(), engine.hold(!0));
-  }), host.addEventListener("keyup", () => engine.hold(!1));
+  still() && engine.renderStill(), pause(host, engine), canvas.addEventListener("pointerenter", (e) => {
+    e.pointerType === "mouse" && engine.setHover(!0);
+  }), canvas.addEventListener("pointerleave", () => engine.setHover(!1)), addEventListener("blur", () => engine.setHover(!1));
   let t = 0;
   return addEventListener("resize", () => {
     clearTimeout(t), t = setTimeout(() => engine.resize(), 120);
@@ -1017,11 +1386,11 @@ function mountSpray(host) {
   let canvas = host.querySelector("canvas"), engine = new SprayBurst(canvas);
   if (!engine.ok) return null;
   still() && engine.renderStill(), pause(host, engine);
-  let at = (e) => {
+  let at2 = (e) => {
     let r = canvas.getBoundingClientRect();
     engine.setPointer(e.clientX - r.left, e.clientY - r.top);
   };
-  canvas.addEventListener("pointermove", at), canvas.addEventListener("pointerdown", at);
+  canvas.addEventListener("pointermove", at2), canvas.addEventListener("pointerdown", at2);
   for (let t2 of ["pointerleave", "pointercancel"]) canvas.addEventListener(t2, () => engine.setPointer(null, null));
   let t = 0;
   return addEventListener("resize", () => {
@@ -1031,6 +1400,6 @@ function mountSpray(host) {
   }), engine;
 }
 export {
-  mountMisprint,
+  mountSlam,
   mountSpray
 };

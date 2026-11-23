@@ -12,9 +12,9 @@
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-html { background: var(--red); }
+html { background: var(--red); overflow-x: clip; }
 body {
-  margin: 0; min-height: 100svh; color: var(--ink); font: 400 16px/1.5 var(--body); -webkit-font-smoothing: antialiased;
+  margin: 0; min-height: 100svh; overflow-x: clip; position: relative; color: var(--ink); font: 400 16px/1.5 var(--body); -webkit-font-smoothing: antialiased;
   background-color: var(--red);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .1 0 0 0 0 .05 0 0 0 0 .03 0 0 0 .16 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
 }
@@ -35,15 +35,13 @@ main { max-width: 1020px; margin: 0 auto; padding: 4px var(--g) 40px; display: g
 }
 .sheet > :not(.poster) { margin-left: clamp(0px, 3vw, 46px); margin-right: clamp(0px, 3vw, 46px); }
 
-/* Misprint type, 2:1. on a phone the box is 5:4 and the canvas 1.6 times as wide, so the square
-   artwork in its middle fills the box. (5:4 keeps the form high on the first screen) */
-.poster { position: relative; aspect-ratio: 2 / 1; border-radius: 10px; overflow: hidden; background: var(--red); box-shadow: 0 0 0 3px var(--ink); cursor: grab; user-select: none; -webkit-user-select: none; touch-action: pan-y; }
-.poster:active { cursor: grabbing; }
-.poster:focus-visible { outline: 3px solid var(--teal); outline-offset: 4px; }
+/* Sunset slam, at the card shape its motion was measured on */
+.poster { position: relative; aspect-ratio: 1344 / 620; border-radius: 10px; overflow: hidden; background: #14394a; box-shadow: 0 0 0 3px var(--ink); }
 .poster canvas { display: block; width: 100%; height: 100%; }
+.kicker { position: absolute; z-index: 1; top: 7%; left: 0; right: 0; margin: 0; text-align: center; pointer-events: none; font: italic 900 clamp(11px, 1.7vw, 18px)/1 var(--type); letter-spacing: .42em; text-transform: uppercase; color: var(--cream); opacity: .85; }
 
 .slab {
-  margin: clamp(22px, 3.4vw, 36px) 0 0; font: italic 900 clamp(40px, 7.4vw, 86px)/.96 var(--type); font-stretch: 112%; letter-spacing: -.01em; text-transform: uppercase;
+  margin: clamp(22px, 3.4vw, 36px) 0 clamp(26px, 4vw, 40px); font: italic 900 min(8.1vw, 78px)/.96 var(--type); font-stretch: 100%; letter-spacing: .01em; text-transform: uppercase; white-space: nowrap;
   color: var(--cream); -webkit-text-stroke: clamp(2px, .3vw, 3px) var(--ink); paint-order: stroke fill;
   text-shadow: clamp(3px, .5vw, 6px) clamp(3px, .5vw, 6px) 0 var(--ink);
 }
@@ -104,7 +102,7 @@ main { max-width: 1020px; margin: 0 auto; padding: 4px var(--g) 40px; display: g
 .done-line { margin: 16px 0 0; font-size: 18px; }
 
 /* questions, on the red */
-#faq .slab { margin-top: 8px; }
+#faq .slab { margin-top: 8px; margin-bottom: 0; }
 .faq { margin-top: 22px; display: grid; gap: 12px; }
 .qa { border-radius: 10px; background: var(--cream); box-shadow: 0 0 0 3px var(--ink), 5px 5px 0 3px var(--ink); }
 .qa summary { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px 20px; cursor: pointer; list-style: none; font: italic 900 clamp(17px, 2vw, 21px)/1.2 var(--type); text-transform: uppercase; }
@@ -113,17 +111,30 @@ main { max-width: 1020px; margin: 0 auto; padding: 4px var(--g) 40px; display: g
 .qa[open] summary::after { transform: rotate(45deg); }
 .qa p { margin: 0; padding: 0 20px 20px; font-size: 17px; }
 
-.end { display: grid; justify-items: center; gap: 10px; padding: 20px var(--g) calc(env(safe-area-inset-bottom) + 34px); text-align: center; color: var(--cream); font: italic 800 13px/1.4 var(--type); letter-spacing: .12em; text-transform: uppercase; }
-.end-logo { width: min(260px, 70vw); height: auto; }
+/* the island at the foot: the rush print with the oval logo set in its empty sky */
+.end { display: grid; justify-items: center; gap: 12px; padding: 10px var(--g) calc(env(safe-area-inset-bottom) + 34px); text-align: center; color: var(--cream); font: italic 800 13px/1.4 var(--type); letter-spacing: .12em; text-transform: uppercase; }
+.island { position: relative; width: min(520px, 100%); margin-bottom: 14px; border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 3px var(--ink), 10px 10px 0 3px var(--ink); }
+.island-art { display: block; width: 100%; height: auto; }
+.island-logo { position: absolute; left: 50%; top: 7%; width: 74%; height: auto; transform: translateX(-50%) rotate(-3deg); filter: drop-shadow(4px 4px 0 rgba(35, 35, 35, .9)); }
 .end p { margin: 0; }
 
+/* island details on the red: a striped setting sun behind the top of the sheet, and a wave along its foot */
+body::before {
+  content: ""; position: absolute; z-index: 0; top: 40px; right: max(-140px, calc(50% - 720px)); width: min(560px, 90vw); aspect-ratio: 1; border-radius: 50%; pointer-events: none;
+  background: repeating-linear-gradient(180deg, var(--sun) 0 22px, transparent 22px 34px); opacity: .55;
+  -webkit-mask: linear-gradient(180deg, #000 30%, transparent 85%); mask: linear-gradient(180deg, #000 30%, transparent 85%);
+}
+.bar, main, .end { position: relative; z-index: 1; }
+.sheet { overflow: hidden; padding-bottom: calc(clamp(28px, 4vw, 48px) + 46px); }
+.sheet::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 46px; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='46' viewBox='0 0 120 46'%3E%3Cpath d='M0 20 Q15 4 30 20 T60 20 T90 20 T120 20 V46 H0Z' fill='%232f6478'/%3E%3Cpath d='M0 20 Q15 4 30 20 T60 20 T90 20 T120 20' fill='none' stroke='%23232323' stroke-width='3'/%3E%3Cpath d='M0 33 Q15 25 30 33 T60 33 T90 33 T120 33' fill='none' stroke='%23f4ecdb' stroke-width='2' opacity='.55'/%3E%3C/svg%3E") repeat-x bottom / 120px 46px;
+}
+
 @media (max-width: 640px) {
-  .poster { aspect-ratio: 5 / 4; }
-  .poster canvas { width: 160%; margin-left: -30%; }
   .grid { grid-template-columns: 1fr; }
   .stamp { width: 100%; }
   .done { grid-template-columns: 1fr; }
   .spray { max-width: 240px; }
-  .lede { font-size: 17px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

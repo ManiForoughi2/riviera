@@ -20,7 +20,7 @@
 <link rel="icon" type="image/png" href="../assets/favicon.png">
 <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
 <link rel="preload" href="../assets/fonts/archivo-italic.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="rush.css?v=1">
+<link rel="stylesheet" href="rush.css?v=2">
 </head>
 <body>
 
@@ -31,10 +31,11 @@
 
 <main>
   <section class="block sheet" id="list">
-    <div class="poster" tabindex="0" role="img" aria-label="SPRING RUSH in tall cream capitals on brick red, printed with a black outline that never quite lines up. Press and hold to pull the print into register."><canvas></canvas></div>
+    <div class="poster" role="img" aria-label="FIJI RUSH, Spring 2027: the words slam forward as a cream block logo trailing a fan of sunset colour over a teal dusk sky, then settle.">
+      <p class="kicker" aria-hidden="true">Spring 2027</p>
+      <canvas></canvas>
+    </div>
     <h1 class="slab">Get on the list</h1>
-    <p class="block-sub">FIJI &middot; Spring &#39;27 &middot; Tempe, AZ</p>
-    <p class="lede">Rush week dates are coming soon. Sign up and a rush chair will text you before it starts.</p>
     <form class="form" novalidate>
       <input class="trap" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
       <fieldset class="set">
@@ -46,7 +47,7 @@
         </div>
       </fieldset>
       <fieldset class="set">
-        <legend class="step">2. School <small>As of spring &#39;27</small></legend>
+        <legend class="step">2. School</legend>
         <div class="chips" role="radiogroup" aria-label="Grade">
           <label class="chip"><input type="radio" name="grade" value="Freshman" required><span>Freshman</span></label>
           <label class="chip"><input type="radio" name="grade" value="Sophomore"><span>Sophomore</span></label>
@@ -54,12 +55,12 @@
           <label class="chip"><input type="radio" name="grade" value="Senior"><span>Senior</span></label>
         </div>
         <div class="grid gap">
-          <label class="field"><span>GPA <small>College, or high school if you don&#39;t have one yet</small></span><input class="input" name="gpa" inputmode="decimal" maxlength="4" autocomplete="off" required></label>
-          <label class="field"><span>Hometown <small>optional</small></span><input class="input" name="hometown" autocomplete="address-level2"></label>
+          <label class="field"><span>GPA</span><input class="input" name="gpa" inputmode="decimal" maxlength="4" autocomplete="off" placeholder="College, or high school" required></label>
+          <label class="field"><span>Hometown</span><input class="input" name="hometown" autocomplete="address-level2"></label>
         </div>
       </fieldset>
       <fieldset class="set">
-        <legend class="step">3. A little more <small>optional</small></legend>
+        <legend class="step">3. More</legend>
         <div class="grid">
           <label class="field wide"><span>Hobbies and interests</span><textarea class="input" name="hobbies" rows="2" placeholder="Golf, lifting, music, whatever you&#39;re into"></textarea></label>
         </div>
@@ -94,21 +95,22 @@
     <div class="faq">
       <details class="qa"><summary>What is FIJI?</summary><p>FIJI is the nickname of Phi Gamma Delta, founded in 1848. Our chapter has been at Arizona State since 1965.</p></details>
       <details class="qa"><summary>Do I need to know anyone?</summary><p>No. Plenty of guys walk in knowing nobody. Come to an open night and talk to whoever&#39;s there.</p></details>
-      <details class="qa"><summary>When is rush?</summary><p>Every fall and spring. Spring &#39;27 dates are still being set. Get on the list or follow @asufiji to hear them first.</p></details>
       <details class="qa"><summary>Where is GLV?</summary><p>The Greek Leadership Village on ASU&#39;s Tempe campus, near Rural Road and Terrace Road.</p></details>
       <details class="qa"><summary>What should I wear?</summary><p>For open nights, whatever you&#39;d wear to class. We&#39;ll tell you ahead of time if a night needs more than that.</p></details>
-      <details class="qa"><summary>How much does it cost?</summary><p>Dues change from year to year, so ask the rush chairs for this semester&#39;s number. They&#39;ll give you a straight answer.</p></details>
       <details class="qa"><summary>Who do I talk to?</summary><p>Matthew Trapp and Nolan Walters are the rush chairs. DM @asufiji and it gets to them.</p></details>
     </div>
   </section>
 </main>
 
 <footer class="end">
-  <img class="end-logo" src="../assets/rush/logo-oval.webp" width="811" height="316" alt="" loading="lazy">
+  <div class="island">
+    <img class="island-art" src="../assets/rush/island.webp" width="1000" height="1000" alt="" loading="lazy" decoding="async">
+    <img class="island-logo" src="../assets/rush/logo-oval.webp" width="811" height="316" alt="FIJI Spring Rush 2027" loading="lazy" decoding="async">
+  </div>
   <p>FIJI &middot; Phi Gamma Delta &middot; Arizona State University</p>
   <a href="../">asufiji.com</a>
 </footer>
 
-<script type="module" src="rush.js?v=1"></script>
+<script type="module" src="rush.js?v=2"></script>
 </body>
 </html>
