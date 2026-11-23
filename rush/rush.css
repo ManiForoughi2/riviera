@@ -36,15 +36,13 @@ main { max-width: 1020px; margin: 0 auto; padding: 4px var(--g) 40px; display: g
 .sheet > :not(.island) { margin-left: clamp(0px, 3vw, 46px); margin-right: clamp(0px, 3vw, 46px); }
 
 /* the island print at the top, the oval logo set in its empty sky. on load the print forms out of a
-   soft cloud (Ghosty reveal's mask, slid up over it) and then the logo stamps down */
+   soft cloud (Ghosty reveal's mask, slid up over it); the logo is simply there */
 .sheet > .island { margin: 0 auto; }
 .island { position: relative; width: min(600px, 100%); border-radius: 12px; overflow: hidden; background: var(--cream); box-shadow: 0 0 0 3px var(--ink); }
 .island-art { display: block; width: 100%; height: auto; }
-.island-logo { position: absolute; left: 50%; top: 7%; width: 74%; height: auto; transform: translateX(-50%) rotate(-3deg); }
+.island-logo { position: absolute; left: 50%; top: 3.5%; width: 68%; height: auto; transform: translateX(-50%) rotate(-3deg); }
 .js-reveal .island-art { -webkit-mask-size: 100% 500%; mask-size: 100% 500%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: 0 0%; mask-position: 0 0%; }
 .js-reveal.is-in .island-art { -webkit-mask-position: 0 100%; mask-position: 0 100%; transition: -webkit-mask-position 1.9s cubic-bezier(0.16, 1, 0.3, 1), mask-position 1.9s cubic-bezier(0.16, 1, 0.3, 1); }
-.js-reveal .island-logo { opacity: 0; transform: translateX(-50%) rotate(-9deg) scale(1.35); }
-.js-reveal.is-in .island-logo { opacity: 1; transform: translateX(-50%) rotate(-3deg) scale(1); transition: opacity .12s linear .95s, transform .45s cubic-bezier(.2, 1.6, .4, 1) .95s; }
 
 .slab {
   margin: clamp(22px, 3.4vw, 36px) 0 clamp(26px, 4vw, 40px); font: italic 900 min(8.1vw, 78px)/.96 var(--type); font-stretch: 100%; letter-spacing: .01em; text-transform: uppercase; white-space: nowrap;

@@ -4,7 +4,7 @@ const SIGNUP = "https://asufiji-join.maniforoughi2.workers.dev/";
 const fx = import("../vendor/design-how/rush-fx.js?v=3");
 
 // the island print forms out of a soft cloud: Ghosty reveal's mask, slid up over the picture once it has
-// loaded, then the logo stamps down. with reduced motion it is simply there
+// loaded. with reduced motion it is simply there
 const island = document.querySelector(".island");
 const art = island?.querySelector(".island-art");
 if (art && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
