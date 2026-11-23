@@ -577,6 +577,13 @@ a.card[aria-expanded="true"] .card-arrow { transform: rotate(90deg); }
 .up-send { min-width: 240px; }
 .up-send:disabled { opacity: .6; }
 .up-msg { font: 600 16px/1.4 var(--body); color: var(--ua); }
+/* recruitment: the sign-up form reuses the alumni form */
+#interest { scroll-margin-top: 80px; }
+.up-gap { margin-top: 22px; }
+.up-sub { margin: 24px 0 12px; font: 600 15px/1.25 var(--body); color: var(--u2); }
+.interest .chip input[type="radio"] + span::before { content: ""; width: 0; margin-left: -9px; }
+.interest .chip input[type="radio"]:checked + span::before { content: "\2713"; width: 1em; margin-left: 0; }
+.up-input.is-bad { box-shadow: inset 0 0 0 1.5px #f2a3a3; }
 .up-done { max-width: 900px; margin: 0 auto; display: grid; gap: 12px; outline: 0; }
 .up-done[hidden], .update[hidden] { display: none; }
 .up-done-head { font: 500 clamp(30px, 3.4vw, 44px)/1.1 var(--serif); }

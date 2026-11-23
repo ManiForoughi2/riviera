@@ -159,6 +159,58 @@
     </div>
   </section>
 
+  <section class="page page-next" id="interest">
+    <h2 class="title" style="--r:7.1">Get on the list</h2>
+    <form class="update interest" novalidate>
+      <fieldset class="up-set">
+        <legend class="up-step">1. You</legend>
+        <div class="up-grid">
+          <label class="up-field up-wide"><span>First and last name</span><input class="up-input" name="name" autocomplete="name" autocapitalize="words" required></label>
+          <label class="up-field"><span>Phone number</span><input class="up-input" name="phone" type="tel" autocomplete="tel" required></label>
+          <label class="up-field"><span>Instagram</span><input class="up-input" name="ig" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="@" required></label>
+        </div>
+      </fieldset>
+      <fieldset class="up-set">
+        <legend class="up-step">2. School <small>As of spring &#39;27</small></legend>
+        <div class="up-chips" role="radiogroup" aria-label="Grade">
+          <label class="chip"><input type="radio" name="grade" value="Freshman" required><span>Freshman</span></label>
+          <label class="chip"><input type="radio" name="grade" value="Sophomore"><span>Sophomore</span></label>
+          <label class="chip"><input type="radio" name="grade" value="Junior"><span>Junior</span></label>
+          <label class="chip"><input type="radio" name="grade" value="Senior"><span>Senior</span></label>
+        </div>
+        <div class="up-grid up-gap">
+          <label class="up-field"><span>GPA <small>College, or high school if you don&#39;t have one yet</small></span><input class="up-input" name="gpa" inputmode="decimal" maxlength="4" autocomplete="off" required></label>
+          <label class="up-field"><span>Hometown <small>optional</small></span><input class="up-input" name="hometown" autocomplete="address-level2"></label>
+        </div>
+      </fieldset>
+      <fieldset class="up-set">
+        <legend class="up-step">3. A little more <small>optional</small></legend>
+        <div class="up-grid">
+          <label class="up-field up-wide"><span>Hobbies and interests</span><textarea class="up-input" name="hobbies" rows="2" placeholder="Golf, lifting, music, whatever you&#39;re into"></textarea></label>
+        </div>
+        <p class="up-sub">How did you hear about FIJI?</p>
+        <div class="up-chips">
+          <label class="chip"><input type="radio" name="heard" value="Instagram"><span>Instagram</span></label>
+          <label class="chip"><input type="radio" name="heard" value="A FIJI brother"><span>A FIJI brother</span></label>
+          <label class="chip"><input type="radio" name="heard" value="Tabling on campus"><span>Tabling on campus</span></label>
+          <label class="chip"><input type="radio" name="heard" value="Fall rush"><span>Fall rush</span></label>
+          <label class="chip"><input type="radio" name="heard" value="Other"><span>Somewhere else</span></label>
+        </div>
+        <div class="up-grid up-gap">
+          <label class="up-field up-wide"><span>Any questions for us?</span><textarea class="up-input" name="questions" rows="2"></textarea></label>
+        </div>
+      </fieldset>
+      <div class="up-foot">
+        <button class="btn-brass btn-lg up-send" type="submit">Sign up</button>
+        <p class="up-msg" role="status" aria-live="polite"></p>
+      </div>
+    </form>
+    <div class="up-done" tabindex="-1" hidden>
+      <p class="up-done-head">You&#39;re on the list, <span class="up-done-name"></span>.</p>
+      <p class="up-done-line">A rush chair will text you before rush week. Follow @asufiji for dates.</p>
+    </div>
+  </section>
+
   <section class="page page-next" id="faq">
     <h2 class="title" style="--r:4.8">Questions</h2>
     <div class="faq">
@@ -182,5 +234,6 @@
 </footer>
 
 <script type="module" src="main.js?v=7cbc8d6a"></script>
+<script type="module" src="interest.js"></script>
 </body>
 </html>
