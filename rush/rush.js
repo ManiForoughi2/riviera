@@ -53,7 +53,12 @@ form.addEventListener("submit", async (e) => {
     return;
   }
   done.querySelector(".done-name").textContent = val("name").split(/\s+/)[0].replace(/^./, (c) => c.toUpperCase());
+  // the form is much taller than the thank-you, so swapping them would leave the page scrolled down at the
+  // questions: put the thank-you in the middle of the screen straight away, once the new layout is in
   form.hidden = true; done.hidden = false; done.focus({ preventScroll: true });
-  done.scrollIntoView({ block: "center", behavior: "smooth" });
+  requestAnimationFrame(() => {
+    const r = done.getBoundingClientRect();
+    window.scrollTo({ top: Math.max(0, scrollY + r.top - (innerHeight - r.height) / 2), behavior: "instant" });
+  });
   fx.then((m) => m.mountSpray(done.querySelector(".spray"))).catch(() => {});
 });
