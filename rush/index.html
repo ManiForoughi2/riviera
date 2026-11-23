@@ -20,7 +20,8 @@
 <link rel="icon" type="image/png" href="../assets/favicon.png">
 <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
 <link rel="preload" href="../assets/fonts/archivo-italic.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="rush.css?v=2">
+<link rel="preload" href="../assets/rush/island.webp" as="image" fetchpriority="high">
+<link rel="stylesheet" href="rush.css?v=3">
 </head>
 <body>
 
@@ -31,9 +32,9 @@
 
 <main>
   <section class="block sheet" id="list">
-    <div class="poster" role="img" aria-label="FIJI RUSH, Spring 2027: the words slam forward as a cream block logo trailing a fan of sunset colour over a teal dusk sky, then settle.">
-      <p class="kicker" aria-hidden="true">Spring 2027</p>
-      <canvas></canvas>
+    <div class="island">
+      <img class="island-art" src="../assets/rush/island.webp" width="1000" height="1000" alt="" fetchpriority="high" decoding="async">
+      <img class="island-logo" src="../assets/rush/logo-oval.webp" width="811" height="316" alt="FIJI Spring Rush 2027" decoding="async">
     </div>
     <h1 class="slab">Get on the list</h1>
     <form class="form" novalidate>
@@ -43,7 +44,7 @@
         <div class="grid">
           <label class="field wide"><span>First and last name</span><input class="input" name="name" autocomplete="name" autocapitalize="words" required></label>
           <label class="field"><span>Phone number</span><input class="input" name="phone" type="tel" autocomplete="tel" required></label>
-          <label class="field"><span>Instagram</span><input class="input" name="ig" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="@" required></label>
+          <label class="field"><span>Instagram</span><span class="at"><b aria-hidden="true">@</b><input class="input" name="ig" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" required></span></label>
         </div>
       </fieldset>
       <fieldset class="set">
@@ -55,14 +56,14 @@
           <label class="chip"><input type="radio" name="grade" value="Senior"><span>Senior</span></label>
         </div>
         <div class="grid gap">
-          <label class="field"><span>GPA</span><input class="input" name="gpa" inputmode="decimal" maxlength="4" autocomplete="off" placeholder="College, or high school" required></label>
+          <label class="field"><span>GPA</span><input class="input" name="gpa" inputmode="decimal" maxlength="4" autocomplete="off" required></label>
           <label class="field"><span>Hometown</span><input class="input" name="hometown" autocomplete="address-level2"></label>
         </div>
       </fieldset>
       <fieldset class="set">
         <legend class="step">3. More</legend>
         <div class="grid">
-          <label class="field wide"><span>Hobbies and interests</span><textarea class="input" name="hobbies" rows="2" placeholder="Golf, lifting, music, whatever you&#39;re into"></textarea></label>
+          <label class="field wide"><span>Hobbies and interests</span><textarea class="input" name="hobbies" rows="2"></textarea></label>
         </div>
         <p class="sub">How did you hear about FIJI?</p>
         <div class="chips">
@@ -103,14 +104,10 @@
 </main>
 
 <footer class="end">
-  <div class="island">
-    <img class="island-art" src="../assets/rush/island.webp" width="1000" height="1000" alt="" loading="lazy" decoding="async">
-    <img class="island-logo" src="../assets/rush/logo-oval.webp" width="811" height="316" alt="FIJI Spring Rush 2027" loading="lazy" decoding="async">
-  </div>
   <p>FIJI &middot; Phi Gamma Delta &middot; Arizona State University</p>
   <a href="../">asufiji.com</a>
 </footer>
 
-<script type="module" src="rush.js?v=2"></script>
+<script type="module" src="rush.js?v=3"></script>
 </body>
 </html>

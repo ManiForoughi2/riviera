@@ -1,10 +1,21 @@
-// asufiji.com/rush: the sign-up form, and the two design.how effects (Sunset slam on the FIJI RUSH title,
-// Spray burst on the thank-you). a sign-up goes to a small sign-up service that only saves it.
+// asufiji.com/rush: the sign-up form, and the two design.how effects (Ghosty reveal on the island print at
+// the top, Spray burst on the thank-you). a sign-up goes to a small sign-up service that only saves it.
 const SIGNUP = "https://asufiji-join.maniforoughi2.workers.dev/";
-const fx = import("../vendor/design-how/rush-fx.js?v=2");
+const fx = import("../vendor/design-how/rush-fx.js?v=3");
 
-const poster = document.querySelector(".poster");
-if (poster) fx.then((m) => m.mountSlam(poster)).catch(() => {});
+// the island print forms out of a soft cloud: Ghosty reveal's mask, slid up over the picture once it has
+// loaded, then the logo stamps down. with reduced motion it is simply there
+const island = document.querySelector(".island");
+const art = island?.querySelector(".island-art");
+if (art && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  island.classList.add("js-reveal");
+  import("../vendor/design-how/ghosty-reveal.js").then(async ({ MASK_IN, rasterMask }) => {
+    const mask = await rasterMask(MASK_IN);
+    art.style.webkitMaskImage = art.style.maskImage = mask;
+    await art.decode().catch(() => {});
+    requestAnimationFrame(() => requestAnimationFrame(() => island.classList.add("is-in")));
+  }).catch(() => island.classList.remove("js-reveal"));
+}
 
 const form = document.querySelector(".form");
 const msg = form.querySelector(".msg");
@@ -13,8 +24,10 @@ const btn = form.querySelector(".send");
 const need = [["name", "your name"], ["phone", "your phone number"], ["ig", "your Instagram"], ["grade", "your grade"], ["gpa", "your GPA"]];
 const handle = (v) => String(v || "").trim().replace(/^(https?:\/\/)?((www|m)\.)?instagram\.com\//i, "").replace(/^@/, "").replace(/[/?#].*$/, "");
 const ig = form.elements.ig;
-// a pasted profile link becomes the handle
-ig.addEventListener("change", () => { const h = handle(ig.value); ig.value = h ? "@" + h : ""; });
+// the box already shows the @: a typed @ or a pasted profile link becomes just the handle
+const tidyIg = () => { const h = handle(ig.value); if (h !== ig.value) ig.value = h; };
+ig.addEventListener("input", () => { if (/^@|instagram\.com/i.test(ig.value)) tidyIg(); });
+ig.addEventListener("change", tidyIg);
 form.addEventListener("input", (e) => { e.target.classList?.remove("bad"); e.target.closest(".chips")?.classList.remove("bad"); });
 
 form.addEventListener("submit", async (e) => {

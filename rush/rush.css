@@ -33,12 +33,18 @@ main { max-width: 1020px; margin: 0 auto; padding: 4px var(--g) 40px; display: g
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .14 0 0 0 0 .12 0 0 0 0 .1 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
   box-shadow: 0 0 0 3px var(--ink), 10px 10px 0 3px var(--ink);
 }
-.sheet > :not(.poster) { margin-left: clamp(0px, 3vw, 46px); margin-right: clamp(0px, 3vw, 46px); }
+.sheet > :not(.island) { margin-left: clamp(0px, 3vw, 46px); margin-right: clamp(0px, 3vw, 46px); }
 
-/* Sunset slam, at the card shape its motion was measured on */
-.poster { position: relative; aspect-ratio: 1344 / 620; border-radius: 10px; overflow: hidden; background: #14394a; box-shadow: 0 0 0 3px var(--ink); }
-.poster canvas { display: block; width: 100%; height: 100%; }
-.kicker { position: absolute; z-index: 1; top: 7%; left: 0; right: 0; margin: 0; text-align: center; pointer-events: none; font: italic 900 clamp(11px, 1.7vw, 18px)/1 var(--type); letter-spacing: .42em; text-transform: uppercase; color: var(--cream); opacity: .85; }
+/* the island print at the top, the oval logo set in its empty sky. on load the print forms out of a
+   soft cloud (Ghosty reveal's mask, slid up over it) and then the logo stamps down */
+.sheet > .island { margin: 0 auto; }
+.island { position: relative; width: min(600px, 100%); border-radius: 12px; overflow: hidden; background: var(--cream); box-shadow: 0 0 0 3px var(--ink); }
+.island-art { display: block; width: 100%; height: auto; }
+.island-logo { position: absolute; left: 50%; top: 7%; width: 74%; height: auto; transform: translateX(-50%) rotate(-3deg); filter: drop-shadow(4px 4px 0 rgba(35, 35, 35, .9)); }
+.js-reveal .island-art { -webkit-mask-size: 100% 500%; mask-size: 100% 500%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: 0 0%; mask-position: 0 0%; }
+.js-reveal.is-in .island-art { -webkit-mask-position: 0 100%; mask-position: 0 100%; transition: -webkit-mask-position 1.9s cubic-bezier(0.16, 1, 0.3, 1), mask-position 1.9s cubic-bezier(0.16, 1, 0.3, 1); }
+.js-reveal .island-logo { opacity: 0; transform: translateX(-50%) rotate(-9deg) scale(1.35); }
+.js-reveal.is-in .island-logo { opacity: 1; transform: translateX(-50%) rotate(-3deg) scale(1); transition: opacity .12s linear .95s, transform .45s cubic-bezier(.2, 1.6, .4, 1) .95s; }
 
 .slab {
   margin: clamp(22px, 3.4vw, 36px) 0 clamp(26px, 4vw, 40px); font: italic 900 min(8.1vw, 78px)/.96 var(--type); font-stretch: 100%; letter-spacing: .01em; text-transform: uppercase; white-space: nowrap;
@@ -64,6 +70,11 @@ main { max-width: 1020px; margin: 0 auto; padding: 4px var(--g) 40px; display: g
   width: 100%; padding: 14px 15px; border: 0; border-radius: 8px; resize: vertical; font: 500 17px/1.35 var(--body);
   color: var(--ink); background: var(--paper); box-shadow: inset 0 0 0 2px var(--ink); transition: box-shadow .15s ease, transform .15s ease;
 }
+/* instagram: the @ is part of the box, so everyone types just the handle */
+.at { position: relative; display: block; }
+.at b { position: absolute; z-index: 1; left: 15px; top: 50%; transform: translateY(-50%); font: 600 17px/1 var(--body); color: var(--ink); pointer-events: none; }
+.at .input { padding-left: 33px; }
+.at .input:focus { transform: none; }
 .input::placeholder { color: rgba(35, 35, 35, .45); }
 .input:focus { outline: 0; background: #fff; box-shadow: inset 0 0 0 2px var(--ink), 4px 4px 0 0 var(--teal); transform: translate(-2px, -2px); }
 .input.bad { box-shadow: inset 0 0 0 2px var(--red), 4px 4px 0 0 var(--red); }
@@ -111,11 +122,7 @@ main { max-width: 1020px; margin: 0 auto; padding: 4px var(--g) 40px; display: g
 .qa[open] summary::after { transform: rotate(45deg); }
 .qa p { margin: 0; padding: 0 20px 20px; font-size: 17px; }
 
-/* the island at the foot: the rush print with the oval logo set in its empty sky */
 .end { display: grid; justify-items: center; gap: 12px; padding: 10px var(--g) calc(env(safe-area-inset-bottom) + 34px); text-align: center; color: var(--cream); font: italic 800 13px/1.4 var(--type); letter-spacing: .12em; text-transform: uppercase; }
-.island { position: relative; width: min(520px, 100%); margin-bottom: 14px; border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 3px var(--ink), 10px 10px 0 3px var(--ink); }
-.island-art { display: block; width: 100%; height: auto; }
-.island-logo { position: absolute; left: 50%; top: 7%; width: 74%; height: auto; transform: translateX(-50%) rotate(-3deg); filter: drop-shadow(4px 4px 0 rgba(35, 35, 35, .9)); }
 .end p { margin: 0; }
 
 /* island details on the red: a striped setting sun behind the top of the sheet, and a wave along its foot */
