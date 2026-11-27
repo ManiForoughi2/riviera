@@ -1,7 +1,6 @@
 // asufiji.com/rush: the sign-up form, and the two design.how effects (Ghosty reveal on the island print at
 // the top, Spray burst on the thank-you). a sign-up goes to a small sign-up service that only saves it.
-// the sign-up service's address is moving; until the move is done, the old address is the fallback
-const SIGNUP = ["https://asufiji-join.asufiji.workers.dev/", "https://asufiji-join.maniforoughi2.workers.dev/"];
+const SIGNUP = ["https://asufiji-join.asufiji.workers.dev/"];
 const fx = import("../vendor/design-how/rush-fx.js?v=3");
 
 // the island print forms out of a soft cloud: Ghosty reveal's mask, slid up over the picture once it has

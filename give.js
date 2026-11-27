@@ -6,7 +6,7 @@
 // session at the exact amount (tools/checkout-worker.js) and goes there. set CHECKOUT to that
 // function's address. until it is set, only the two club amounts can be paid (through the fixed
 // payment links below) and any other amount says it is not connected yet.
-const CHECKOUT = "https://asufiji-checkout.maniforoughi2.workers.dev";
+const CHECKOUT = "https://asufiji-checkout.asufiji.workers.dev";
 const FIXED = {
   "monthly:1848": "https://buy.stripe.com/test_28E7sK5Wc0m6bL3fSfbjW00",
   "once:184800": "https://buy.stripe.com/test_14A8wO3O41qa5mF5dBbjW01",
