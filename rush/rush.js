@@ -47,7 +47,8 @@ form.addEventListener("submit", async (e) => {
   try {
     let r = null;
     for (const url of SIGNUP) {
-      try { r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }); break; } catch {}
+      // only our own service's answer counts: an address with nothing behind it fails CORS or errors
+      try { r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }); if (r.ok || r.status === 429) break; } catch {}
     }
     if (!r) throw new Error("unreachable");
     if (r.status === 429) { msg.textContent = "Too many sign-ups from this connection. Try again in a bit."; btn.disabled = false; return; }

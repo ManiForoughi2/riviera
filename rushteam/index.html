@@ -9,7 +9,8 @@
 // the sign-in page is moving to a new address: go there once it answers, else to the current one
 (async () => {
   const next = "https://fiji-portal.asufiji.workers.dev/", now = "https://fiji-portal.maniforoughi2.workers.dev/";
-  try { await fetch(next, { mode: "no-cors", cache: "no-store" }); location.replace(next); } catch { location.replace(now); }
+  // the sign-in service answers an unsigned request with 401 and a CORS header; an empty address does not
+  try { const r = await fetch(next + "data", { cache: "no-store" }); location.replace(r.status === 401 || r.ok ? next : now); } catch { location.replace(now); }
 })();
 </script>
 </head>
