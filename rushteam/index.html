@@ -5,8 +5,13 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>FIJI</title>
-<meta http-equiv="refresh" content="0; url=https://fiji-portal.maniforoughi2.workers.dev/">
-<script>location.replace("https://fiji-portal.maniforoughi2.workers.dev/");</script>
+<script>
+// the sign-in page is moving to a new address: go there once it answers, else to the current one
+(async () => {
+  const next = "https://fiji-portal.asufiji.workers.dev/", now = "https://fiji-portal.maniforoughi2.workers.dev/";
+  try { await fetch(next, { mode: "no-cors", cache: "no-store" }); location.replace(next); } catch { location.replace(now); }
+})();
+</script>
 </head>
-<body><a href="https://fiji-portal.maniforoughi2.workers.dev/">Sign in</a></body>
+<body><a href="https://fiji-portal.asufiji.workers.dev/">Sign in</a></body>
 </html>

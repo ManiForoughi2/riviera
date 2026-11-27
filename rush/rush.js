@@ -1,6 +1,7 @@
 // asufiji.com/rush: the sign-up form, and the two design.how effects (Ghosty reveal on the island print at
 // the top, Spray burst on the thank-you). a sign-up goes to a small sign-up service that only saves it.
-const SIGNUP = "https://asufiji-join.maniforoughi2.workers.dev/";
+// the sign-up service's address is moving; until the move is done, the old address is the fallback
+const SIGNUP = ["https://asufiji-join.asufiji.workers.dev/", "https://asufiji-join.maniforoughi2.workers.dev/"];
 const fx = import("../vendor/design-how/rush-fx.js?v=3");
 
 // the island print forms out of a soft cloud: Ghosty reveal's mask, slid up over the picture once it has
@@ -44,7 +45,11 @@ form.addEventListener("submit", async (e) => {
   btn.disabled = true; msg.textContent = "Sending…";
   const body = Object.fromEntries(["name", "phone", "ig", "grade", "gpa", "hometown", "hobbies", "heard", "questions", "website"].map((k) => [k, val(k)]));
   try {
-    const r = await fetch(SIGNUP, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    let r = null;
+    for (const url of SIGNUP) {
+      try { r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }); break; } catch {}
+    }
+    if (!r) throw new Error("unreachable");
     if (r.status === 429) { msg.textContent = "Too many sign-ups from this connection. Try again in a bit."; btn.disabled = false; return; }
     if (!r.ok) throw new Error("failed");
   } catch {
